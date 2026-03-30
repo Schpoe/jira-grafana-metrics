@@ -35,7 +35,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT sprint_name, COALESCE(committed_points, 0) AS \"Committed\", COALESCE(delivered_points, 0) AS \"Delivered\" FROM v_planning_deviation WHERE state = 'closed' ORDER BY complete_date DESC LIMIT 20",
+          "rawSql": "SELECT sprint_name, COALESCE(committed_points, 0) AS \"Committed\", COALESCE(delivered_points, 0) AS \"Delivered\" FROM v_planning_deviation WHERE sprint_id IN (SELECT DISTINCT si.sprint_id FROM sprint_issues si JOIN issues i ON i.key = si.issue_key WHERE i.project_key IN ($project)) WHERE state = 'closed' ORDER BY complete_date DESC LIMIT 20",
           "format": "table",
           "refId": "A"
         }
@@ -113,7 +113,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT sprint_name, COALESCE(delivery_pct, 0) AS \"Delivery %\" FROM v_planning_deviation WHERE state = 'closed' ORDER BY complete_date DESC LIMIT 20",
+          "rawSql": "SELECT sprint_name, COALESCE(delivery_pct, 0) AS \"Delivery %\" FROM v_planning_deviation WHERE sprint_id IN (SELECT DISTINCT si.sprint_id FROM sprint_issues si JOIN issues i ON i.key = si.issue_key WHERE i.project_key IN ($project)) WHERE state = 'closed' ORDER BY complete_date DESC LIMIT 20",
           "format": "table",
           "refId": "A"
         }
@@ -175,7 +175,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT sprint_name, SUM(CASE WHEN scope_change_type = 'added' THEN 1 ELSE 0 END) AS \"Added\", SUM(CASE WHEN scope_change_type = 'removed' THEN 1 ELSE 0 END) AS \"Removed\" FROM v_sprint_scope_changes WHERE sprint_state IN ('active','closed') GROUP BY sprint_name ORDER BY sprint_name",
+          "rawSql": "SELECT sprint_name, SUM(CASE WHEN scope_change_type = 'added' THEN 1 ELSE 0 END) AS \"Added\", SUM(CASE WHEN scope_change_type = 'removed' THEN 1 ELSE 0 END) AS \"Removed\" FROM v_sprint_scope_changes WHERE project_key IN ($project) AND sprint_state IN ('active','closed') GROUP BY sprint_name ORDER BY sprint_name",
           "format": "table",
           "refId": "A"
         }
@@ -250,7 +250,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT sprint_name AS \"Sprint\", state AS \"State\", TO_CHAR(start_date, 'YYYY-MM-DD') AS \"Start\", TO_CHAR(complete_date, 'YYYY-MM-DD') AS \"Completed\", COALESCE(committed_points, 0) AS \"Committed\", COALESCE(delivered_points, 0) AS \"Delivered\", COALESCE(delivery_pct, 0) AS \"Delivery %\", COALESCE(deviation_points, 0) AS \"Deviation\" FROM v_planning_deviation ORDER BY CASE state WHEN 'active' THEN 0 WHEN 'closed' THEN 1 ELSE 2 END, complete_date DESC NULLS LAST LIMIT 30",
+          "rawSql": "SELECT sprint_name AS \"Sprint\", state AS \"State\", TO_CHAR(start_date, 'YYYY-MM-DD') AS \"Start\", TO_CHAR(complete_date, 'YYYY-MM-DD') AS \"Completed\", COALESCE(committed_points, 0) AS \"Committed\", COALESCE(delivered_points, 0) AS \"Delivered\", COALESCE(delivery_pct, 0) AS \"Delivery %\", COALESCE(deviation_points, 0) AS \"Deviation\" FROM v_planning_deviation WHERE sprint_id IN (SELECT DISTINCT si.sprint_id FROM sprint_issues si JOIN issues i ON i.key = si.issue_key WHERE i.project_key IN ($project)) ORDER BY CASE state WHEN 'active' THEN 0 WHEN 'closed' THEN 1 ELSE 2 END, complete_date DESC NULLS LAST LIMIT 30",
           "format": "table",
           "refId": "A"
         }
