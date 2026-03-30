@@ -102,12 +102,42 @@ _jira_session.headers.update({"Accept": "application/json"})
 
 # ─── Jira API helpers ────────────────────────────────────────────────────────
 
+import time as _time
+
+def _jira_request(method, url, max_retries=5, **kwargs):
+    """Execute a Jira API request with exponential backoff retry.
+
+    Retries on connection errors, timeouts, 429 (rate limit) and 5xx responses.
+    Raises on 4xx errors that are not 429.
+    """
+    for attempt in range(max_retries):
+        try:
+            resp = _jira_session.request(method, url, timeout=30, **kwargs)
+            if resp.status_code == 429 or resp.status_code >= 500:
+                wait = 2 ** attempt
+                log.warning("Jira %s %s → %d, retrying in %ds (attempt %d/%d)",
+                            method, url, resp.status_code, wait, attempt + 1, max_retries)
+                _time.sleep(wait)
+                continue
+            if not resp.ok:
+                log.error("Jira error %d: %s", resp.status_code, resp.text)
+            resp.raise_for_status()
+            return resp.json()
+        except requests.exceptions.ConnectionError as exc:
+            if attempt == max_retries - 1:
+                raise
+            wait = 2 ** attempt
+            log.warning("Connection error (%s), retrying in %ds (attempt %d/%d)",
+                        exc, wait, attempt + 1, max_retries)
+            _time.sleep(wait)
+
+    raise RuntimeError(f"Jira request failed after {max_retries} attempts: {method} {url}")
+
+
 def jira_get(path, params=None):
     """GET request against the Jira REST API."""
     url = f"{JIRA_URL}/rest/{path}"
-    resp = _jira_session.get(url, params=params, timeout=30)
-    resp.raise_for_status()
-    return resp.json()
+    return _jira_request("GET", url, params=params)
 
 
 def jira_search(jql, fields, next_page_token=None, max_results=100):
@@ -121,11 +151,7 @@ def jira_search(jql, fields, next_page_token=None, max_results=100):
     body = {"jql": jql, "fields": fields, "maxResults": max_results}
     if next_page_token:
         body["nextPageToken"] = next_page_token
-    resp = _jira_session.post(url, json=body, timeout=30)
-    if not resp.ok:
-        log.error("Jira search error %d: %s", resp.status_code, resp.text)
-    resp.raise_for_status()
-    return resp.json()
+    return _jira_request("POST", url, json=body)
 
 
 def parse_dt(value):
