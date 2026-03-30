@@ -593,40 +593,66 @@ def main():
         sync_id = cur.fetchone()[0]
     conn.commit()
 
+    issues_synced = 0
+    transitions_synced = 0
+    sprints_synced = 0
+    errors = []
+
     try:
         last_sync_start, last_sync_finish = _last_successful_sync(conn)
         last_sync_duration = (last_sync_finish - last_sync_start) if (last_sync_start and last_sync_finish) else None
         sync_projects(conn)
         issues_synced, transitions_synced = sync_issues(conn, since=last_sync_start, last_sync_duration=last_sync_duration)
-        sprints_synced = sync_sprints(conn)
-        sync_releases(conn)
+    except Exception as exc:
+        log.error("Issues sync failed: %s", exc, exc_info=True)
+        errors.append(f"issues: {exc}")
 
+    # Sprints and releases are independent — run even if issues sync failed,
+    # and record success for whichever steps completed so the next incremental
+    # run does not have to redo the full issue import.
+    try:
+        sprints_synced = sync_sprints(conn)
+    except Exception as exc:
+        log.error("Sprints sync failed: %s", exc, exc_info=True)
+        errors.append(f"sprints: {exc}")
+
+    try:
+        sync_releases(conn)
+    except Exception as exc:
+        log.error("Releases sync failed: %s", exc, exc_info=True)
+        errors.append(f"releases: {exc}")
+
+    # Record success as long as the issues sync completed — that is the
+    # step that determines whether the next run can be incremental.
+    if "issues:" not in " ".join(errors):
+        status = "success" if not errors else "partial"
         with conn.cursor() as cur:
             cur.execute(
                 """
                 UPDATE sync_log
-                   SET status = 'success', finished_at = NOW(),
+                   SET status = %s, finished_at = NOW(),
                        issues_synced = %s, sprints_synced = %s,
-                       transitions_synced = %s
+                       transitions_synced = %s,
+                       error_message = %s
                  WHERE id = %s
                 """,
-                (issues_synced, sprints_synced, transitions_synced, sync_id),
+                (status, issues_synced, sprints_synced, transitions_synced,
+                 "; ".join(errors) or None, sync_id),
             )
         conn.commit()
-        log.info("=== Sync complete ===")
-
-    except Exception as exc:
-        log.error("Sync failed: %s", exc, exc_info=True)
+        log.info("=== Sync complete (status: %s) ===", status)
+    else:
         with conn.cursor() as cur:
             cur.execute(
                 "UPDATE sync_log SET status='error', finished_at=NOW(), error_message=%s WHERE id=%s",
-                (str(exc), sync_id),
+                ("; ".join(errors), sync_id),
             )
         conn.commit()
+        log.error("=== Sync failed ===")
+        conn.close()
         sys.exit(1)
 
-    finally:
-        conn.close()
+    conn.close()
 
 
 if __name__ == "__main__":
