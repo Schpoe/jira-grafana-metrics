@@ -2,23 +2,40 @@
   "id": null,
   "uid": "jira-team-overview",
   "title": "Team Overview",
-  "tags": ["jira", "team"],
+  "tags": [
+    "jira",
+    "team"
+  ],
   "timezone": "browser",
   "schemaVersion": 38,
   "version": 1,
   "refresh": "1h",
-  "time": { "from": "now-90d", "to": "now" },
+  "time": {
+    "from": "now-90d",
+    "to": "now"
+  },
   "panels": [
     {
       "id": 1,
       "type": "barchart",
       "title": "Current WIP per Assignee (Issues In Progress)",
       "description": "Open issues currently in progress per person. Useful for spotting overload.",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
-      "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
       "targets": [
         {
-          "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
           "rawSql": "SELECT COALESCE(assignee, 'Unassigned') AS \"Assignee\", COUNT(*) AS \"Issues\", COALESCE(SUM(story_points), 0) AS \"Story Points\" FROM issues WHERE status_category = 'In Progress' GROUP BY assignee ORDER BY \"Issues\" DESC LIMIT 20",
           "format": "table",
           "refId": "A"
@@ -28,23 +45,42 @@
         "xField": "Assignee",
         "stacking": "none",
         "fillOpacity": 80,
-        "legend": { "displayMode": "list", "placement": "bottom" }
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
       },
       "fieldConfig": {
-        "defaults": { "unit": "short", "color": { "mode": "palette-classic" } }
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          }
+        }
       }
     },
     {
       "id": 2,
       "type": "barchart",
-      "title": "Avg Cycle Time (RFT → Done) per Assignee",
+      "title": "Avg Cycle Time (RFT \u2192 Done) per Assignee",
       "description": "Average hours from Ready For Testing to Done per assignee, over the selected time range.",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
-      "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
       "targets": [
         {
-          "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
-          "rawSql": "SELECT i.assignee AS \"Assignee\", ROUND(AVG(c.hours_rft_to_done)::numeric, 1) AS \"Avg Hours\", ROUND(PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY c.hours_rft_to_done)::numeric, 1) AS \"Median Hours\", COUNT(*) AS \"Issues\" FROM v_cycle_time_rft_to_done c JOIN issues i ON i.key = c.issue_key WHERE i.assignee IS NOT NULL AND $__timeFilter(c.resolved_at) GROUP BY i.assignee ORDER BY \"Avg Hours\" ASC LIMIT 20",
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT i.assignee AS \"Assignee\", ROUND(AVG(c.hours_rft_to_done)::numeric, 1) AS \"Avg Hours\", ROUND(PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY c.hours_rft_to_done)::numeric, 1) AS \"Median Hours\", COUNT(*) AS \"Issues\" FROM v_cycle_time_rft_to_done c JOIN issues i ON i.key = c.issue_key WHERE project_key = ANY(string_to_array('$project', ',')) AND i.assignee IS NOT NULL AND $__timeFilter(c.resolved_at) GROUP BY i.assignee ORDER BY \"Avg Hours\" ASC LIMIT 20",
           "format": "table",
           "refId": "A"
         }
@@ -52,10 +88,18 @@
       "options": {
         "xField": "Assignee",
         "fillOpacity": 80,
-        "legend": { "displayMode": "list", "placement": "bottom" }
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
       },
       "fieldConfig": {
-        "defaults": { "unit": "h", "color": { "mode": "palette-classic" } }
+        "defaults": {
+          "unit": "h",
+          "color": {
+            "mode": "palette-classic"
+          }
+        }
       }
     },
     {
@@ -63,12 +107,23 @@
       "type": "barchart",
       "title": "Issues Completed per Assignee",
       "description": "Issues resolved per person over the selected time range.",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
-      "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
       "targets": [
         {
-          "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
-          "rawSql": "SELECT COALESCE(assignee, 'Unassigned') AS \"Assignee\", COUNT(*) AS \"Completed\", COALESCE(SUM(story_points), 0) AS \"Story Points\" FROM issues WHERE status_category = 'Done' AND resolved_at IS NOT NULL AND $__timeFilter(resolved_at) GROUP BY assignee ORDER BY \"Completed\" DESC LIMIT 20",
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT COALESCE(assignee, 'Unassigned') AS \"Assignee\", COUNT(*) AS \"Completed\", COALESCE(SUM(story_points), 0) AS \"Story Points\" FROM issues WHERE project_key = ANY(string_to_array('$project', ',')) AND status_category = 'Done' AND resolved_at IS NOT NULL AND $__timeFilter(resolved_at) GROUP BY assignee ORDER BY \"Completed\" DESC LIMIT 20",
           "format": "table",
           "refId": "A"
         }
@@ -77,10 +132,18 @@
         "xField": "Assignee",
         "stacking": "none",
         "fillOpacity": 80,
-        "legend": { "displayMode": "list", "placement": "bottom" }
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
       },
       "fieldConfig": {
-        "defaults": { "unit": "short", "color": { "mode": "palette-classic" } }
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          }
+        }
       }
     },
     {
@@ -88,11 +151,22 @@
       "type": "barchart",
       "title": "Where Issues Spend the Most Time (Avg Hours per Status)",
       "description": "Average hours issues remain in each status. Long waits in review/testing statuses indicate bottlenecks.",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
-      "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
       "targets": [
         {
-          "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
           "rawSql": "SELECT status AS \"Status\", ROUND(AVG(hours_in_status)::numeric, 1) AS \"Avg Hours\", ROUND(PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY hours_in_status)::numeric, 1) AS \"Median Hours\", COUNT(*) AS \"Samples\" FROM v_time_in_status WHERE hours_in_status IS NOT NULL AND hours_in_status > 0 AND hours_in_status < 8760 GROUP BY status HAVING COUNT(*) >= 5 ORDER BY \"Avg Hours\" DESC LIMIT 15",
           "format": "table",
           "refId": "A"
@@ -101,10 +175,18 @@
       "options": {
         "xField": "Status",
         "fillOpacity": 80,
-        "legend": { "displayMode": "list", "placement": "bottom" }
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
       },
       "fieldConfig": {
-        "defaults": { "unit": "h", "color": { "mode": "palette-classic" } }
+        "defaults": {
+          "unit": "h",
+          "color": {
+            "mode": "palette-classic"
+          }
+        }
       }
     },
     {
@@ -112,56 +194,149 @@
       "type": "timeseries",
       "title": "Issues Completed per Assignee Over Time (weekly)",
       "description": "Throughput trend per team member.",
-      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 16 },
-      "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+      "gridPos": {
+        "h": 9,
+        "w": 24,
+        "x": 0,
+        "y": 16
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
       "targets": [
         {
-          "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
-          "rawSql": "SELECT DATE_TRUNC('week', resolved_at) AS time, assignee AS metric, COUNT(*) AS value FROM issues WHERE status_category = 'Done' AND resolved_at IS NOT NULL AND assignee IS NOT NULL AND $__timeFilter(resolved_at) GROUP BY 1, 2 ORDER BY 1",
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT DATE_TRUNC('week', resolved_at) AS time, assignee AS metric, COUNT(*) AS value FROM issues WHERE project_key = ANY(string_to_array('$project', ',')) AND status_category = 'Done' AND resolved_at IS NOT NULL AND assignee IS NOT NULL AND $__timeFilter(resolved_at) GROUP BY 1, 2 ORDER BY 1",
           "format": "time_series",
           "refId": "A"
         }
       ],
       "options": {
-        "legend": { "displayMode": "list", "placement": "bottom" },
-        "tooltip": { "mode": "multi" }
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
       },
       "fieldConfig": {
-        "defaults": { "unit": "short", "custom": { "lineWidth": 2, "fillOpacity": 5 } }
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 5
+          }
+        }
       }
     },
     {
       "id": 6,
       "type": "table",
-      "title": "Assignee Detail — Last 90 Days",
+      "title": "Assignee Detail \u2014 Last 90 Days",
       "description": "Per-person summary: issues completed, story points delivered, and avg cycle time.",
-      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 25 },
-      "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 25
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
       "targets": [
         {
-          "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
           "rawSql": "SELECT i.assignee AS \"Assignee\", COUNT(DISTINCT i.key) AS \"Issues Completed\", COALESCE(SUM(i.story_points), 0) AS \"Points Delivered\", COUNT(DISTINCT CASE WHEN i.issue_type = 'Bug' THEN i.key END) AS \"Bugs Fixed\", ROUND(AVG(c.hours_rft_to_done)::numeric, 1) AS \"Avg Cycle Time (h)\", COUNT(DISTINCT wip.key) AS \"Current WIP\" FROM issues i LEFT JOIN v_cycle_time_rft_to_done c ON c.issue_key = i.key AND c.resolved_at >= NOW() - INTERVAL '90 days' LEFT JOIN issues wip ON wip.assignee = i.assignee AND wip.status_category = 'In Progress' WHERE i.status_category = 'Done' AND i.resolved_at >= NOW() - INTERVAL '90 days' AND i.assignee IS NOT NULL GROUP BY i.assignee ORDER BY \"Issues Completed\" DESC",
           "format": "table",
           "refId": "A"
         }
       ],
-      "options": { "sortBy": [{ "displayName": "Issues Completed", "desc": true }] },
+      "options": {
+        "sortBy": [
+          {
+            "displayName": "Issues Completed",
+            "desc": true
+          }
+        ]
+      },
       "fieldConfig": {
-        "defaults": { "custom": { "align": "left" } },
+        "defaults": {
+          "custom": {
+            "align": "left"
+          }
+        },
         "overrides": [
           {
-            "matcher": { "id": "byName", "options": "Avg Cycle Time (h)" },
+            "matcher": {
+              "id": "byName",
+              "options": "Avg Cycle Time (h)"
+            },
             "properties": [
-              { "id": "unit", "value": "h" },
+              {
+                "id": "unit",
+                "value": "h"
+              },
               {
                 "id": "thresholds",
-                "value": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 24 }, { "color": "orange", "value": 72 }, { "color": "red", "value": 168 }] }
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "yellow",
+                      "value": 24
+                    },
+                    {
+                      "color": "orange",
+                      "value": 72
+                    },
+                    {
+                      "color": "red",
+                      "value": 168
+                    }
+                  ]
+                }
               },
-              { "id": "custom.displayMode", "value": "color-background" }
+              {
+                "id": "custom.displayMode",
+                "value": "color-background"
+              }
             ]
           }
         ]
       }
     }
-  ]
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "project",
+        "label": "Team / Project",
+        "type": "query",
+        "datasource": {
+          "type": "postgres",
+          "uid": "jira-metrics-pg"
+        },
+        "query": "SELECT key FROM projects ORDER BY key",
+        "refresh": 2,
+        "includeAll": true,
+        "multi": true,
+        "allValue": null,
+        "sort": 1,
+        "hide": 0
+      }
+    ]
+  }
 }
