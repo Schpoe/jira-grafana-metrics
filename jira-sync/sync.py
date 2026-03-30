@@ -55,25 +55,42 @@ PG_DSN = (
 # ─── Read-only Jira HTTP session ─────────────────────────────────────────────
 
 class JiraWriteAttemptError(RuntimeError):
-    """Raised when code attempts any non-GET call to Jira."""
+    """Raised when code attempts a mutating call to Jira."""
 
 
 class ReadOnlyJiraSession(requests.Session):
     """A requests Session that hard-blocks every mutating HTTP method.
 
-    POST, PUT, PATCH, and DELETE will raise JiraWriteAttemptError before any
-    network connection is made, so Jira data can never be changed regardless
-    of what the rest of the code does.
+    PUT, PATCH, and DELETE are always blocked.
+    POST is blocked except for explicitly whitelisted read-only query endpoints
+    (Jira Cloud migrated issue search from GET to POST for the search/jql path).
+    No network connection is made before the check, so Jira data can never be
+    changed regardless of what the rest of the code does.
     """
 
-    _BLOCKED_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
+    _BLOCKED_METHODS = {"PUT", "PATCH", "DELETE"}
+
+    # POST paths that are semantically read-only queries, not writes.
+    # Matched as suffix of the request path.
+    _READONLY_POST_SUFFIXES = (
+        "/rest/api/3/search/jql",
+    )
 
     def request(self, method, url, **kwargs):
-        if method.upper() in self._BLOCKED_METHODS:
+        m = method.upper()
+        if m in self._BLOCKED_METHODS:
             raise JiraWriteAttemptError(
-                f"Blocked attempt to call {method.upper()} {url} — "
+                f"Blocked attempt to call {m} {url} — "
                 "this script is read-only and must never modify Jira."
             )
+        if m == "POST":
+            from urllib.parse import urlparse
+            path = urlparse(url).path
+            if not any(path.endswith(suffix) for suffix in self._READONLY_POST_SUFFIXES):
+                raise JiraWriteAttemptError(
+                    f"Blocked POST to non-whitelisted path {url} — "
+                    "this script is read-only and must never modify Jira."
+                )
         return super().request(method, url, **kwargs)
 
 
@@ -85,13 +102,27 @@ _jira_session.headers.update({"Accept": "application/json"})
 # ─── Jira API helpers ────────────────────────────────────────────────────────
 
 def jira_get(path, params=None):
-    """Perform a GET request against the Jira REST API.
-
-    This is the single entry-point for all Jira communication. It intentionally
-    exposes only GET so call-sites cannot accidentally pass a mutating method.
-    """
+    """GET request against the Jira REST API."""
     url = f"{JIRA_URL}/rest/{path}"
     resp = _jira_session.get(url, params=params, timeout=30)
+    resp.raise_for_status()
+    return resp.json()
+
+
+def jira_search(jql, fields, next_page_token=None, max_results=100):
+    """POST to /rest/api/3/search/jql — Jira Cloud's current search endpoint.
+
+    Jira deprecated GET /rest/api/3/search (returns 410). The replacement
+    uses token-based pagination: pass nextPageToken from the previous response
+    to fetch the next page. isLast=True in the response means no more pages.
+    """
+    url = f"{JIRA_URL}/rest/api/3/search/jql"
+    body = {"jql": jql, "fields": fields, "maxResults": max_results}
+    if next_page_token:
+        body["nextPageToken"] = next_page_token
+    resp = _jira_session.post(url, json=body, timeout=30)
+    if not resp.ok:
+        log.error("Jira search error %d: %s", resp.status_code, resp.text)
     resp.raise_for_status()
     return resp.json()
 
@@ -129,31 +160,96 @@ def sync_projects(conn):
     log.info("Synced %d project(s)", len(rows))
 
 
-def sync_issues(conn):
-    """Sync all issues and their changelog (status transitions)."""
-    log.info("Syncing issues")
-    project_filter = ", ".join(JIRA_PROJECT_KEYS)
-    jql = f"project in ({project_filter}) ORDER BY updated DESC"
+def _fetch_changelog(issue_key):
+    """Fetch all status transitions for a single issue via the changelog endpoint.
+
+    Jira Cloud deprecated expand=changelog on the bulk search endpoint (410).
+    This calls the dedicated per-issue changelog API instead.
+    """
+    transition_rows = []
     start = 0
+    while True:
+        data = jira_get(
+            f"api/3/issue/{issue_key}/changelog",
+            params={"startAt": start, "maxResults": 100},
+        )
+        for history in data.get("values", []):
+            for item in history.get("items", []):
+                if item["field"] == "status":
+                    transition_rows.append((
+                        issue_key,
+                        item.get("fromString"),
+                        item.get("toString"),
+                        parse_dt(history.get("created")),
+                        history.get("author", {}).get("displayName"),
+                    ))
+        if data.get("isLast", True):
+            break
+        start += data.get("maxResults", 100)
+    return transition_rows
+
+
+def _last_successful_sync(conn):
+    """Return (started_at, finished_at) of the last successful sync, or (None, None)."""
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT started_at, finished_at FROM sync_log WHERE status = 'success' ORDER BY started_at DESC LIMIT 1"
+        )
+        row = cur.fetchone()
+    return (row[0], row[1]) if row else (None, None)
+
+
+def sync_issues(conn, since=None, last_sync_duration=None):
+    """Sync issues and their full changelog.
+
+    If `since` is provided (datetime), only issues updated on or after
+    (since - buffer) are fetched. The buffer is calculated as:
+
+        max(30 minutes, last_sync_duration + 15 minutes)
+
+    This ensures that any issue updated during the previous sync run —
+    which may have been paginated past before the update occurred — is
+    always re-fetched on the next incremental run. No historical data is
+    lost: the full changelog is always fetched for every matched issue.
+
+    Pass since=None (or set FULL_SYNC=true) to re-sync everything.
+    """
+    from datetime import timedelta
+
+    project_filter = ", ".join(f'"{k}"' for k in JIRA_PROJECT_KEYS)
+
+    if since and os.environ.get("FULL_SYNC", "").lower() not in ("1", "true", "yes"):
+        if last_sync_duration:
+            buffer = max(timedelta(minutes=30), last_sync_duration + timedelta(minutes=15))
+        else:
+            buffer = timedelta(minutes=30)
+        cutoff = since - buffer
+        cutoff_str = cutoff.strftime("%Y-%m-%d %H:%M")
+        jql = (
+            f'project in ({project_filter}) AND updated >= "{cutoff_str}" '
+            f"ORDER BY updated DESC"
+        )
+        log.info(
+            "Incremental sync: issues updated since %s (buffer: %s)",
+            cutoff_str, buffer,
+        )
+    else:
+        jql = f"project in ({project_filter}) ORDER BY updated DESC"
+        log.info("Full sync: fetching all issues")
+    next_page_token = None
     page_size = 100
     total_issues = 0
     total_transitions = 0
+    page = 0
+
+    fields = [
+        "summary", "issuetype", "status", "priority", STORY_POINTS_FIELD,
+        "assignee", "reporter", "created", "updated", "resolutiondate",
+        "fixVersions", "labels", "project",
+    ]
 
     while True:
-        data = jira_get(
-            "api/3/search",
-            params={
-                "jql": jql,
-                "startAt": start,
-                "maxResults": page_size,
-                "fields": (
-                    f"summary,issuetype,status,priority,{STORY_POINTS_FIELD},"
-                    "assignee,reporter,created,updated,resolutiondate,"
-                    "fixVersions,labels,project"
-                ),
-                "expand": "changelog",
-            },
-        )
+        data = jira_search(jql, fields=fields, next_page_token=next_page_token, max_results=page_size)
 
         issues = data.get("issues", [])
         if not issues:
@@ -188,26 +284,17 @@ def sync_issues(conn):
                 labels,
             ))
 
-            for history in issue.get("changelog", {}).get("histories", []):
-                for item in history.get("items", []):
-                    if item["field"] == "status":
-                        transition_rows.append((
-                            key,
-                            item.get("fromString"),
-                            item.get("toString"),
-                            parse_dt(history.get("created")),
-                            history.get("author", {}).get("displayName"),
-                        ))
+            transition_rows.extend(_fetch_changelog(key))
 
         with conn.cursor() as cur:
             execute_values(
                 cur,
-                f"""
+                """
                 INSERT INTO issues (
                     key, project_key, summary, issue_type, status, status_category,
                     priority, story_points, assignee, reporter,
                     created_at, updated_at, resolved_at,
-                    fix_versions, labels, synced_at
+                    fix_versions, labels
                 ) VALUES %s
                 ON CONFLICT (key) DO UPDATE SET
                     summary          = EXCLUDED.summary,
@@ -239,16 +326,17 @@ def sync_issues(conn):
                 )
 
         conn.commit()
+        page += 1
         total_issues += len(issue_rows)
         total_transitions += len(transition_rows)
         log.info(
-            "Page %d–%d: %d issues, %d transitions",
-            start + 1, start + len(issues), len(issue_rows), len(transition_rows),
+            "Page %d: %d issues, %d transitions",
+            page, len(issue_rows), len(transition_rows),
         )
 
-        if start + page_size >= data["total"]:
+        if data.get("isLast", True):
             break
-        start += page_size
+        next_page_token = data.get("nextPageToken")
 
     log.info("Issues synced: %d  Transitions synced: %d", total_issues, total_transitions)
     return total_issues, total_transitions
@@ -410,7 +498,7 @@ def sync_sprints(conn):
                     cur,
                     """
                     INSERT INTO sprints
-                        (id, board_id, name, state, start_date, end_date, complete_date, goal, synced_at)
+                        (id, board_id, name, state, start_date, end_date, complete_date, goal)
                     VALUES %s
                     ON CONFLICT (id) DO UPDATE SET
                         name          = EXCLUDED.name,
@@ -461,7 +549,7 @@ def sync_releases(conn):
                 cur,
                 """
                 INSERT INTO releases
-                    (id, project_key, name, description, release_date, released, archived, synced_at)
+                    (id, project_key, name, description, release_date, released, archived)
                 VALUES %s
                 ON CONFLICT (id) DO UPDATE SET
                     name         = EXCLUDED.name,
@@ -490,8 +578,10 @@ def main():
     conn.commit()
 
     try:
+        last_sync_start, last_sync_finish = _last_successful_sync(conn)
+        last_sync_duration = (last_sync_finish - last_sync_start) if (last_sync_start and last_sync_finish) else None
         sync_projects(conn)
-        issues_synced, transitions_synced = sync_issues(conn)
+        issues_synced, transitions_synced = sync_issues(conn, since=last_sync_start, last_sync_duration=last_sync_duration)
         sprints_synced = sync_sprints(conn)
         sync_releases(conn)
 
