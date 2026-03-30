@@ -92,8 +92,11 @@ CREATE TABLE IF NOT EXISTS sync_log (
     issues_synced       INTEGER DEFAULT 0,
     sprints_synced      INTEGER DEFAULT 0,
     transitions_synced  INTEGER DEFAULT 0,
-    status              TEXT DEFAULT 'running',  -- running, success, error
-    error_message       TEXT
+    status              TEXT DEFAULT 'running',  -- running, success, partial, error
+    error_message       TEXT,
+    next_page_token     TEXT,   -- checkpoint: resume issues sync from this token
+    issues_checkpoint   INTEGER DEFAULT 0,  -- issues synced so far in this run
+    transitions_checkpoint INTEGER DEFAULT 0
 );
 
 -- ─── Indexes ────────────────────────────────────────────────────────────────

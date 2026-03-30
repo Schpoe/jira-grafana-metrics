@@ -227,26 +227,38 @@ def _last_successful_sync(conn):
     """Return (started_at, finished_at) of the last successful sync, or (None, None)."""
     with conn.cursor() as cur:
         cur.execute(
-            "SELECT started_at, finished_at FROM sync_log WHERE status = 'success' ORDER BY started_at DESC LIMIT 1"
+            "SELECT started_at, finished_at FROM sync_log WHERE status IN ('success', 'partial') ORDER BY started_at DESC LIMIT 1"
         )
         row = cur.fetchone()
     return (row[0], row[1]) if row else (None, None)
 
 
-def sync_issues(conn, since=None, last_sync_duration=None):
+def _resume_checkpoint(conn):
+    """Return (sync_id, next_page_token, issues_checkpoint, transitions_checkpoint)
+    if there is an interrupted running sync with a saved page token, else None."""
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT id, next_page_token, issues_checkpoint, transitions_checkpoint
+            FROM sync_log
+            WHERE status = 'running' AND next_page_token IS NOT NULL
+            ORDER BY started_at DESC LIMIT 1
+            """
+        )
+        row = cur.fetchone()
+    return row if row else None
+
+
+def sync_issues(conn, sync_id, since=None, last_sync_duration=None, resume_token=None, resume_counts=None):
     """Sync issues and their full changelog.
 
-    If `since` is provided (datetime), only issues updated on or after
-    (since - buffer) are fetched. The buffer is calculated as:
+    Checkpointing: after every page the current nextPageToken and running
+    totals are written to sync_log. If the container restarts mid-sync,
+    _resume_checkpoint() finds the saved token and this function continues
+    from where it left off instead of starting from page 1.
 
-        max(30 minutes, last_sync_duration + 15 minutes)
-
-    This ensures that any issue updated during the previous sync run —
-    which may have been paginated past before the update occurred — is
-    always re-fetched on the next incremental run. No historical data is
-    lost: the full changelog is always fetched for every matched issue.
-
-    Pass since=None (or set FULL_SYNC=true) to re-sync everything.
+    resume_token:  nextPageToken from a previous interrupted run (or None).
+    resume_counts: (issues, transitions) already saved in the previous run.
     """
     project_filter = ", ".join(f'"{k}"' for k in JIRA_PROJECT_KEYS)
 
@@ -267,21 +279,22 @@ def sync_issues(conn, since=None, last_sync_duration=None):
             f'AND created >= "{history_cutoff_str}" '
             f"ORDER BY updated DESC"
         )
-        log.info(
-            "Incremental sync: issues updated since %s (buffer: %s)",
-            cutoff_str, buffer,
-        )
+        log.info("Incremental sync: issues updated since %s (buffer: %s)", cutoff_str, buffer)
     else:
         jql = (
             f'project in ({project_filter}) AND created >= "{history_cutoff_str}" '
             f"ORDER BY updated DESC"
         )
         log.info("Full sync: fetching all issues")
-    next_page_token = None
+
+    next_page_token = resume_token
     page_size = 100
-    total_issues = 0
-    total_transitions = 0
+    total_issues, total_transitions = resume_counts if resume_counts else (0, 0)
     page = 0
+
+    if resume_token:
+        log.info("Resuming from checkpoint (already synced: %d issues, %d transitions)",
+                 total_issues, total_transitions)
 
     fields = [
         "summary", "issuetype", "status", "priority", STORY_POINTS_FIELD,
@@ -327,6 +340,9 @@ def sync_issues(conn, since=None, last_sync_duration=None):
 
             transition_rows.extend(_fetch_changelog(key))
 
+        is_last = data.get("isLast", True)
+        next_page_token = None if is_last else data.get("nextPageToken")
+
         with conn.cursor() as cur:
             execute_values(
                 cur,
@@ -366,18 +382,28 @@ def sync_issues(conn, since=None, last_sync_duration=None):
                     transition_rows,
                 )
 
+            # Save checkpoint after every page so a restart can resume here
+            cur.execute(
+                """
+                UPDATE sync_log
+                   SET next_page_token        = %s,
+                       issues_checkpoint      = %s,
+                       transitions_checkpoint = %s
+                 WHERE id = %s
+                """,
+                (next_page_token, total_issues + len(issue_rows),
+                 total_transitions + len(transition_rows), sync_id),
+            )
+
         conn.commit()
         page += 1
         total_issues += len(issue_rows)
         total_transitions += len(transition_rows)
-        log.info(
-            "Page %d: %d issues, %d transitions",
-            page, len(issue_rows), len(transition_rows),
-        )
+        log.info("Page %d: %d issues, %d transitions (total: %d issues)",
+                 page, len(issue_rows), len(transition_rows), total_issues)
 
-        if data.get("isLast", True):
+        if is_last:
             break
-        next_page_token = data.get("nextPageToken")
 
     log.info("Issues synced: %d  Transitions synced: %d", total_issues, total_transitions)
     return total_issues, total_transitions
@@ -629,10 +655,21 @@ def main():
     log.info("=== Jira sync starting ===")
     conn = psycopg2.connect(PG_DSN)
 
-    with conn.cursor() as cur:
-        cur.execute("INSERT INTO sync_log (status) VALUES ('running') RETURNING id")
-        sync_id = cur.fetchone()[0]
-    conn.commit()
+    # Check if a previous run was interrupted mid-issues-sync and left a checkpoint
+    checkpoint = _resume_checkpoint(conn)
+    if checkpoint:
+        sync_id, resume_token, issues_done, transitions_done = checkpoint
+        log.info("Resuming interrupted sync (id=%d) from checkpoint — "
+                 "%d issues and %d transitions already saved",
+                 sync_id, issues_done, transitions_done)
+        resume_counts = (issues_done, transitions_done)
+    else:
+        with conn.cursor() as cur:
+            cur.execute("INSERT INTO sync_log (status) VALUES ('running') RETURNING id")
+            sync_id = cur.fetchone()[0]
+        conn.commit()
+        resume_token = None
+        resume_counts = None
 
     issues_synced = 0
     transitions_synced = 0
@@ -643,7 +680,13 @@ def main():
         last_sync_start, last_sync_finish = _last_successful_sync(conn)
         last_sync_duration = (last_sync_finish - last_sync_start) if (last_sync_start and last_sync_finish) else None
         sync_projects(conn)
-        issues_synced, transitions_synced = sync_issues(conn, since=last_sync_start, last_sync_duration=last_sync_duration)
+        issues_synced, transitions_synced = sync_issues(
+            conn, sync_id,
+            since=last_sync_start,
+            last_sync_duration=last_sync_duration,
+            resume_token=resume_token,
+            resume_counts=resume_counts,
+        )
     except Exception as exc:
         log.error("Issues sync failed: %s", exc, exc_info=True)
         errors.append(f"issues: {exc}")
