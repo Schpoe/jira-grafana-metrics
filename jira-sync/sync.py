@@ -20,6 +20,7 @@ All writes go exclusively to the local Postgres database.
 import logging
 import os
 import sys
+from datetime import datetime, timezone, timedelta
 
 import psycopg2
 import requests
@@ -214,9 +215,12 @@ def sync_issues(conn, since=None, last_sync_duration=None):
 
     Pass since=None (or set FULL_SYNC=true) to re-sync everything.
     """
-    from datetime import timedelta
-
     project_filter = ", ".join(f'"{k}"' for k in JIRA_PROJECT_KEYS)
+
+    # Hard limit: never sync issues older than JIRA_MAX_HISTORY_YEARS (default 3)
+    max_years = int(os.environ.get("JIRA_MAX_HISTORY_YEARS", "3"))
+    history_cutoff = datetime.now(timezone.utc) - timedelta(days=max_years * 365)
+    history_cutoff_str = history_cutoff.strftime("%Y-%m-%d")
 
     if since and os.environ.get("FULL_SYNC", "").lower() not in ("1", "true", "yes"):
         if last_sync_duration:
@@ -227,6 +231,7 @@ def sync_issues(conn, since=None, last_sync_duration=None):
         cutoff_str = cutoff.strftime("%Y-%m-%d %H:%M")
         jql = (
             f'project in ({project_filter}) AND updated >= "{cutoff_str}" '
+            f'AND created >= "{history_cutoff_str}" '
             f"ORDER BY updated DESC"
         )
         log.info(
@@ -234,7 +239,10 @@ def sync_issues(conn, since=None, last_sync_duration=None):
             cutoff_str, buffer,
         )
     else:
-        jql = f"project in ({project_filter}) ORDER BY updated DESC"
+        jql = (
+            f'project in ({project_filter}) AND created >= "{history_cutoff_str}" '
+            f"ORDER BY updated DESC"
+        )
         log.info("Full sync: fetching all issues")
     next_page_token = None
     page_size = 100
