@@ -35,7 +35,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT sprint_name, COALESCE(committed_points, 0) AS \"Committed\", COALESCE(delivered_points, 0) AS \"Delivered\" FROM v_planning_deviation WHERE sprint_id IN (SELECT DISTINCT si.sprint_id FROM sprint_issues si JOIN issues i ON i.key = si.issue_key WHERE i.project_key IN ($project)) WHERE state = 'closed' ORDER BY complete_date DESC LIMIT 20",
+          "rawSql": "SELECT sprint_name, COALESCE(committed_points, 0) AS \"Committed\", COALESCE(delivered_points, 0) AS \"Delivered\" FROM v_planning_deviation WHERE sprint_id IN (SELECT DISTINCT si.sprint_id FROM sprint_issues si JOIN issues i ON i.key = si.issue_key WHERE i.project_key IN ($project)) AND state = 'closed' ORDER BY complete_date DESC LIMIT 20",
           "format": "table",
           "refId": "A"
         }
@@ -113,7 +113,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT sprint_name, COALESCE(delivery_pct, 0) AS \"Delivery %\" FROM v_planning_deviation WHERE sprint_id IN (SELECT DISTINCT si.sprint_id FROM sprint_issues si JOIN issues i ON i.key = si.issue_key WHERE i.project_key IN ($project)) WHERE state = 'closed' ORDER BY complete_date DESC LIMIT 20",
+          "rawSql": "SELECT sprint_name, COALESCE(delivery_pct, 0) AS \"Delivery %\" FROM v_planning_deviation WHERE sprint_id IN (SELECT DISTINCT si.sprint_id FROM sprint_issues si JOIN issues i ON i.key = si.issue_key WHERE i.project_key IN ($project)) AND state = 'closed' ORDER BY complete_date DESC LIMIT 20",
           "format": "table",
           "refId": "A"
         }
