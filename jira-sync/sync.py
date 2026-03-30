@@ -192,14 +192,21 @@ def _fetch_changelog(issue_key):
 
     Jira Cloud deprecated expand=changelog on the bulk search endpoint (410).
     This calls the dedicated per-issue changelog API instead.
+
+    Some issues are corrupt on Jira's side (internal PSQLException returned as
+    a 400) — these are logged and skipped rather than failing the entire sync.
     """
     transition_rows = []
     start = 0
     while True:
-        data = jira_get(
-            f"api/3/issue/{issue_key}/changelog",
-            params={"startAt": start, "maxResults": 100},
-        )
+        try:
+            data = jira_get(
+                f"api/3/issue/{issue_key}/changelog",
+                params={"startAt": start, "maxResults": 100},
+            )
+        except requests.exceptions.HTTPError as exc:
+            log.warning("Skipping changelog for %s — Jira returned %s", issue_key, exc)
+            return []
         for history in data.get("values", []):
             for item in history.get("items", []):
                 if item["field"] == "status":
