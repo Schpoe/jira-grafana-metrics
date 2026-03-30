@@ -11,7 +11,7 @@
   "version": 1,
   "refresh": "1h",
   "time": {
-    "from": "now-90d",
+    "from": "now-3y",
     "to": "now"
   },
   "panels": [
@@ -80,7 +80,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT i.assignee AS \"Assignee\", ROUND(AVG(c.hours_rft_to_done)::numeric, 1) AS \"Avg Hours\", ROUND(PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY c.hours_rft_to_done)::numeric, 1) AS \"Median Hours\", COUNT(*) AS \"Issues\" FROM v_cycle_time_rft_to_done c JOIN issues i ON i.key = c.issue_key WHERE project_key IN ($project) AND i.assignee IS NOT NULL AND $__timeFilter(c.resolved_at) GROUP BY i.assignee ORDER BY \"Avg Hours\" ASC LIMIT 20",
+          "rawSql": "SELECT i.assignee AS \"Assignee\", ROUND(AVG(c.hours_rft_to_done)::numeric, 1) AS \"Avg Hours\", ROUND(PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY c.hours_rft_to_done)::numeric, 1) AS \"Median Hours\", COUNT(*) AS \"Issues\" FROM v_cycle_time_rft_to_done c JOIN issues i ON i.key = c.issue_key WHERE c.project_key IN ($project) AND i.assignee IS NOT NULL AND $__timeFilter(c.resolved_at) AND ('$quarter' = '1900-01-01' OR date_trunc('quarter', c.resolved_at) = '$quarter'::date) GROUP BY i.assignee ORDER BY \"Avg Hours\" ASC LIMIT 20",
           "format": "table",
           "refId": "A"
         }
@@ -123,7 +123,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT COALESCE(assignee, 'Unassigned') AS \"Assignee\", COUNT(*) AS \"Completed\", COALESCE(SUM(story_points), 0) AS \"Story Points\" FROM issues WHERE project_key IN ($project) AND status_category = 'Done' AND resolved_at IS NOT NULL AND $__timeFilter(resolved_at) GROUP BY assignee ORDER BY \"Completed\" DESC LIMIT 20",
+          "rawSql": "SELECT COALESCE(assignee, 'Unassigned') AS \"Assignee\", COUNT(*) AS \"Completed\", COALESCE(SUM(story_points), 0) AS \"Story Points\" FROM issues WHERE project_key IN ($project) AND status_category = 'Done' AND resolved_at IS NOT NULL AND $__timeFilter(resolved_at) AND ('$quarter' = '1900-01-01' OR date_trunc('quarter', resolved_at) = '$quarter'::date) GROUP BY assignee ORDER BY \"Completed\" DESC LIMIT 20",
           "format": "table",
           "refId": "A"
         }
@@ -210,7 +210,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT DATE_TRUNC('week', resolved_at) AS time, assignee AS metric, COUNT(*) AS value FROM issues WHERE project_key IN ($project) AND status_category = 'Done' AND resolved_at IS NOT NULL AND assignee IS NOT NULL AND $__timeFilter(resolved_at) GROUP BY 1, 2 ORDER BY 1",
+          "rawSql": "SELECT DATE_TRUNC('week', resolved_at) AS time, assignee AS metric, COUNT(*) AS value FROM issues WHERE project_key IN ($project) AND status_category = 'Done' AND resolved_at IS NOT NULL AND assignee IS NOT NULL AND $__timeFilter(resolved_at) AND ('$quarter' = '1900-01-01' OR date_trunc('quarter', resolved_at) = '$quarter'::date) GROUP BY 1, 2 ORDER BY 1",
           "format": "time_series",
           "refId": "A"
         }
@@ -237,8 +237,8 @@
     {
       "id": 6,
       "type": "table",
-      "title": "Assignee Detail \u2014 Last 90 Days",
-      "description": "Per-person summary: issues completed, story points delivered, and avg cycle time.",
+      "title": "Assignee Detail \u2014 Selected Period",
+      "description": "Per-person summary: issues completed, story points delivered, and avg cycle time. Filtered by selected quarter, or last 90 days when All is selected.",
       "gridPos": {
         "h": 8,
         "w": 24,
@@ -255,7 +255,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT i.assignee AS \"Assignee\", COUNT(DISTINCT i.key) AS \"Issues Completed\", COALESCE(SUM(i.story_points), 0) AS \"Points Delivered\", COUNT(DISTINCT CASE WHEN i.issue_type = 'Bug' THEN i.key END) AS \"Bugs Fixed\", ROUND(AVG(c.hours_rft_to_done)::numeric, 1) AS \"Avg Cycle Time (h)\", COUNT(DISTINCT wip.key) AS \"Current WIP\" FROM issues i LEFT JOIN v_cycle_time_rft_to_done c ON c.issue_key = i.key AND c.resolved_at >= NOW() - INTERVAL '90 days' LEFT JOIN issues wip ON wip.assignee = i.assignee AND wip.status_category = 'In Progress' WHERE project_key IN ($project) AND i.status_category = 'Done' AND i.resolved_at >= NOW() - INTERVAL '90 days' AND i.assignee IS NOT NULL GROUP BY i.assignee ORDER BY \"Issues Completed\" DESC",
+          "rawSql": "SELECT i.assignee AS \"Assignee\", COUNT(DISTINCT i.key) AS \"Issues Completed\", COALESCE(SUM(i.story_points), 0) AS \"Points Delivered\", COUNT(DISTINCT CASE WHEN i.issue_type = 'Bug' THEN i.key END) AS \"Bugs Fixed\", ROUND(AVG(c.hours_rft_to_done)::numeric, 1) AS \"Avg Cycle Time (h)\", COUNT(DISTINCT wip.key) AS \"Current WIP\" FROM issues i LEFT JOIN v_cycle_time_rft_to_done c ON c.issue_key = i.key AND ('$quarter' = '1900-01-01' AND c.resolved_at >= NOW() - INTERVAL '90 days' OR '$quarter' != '1900-01-01' AND date_trunc('quarter', c.resolved_at) = '$quarter'::date) LEFT JOIN issues wip ON wip.assignee = i.assignee AND wip.status_category = 'In Progress' WHERE project_key IN ($project) AND i.status_category = 'Done' AND ('$quarter' = '1900-01-01' AND i.resolved_at >= NOW() - INTERVAL '90 days' OR '$quarter' != '1900-01-01' AND date_trunc('quarter', i.resolved_at) = '$quarter'::date) AND i.assignee IS NOT NULL GROUP BY i.assignee ORDER BY \"Issues Completed\" DESC",
           "format": "table",
           "refId": "A"
         }
@@ -335,6 +335,22 @@
         "multi": true,
         "allValue": null,
         "sort": 1,
+        "hide": 0
+      },
+      {
+        "name": "quarter",
+        "label": "Quarter",
+        "type": "query",
+        "datasource": {
+          "type": "postgres",
+          "uid": "jira-metrics-pg"
+        },
+        "query": "SELECT DISTINCT TO_CHAR(date_trunc('quarter', created_at), 'YYYY-MM-DD') FROM issues WHERE created_at IS NOT NULL ORDER BY 1 DESC",
+        "refresh": 2,
+        "includeAll": true,
+        "multi": false,
+        "allValue": "1900-01-01",
+        "sort": 0,
         "hide": 0
       }
     ]

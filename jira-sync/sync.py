@@ -427,8 +427,15 @@ def _get_scrum_boards():
     return boards
 
 
-def _sync_sprint_members(conn, sprint_id):
-    """Upsert current sprint membership; mark removed issues."""
+def _sync_sprint_members(conn, sprint_id, sprint_state):
+    """Upsert current sprint membership; mark removed issues; track scope changes.
+
+    was_in_initial_scope logic:
+    - First time we ever sync an active sprint: all current members are initial scope.
+    - Subsequent syncs of an active sprint: only pre-existing rows are initial scope;
+      newly inserted rows (added mid-sprint) are NOT initial scope.
+    - Closed/future sprints: always mark as initial scope (historical data, no live tracking).
+    """
     try:
         data = jira_get(
             f"agile/1.0/sprint/{sprint_id}/issue",
@@ -466,15 +473,28 @@ def _sync_sprint_members(conn, sprint_id):
         if not rows:
             return
 
-        # Upsert membership
+        # Determine was_in_initial_scope for newly inserted rows:
+        # - closed/future sprints: always TRUE (historical, no live tracking needed)
+        # - active sprint, first sync (no existing rows): TRUE — all current members
+        #   were there when the sprint started as far as we can tell
+        # - active sprint, subsequent sync: FALSE for new rows — they were added mid-sprint
+        if sprint_state in ("closed", "future"):
+            initial_scope = True
+        else:
+            cur.execute(
+                "SELECT COUNT(*) FROM sprint_issues WHERE sprint_id = %s", (sprint_id,)
+            )
+            existing_count = cur.fetchone()[0]
+            initial_scope = existing_count == 0  # True only on first sync of this sprint
+
         execute_values(
             cur,
             """
-            INSERT INTO sprint_issues (sprint_id, issue_key, story_points_at_add)
+            INSERT INTO sprint_issues (sprint_id, issue_key, story_points_at_add, was_in_initial_scope)
             VALUES %s
             ON CONFLICT (sprint_id, issue_key) DO NOTHING
             """,
-            rows,
+            [(sprint_id, key, sp, initial_scope) for _sid, key, sp in rows],
         )
 
         # Mark issues no longer returned by Jira as removed
@@ -597,7 +617,7 @@ def sync_sprints(conn):
             conn.commit()
 
             for sprint in sprints:
-                _sync_sprint_members(conn, sprint["id"])
+                _sync_sprint_members(conn, sprint["id"], sprint.get("state", ""))
                 _take_sprint_snapshot(conn, sprint)
 
             total_sprints += len(sprints)
