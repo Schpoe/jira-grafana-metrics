@@ -36,7 +36,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT DATE_TRUNC('week', resolved_at) AS time, ROUND(AVG(hours_rft_to_done)::numeric, 1) AS \"Avg\", ROUND(PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY hours_rft_to_done)::numeric, 1) AS \"Median\", ROUND(PERCENTILE_CONT(0.85) WITHIN GROUP (ORDER BY hours_rft_to_done)::numeric, 1) AS \"p85\" FROM v_cycle_time_rft_to_done WHERE project_key IN ($project) AND $__timeFilter(resolved_at) AND ('$quarter' = '1900-01-01' OR date_trunc('quarter', resolved_at) = '$quarter'::date) GROUP BY 1 ORDER BY 1",
+          "rawSql": "SELECT DATE_TRUNC('week', resolved_at) AS time, ROUND(AVG(hours_rft_to_done)::numeric, 1) AS \"Avg\", ROUND(PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY hours_rft_to_done)::numeric, 1) AS \"Median\", ROUND(PERCENTILE_CONT(0.85) WITHIN GROUP (ORDER BY hours_rft_to_done)::numeric, 1) AS \"p85\" FROM v_cycle_time_rft_to_done WHERE project_key IN ($project) AND (('$quarter' = '1900-01-01' AND $__timeFilter(resolved_at)) OR ('$quarter' != '1900-01-01' AND date_trunc('quarter', resolved_at) = '$quarter'::date)) GROUP BY 1 ORDER BY 1",
           "format": "time_series",
           "refId": "A"
         }
@@ -138,7 +138,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT DATE_TRUNC('week', resolved_at) AS time, COUNT(*) AS \"Issues Completed\" FROM issues WHERE project_key IN ($project) AND resolved_at IS NOT NULL AND status_category = 'Done' AND $__timeFilter(resolved_at) AND ('$quarter' = '1900-01-01' OR date_trunc('quarter', resolved_at) = '$quarter'::date) GROUP BY 1 ORDER BY 1",
+          "rawSql": "SELECT DATE_TRUNC('week', resolved_at) AS time, COUNT(*) AS \"Issues Completed\" FROM issues WHERE project_key IN ($project) AND resolved_at IS NOT NULL AND status_category = 'Done' AND (('$quarter' = '1900-01-01' AND $__timeFilter(resolved_at)) OR ('$quarter' != '1900-01-01' AND date_trunc('quarter', resolved_at) = '$quarter'::date)) GROUP BY 1 ORDER BY 1",
           "format": "time_series",
           "refId": "A"
         }
@@ -308,7 +308,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT issue_key AS \"Key\", issue_type AS \"Type\", priority AS \"Priority\", COALESCE(story_points::text, '-') AS \"Points\", ROUND(hours_rft_to_done::numeric, 1) AS \"Hours (RFT\u2192Done)\", TO_CHAR(entered_rft_at, 'YYYY-MM-DD') AS \"Entered RFT\", TO_CHAR(resolved_at, 'YYYY-MM-DD') AS \"Resolved\" FROM v_cycle_time_rft_to_done WHERE project_key IN ($project) AND $__timeFilter(resolved_at) AND ('$quarter' = '1900-01-01' OR date_trunc('quarter', resolved_at) = '$quarter'::date) ORDER BY hours_rft_to_done DESC LIMIT 25",
+          "rawSql": "SELECT issue_key AS \"Key\", issue_type AS \"Type\", priority AS \"Priority\", COALESCE(story_points::text, '-') AS \"Points\", ROUND(hours_rft_to_done::numeric, 1) AS \"Hours (RFT\u2192Done)\", TO_CHAR(entered_rft_at, 'YYYY-MM-DD') AS \"Entered RFT\", TO_CHAR(resolved_at, 'YYYY-MM-DD') AS \"Resolved\" FROM v_cycle_time_rft_to_done WHERE project_key IN ($project) AND (('$quarter' = '1900-01-01' AND $__timeFilter(resolved_at)) OR ('$quarter' != '1900-01-01' AND date_trunc('quarter', resolved_at) = '$quarter'::date)) ORDER BY hours_rft_to_done DESC LIMIT 25",
           "format": "table",
           "refId": "A"
         }
@@ -398,7 +398,7 @@
           "type": "postgres",
           "uid": "jira-metrics-pg"
         },
-        "query": "SELECT DISTINCT TO_CHAR(date_trunc('quarter', created_at), 'YYYY-MM-DD') FROM issues WHERE created_at IS NOT NULL ORDER BY 1 DESC",
+        "query": "SELECT CONCAT('Q', EXTRACT(QUARTER FROM created_at)::int, ' ', EXTRACT(YEAR FROM created_at)::int) AS __text, TO_CHAR(date_trunc('quarter', created_at), 'YYYY-MM-DD') AS __value FROM issues WHERE created_at IS NOT NULL GROUP BY 1, 2 ORDER BY 2 DESC",
         "refresh": 2,
         "includeAll": true,
         "multi": false,

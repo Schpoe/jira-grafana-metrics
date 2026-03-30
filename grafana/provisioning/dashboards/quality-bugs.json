@@ -265,7 +265,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT DATE_TRUNC('week', created_at) AS time, SUM(CASE WHEN priority ILIKE '%blocker%' THEN 1 ELSE 0 END) AS \"Blocker\", SUM(CASE WHEN priority ILIKE '%critical%' THEN 1 ELSE 0 END) AS \"Critical\", SUM(CASE WHEN priority ILIKE '%high%' AND priority NOT ILIKE '%critical%' THEN 1 ELSE 0 END) AS \"High\", SUM(CASE WHEN priority ILIKE '%medium%' THEN 1 ELSE 0 END) AS \"Medium\", SUM(CASE WHEN priority ILIKE '%low%' THEN 1 ELSE 0 END) AS \"Low\" FROM issues WHERE project_key IN ($project) AND issue_type = 'Bug' AND $__timeFilter(created_at) AND ('$quarter' = '1900-01-01' OR date_trunc('quarter', created_at) = '$quarter'::date) GROUP BY 1 ORDER BY 1",
+          "rawSql": "SELECT DATE_TRUNC('week', created_at) AS time, SUM(CASE WHEN priority ILIKE '%blocker%' THEN 1 ELSE 0 END) AS \"Blocker\", SUM(CASE WHEN priority ILIKE '%critical%' THEN 1 ELSE 0 END) AS \"Critical\", SUM(CASE WHEN priority ILIKE '%high%' AND priority NOT ILIKE '%critical%' THEN 1 ELSE 0 END) AS \"High\", SUM(CASE WHEN priority ILIKE '%medium%' THEN 1 ELSE 0 END) AS \"Medium\", SUM(CASE WHEN priority ILIKE '%low%' THEN 1 ELSE 0 END) AS \"Low\" FROM issues WHERE project_key IN ($project) AND issue_type = 'Bug' AND ('$release' = 'ALL' OR '$release' = ANY(fix_versions)) AND (('$quarter' = '1900-01-01' AND $__timeFilter(created_at)) OR ('$quarter' != '1900-01-01' AND date_trunc('quarter', created_at) = '$quarter'::date)) GROUP BY 1 ORDER BY 1",
           "format": "time_series",
           "refId": "A"
         }
@@ -372,7 +372,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT UNNEST(fix_versions) AS \"Release\", COUNT(*) AS \"Total Bugs\", COUNT(*) FILTER (WHERE status_category = 'Done') AS \"Resolved\", COUNT(*) FILTER (WHERE status_category != 'Done') AS \"Open\" FROM issues WHERE project_key IN ($project) AND issue_type = 'Bug' AND fix_versions != '{}' AND ('$quarter' = '1900-01-01' OR date_trunc('quarter', created_at) = '$quarter'::date) GROUP BY 1 ORDER BY \"Total Bugs\" DESC",
+          "rawSql": "SELECT UNNEST(fix_versions) AS \"Release\", COUNT(*) AS \"Total Bugs\", COUNT(*) FILTER (WHERE status_category = 'Done') AS \"Resolved\", COUNT(*) FILTER (WHERE status_category != 'Done') AS \"Open\" FROM issues WHERE project_key IN ($project) AND issue_type = 'Bug' AND fix_versions != '{}' AND ('$release' = 'ALL' OR '$release' = ANY(fix_versions)) AND ('$quarter' = '1900-01-01' OR date_trunc('quarter', created_at) = '$quarter'::date) GROUP BY 1 ORDER BY \"Total Bugs\" DESC",
           "format": "table",
           "refId": "A"
         }
@@ -448,7 +448,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT key AS \"Key\", priority AS \"Priority\", status AS \"Status\", COALESCE(assignee, 'Unassigned') AS \"Assignee\", ARRAY_TO_STRING(fix_versions, ', ') AS \"Fix Version\", TO_CHAR(created_at, 'YYYY-MM-DD') AS \"Created\", DATE_PART('day', NOW() - created_at)::int AS \"Age (days)\" FROM issues WHERE project_key IN ($project) AND issue_type = 'Bug' AND status_category != 'Done' AND (priority ILIKE '%blocker%' OR priority ILIKE '%critical%') ORDER BY CASE WHEN priority ILIKE '%blocker%' THEN 1 ELSE 2 END, created_at ASC",
+          "rawSql": "SELECT key AS \"Key\", priority AS \"Priority\", status AS \"Status\", COALESCE(assignee, 'Unassigned') AS \"Assignee\", ARRAY_TO_STRING(fix_versions, ', ') AS \"Fix Version\", TO_CHAR(created_at, 'YYYY-MM-DD') AS \"Created\", DATE_PART('day', NOW() - created_at)::int AS \"Age (days)\" FROM issues WHERE project_key IN ($project) AND issue_type = 'Bug' AND status_category != 'Done' AND (priority ILIKE '%blocker%' OR priority ILIKE '%critical%') AND ('$release' = 'ALL' OR '$release' = ANY(fix_versions)) ORDER BY CASE WHEN priority ILIKE '%blocker%' THEN 1 ELSE 2 END, created_at ASC",
           "format": "table",
           "refId": "A"
         }
@@ -556,7 +556,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT DATE_TRUNC('week', created_at) AS time, COUNT(*) AS \"Created\" FROM issues WHERE project_key IN ($project) AND issue_type = 'Bug' AND $__timeFilter(created_at) AND ('$quarter' = '1900-01-01' OR date_trunc('quarter', created_at) = '$quarter'::date) GROUP BY 1 ORDER BY 1",
+          "rawSql": "SELECT DATE_TRUNC('week', created_at) AS time, COUNT(*) AS \"Created\" FROM issues WHERE project_key IN ($project) AND issue_type = 'Bug' AND ('$release' = 'ALL' OR '$release' = ANY(fix_versions)) AND (('$quarter' = '1900-01-01' AND $__timeFilter(created_at)) OR ('$quarter' != '1900-01-01' AND date_trunc('quarter', created_at) = '$quarter'::date)) GROUP BY 1 ORDER BY 1",
           "format": "time_series",
           "refId": "A"
         },
@@ -565,7 +565,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT DATE_TRUNC('week', resolved_at) AS time, COUNT(*) AS \"Resolved\" FROM issues WHERE project_key IN ($project) AND issue_type = 'Bug' AND resolved_at IS NOT NULL AND $__timeFilter(resolved_at) AND ('$quarter' = '1900-01-01' OR date_trunc('quarter', resolved_at) = '$quarter'::date) GROUP BY 1 ORDER BY 1",
+          "rawSql": "SELECT DATE_TRUNC('week', resolved_at) AS time, COUNT(*) AS \"Resolved\" FROM issues WHERE project_key IN ($project) AND issue_type = 'Bug' AND resolved_at IS NOT NULL AND ('$release' = 'ALL' OR '$release' = ANY(fix_versions)) AND (('$quarter' = '1900-01-01' AND $__timeFilter(resolved_at)) OR ('$quarter' != '1900-01-01' AND date_trunc('quarter', resolved_at) = '$quarter'::date)) GROUP BY 1 ORDER BY 1",
           "format": "time_series",
           "refId": "B"
         }
@@ -648,12 +648,28 @@
           "type": "postgres",
           "uid": "jira-metrics-pg"
         },
-        "query": "SELECT DISTINCT TO_CHAR(date_trunc('quarter', created_at), 'YYYY-MM-DD') FROM issues WHERE created_at IS NOT NULL ORDER BY 1 DESC",
+        "query": "SELECT CONCAT('Q', EXTRACT(QUARTER FROM created_at)::int, ' ', EXTRACT(YEAR FROM created_at)::int) AS __text, TO_CHAR(date_trunc('quarter', created_at), 'YYYY-MM-DD') AS __value FROM issues WHERE created_at IS NOT NULL GROUP BY 1, 2 ORDER BY 2 DESC",
         "refresh": 2,
         "includeAll": true,
         "multi": false,
         "allValue": "1900-01-01",
         "sort": 0,
+        "hide": 0
+      },
+      {
+        "name": "release",
+        "label": "Release / Fix Version",
+        "type": "query",
+        "datasource": {
+          "type": "postgres",
+          "uid": "jira-metrics-pg"
+        },
+        "query": "SELECT DISTINCT unnest(fix_versions) FROM issues WHERE project_key IN ($project) AND fix_versions != '{}' ORDER BY 1",
+        "refresh": 2,
+        "includeAll": true,
+        "multi": false,
+        "allValue": "ALL",
+        "sort": 1,
         "hide": 0
       }
     ]
