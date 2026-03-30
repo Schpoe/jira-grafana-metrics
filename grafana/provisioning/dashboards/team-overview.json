@@ -80,7 +80,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT i.assignee AS \"Assignee\", ROUND(AVG(c.hours_rft_to_done)::numeric, 1) AS \"Avg Hours\", ROUND(PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY c.hours_rft_to_done)::numeric, 1) AS \"Median Hours\", COUNT(*) AS \"Issues\" FROM v_cycle_time_rft_to_done c JOIN issues i ON i.key = c.issue_key WHERE c.project_key IN ($project) AND i.assignee IS NOT NULL AND $__timeFilter(c.resolved_at) AND ('$quarter' = '1900-01-01' OR date_trunc('quarter', c.resolved_at) = '$quarter'::date) GROUP BY i.assignee ORDER BY \"Avg Hours\" ASC LIMIT 20",
+          "rawSql": "SELECT i.assignee AS \"Assignee\", ROUND(AVG(c.hours_rft_to_done)::numeric, 1) AS \"Avg Hours\", ROUND(PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY c.hours_rft_to_done)::numeric, 1) AS \"Median Hours\", COUNT(*) AS \"Issues\" FROM v_cycle_time_rft_to_done c JOIN issues i ON i.key = c.issue_key WHERE c.project_key IN ($project) AND i.assignee IS NOT NULL AND c.hours_rft_to_done > 0 AND $__timeFilter(c.resolved_at) AND ('$quarter' = '1900-01-01' OR date_trunc('quarter', c.resolved_at) = '$quarter'::date) GROUP BY i.assignee HAVING AVG(c.hours_rft_to_done) > 0 ORDER BY \"Avg Hours\" DESC LIMIT 20",
           "format": "table",
           "refId": "A"
         }
