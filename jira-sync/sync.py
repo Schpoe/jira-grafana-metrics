@@ -118,7 +118,7 @@ def sync_projects(conn):
         execute_values(
             cur,
             """
-            INSERT INTO projects (key, name, synced_at)
+            INSERT INTO projects (key, name)
             VALUES %s
             ON CONFLICT (key) DO UPDATE
                 SET name = EXCLUDED.name, synced_at = NOW()
