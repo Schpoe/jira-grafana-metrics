@@ -152,15 +152,15 @@ SELECT
 FROM issue_transitions rft
 JOIN issue_transitions done
     ON  done.issue_key     = rft.issue_key
-    AND done.to_status     = 'Done'
+    AND UPPER(done.to_status) = 'DONE'
     AND done.transitioned_at > rft.transitioned_at
 JOIN issues i ON i.key = rft.issue_key
-WHERE rft.to_status = 'Ready For Testing'
+WHERE LOWER(rft.to_status) = 'ready for testing'
   -- take only the first Done transition after RFT
   AND NOT EXISTS (
       SELECT 1 FROM issue_transitions x
       WHERE x.issue_key = done.issue_key
-        AND x.to_status = 'Done'
+        AND UPPER(x.to_status) = 'DONE'
         AND x.transitioned_at > rft.transitioned_at
         AND x.transitioned_at < done.transitioned_at
   );
