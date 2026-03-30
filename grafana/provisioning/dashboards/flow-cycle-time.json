@@ -223,7 +223,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT issue_type AS \"Issue Type\", ROUND(AVG(hours_rft_to_done)::numeric, 1) AS \"Avg Hours\", ROUND(PERCENTILE_CONT(0.5) WITHIN GROUP (WHERE project_key IN ($project) ORDER BY hours_rft_to_done)::numeric, 1) AS \"Median Hours\", COUNT(*) AS \"Sample Size\" FROM v_cycle_time_rft_to_done GROUP BY issue_type ORDER BY \"Avg Hours\" DESC",
+          "rawSql": "SELECT issue_type AS \"Issue Type\", ROUND(AVG(hours_rft_to_done)::numeric, 1) AS \"Avg Hours\", ROUND(PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY hours_rft_to_done)::numeric, 1) AS \"Median Hours\", COUNT(*) AS \"Sample Size\" FROM v_cycle_time_rft_to_done WHERE project_key IN ($project) GROUP BY issue_type ORDER BY \"Avg Hours\" DESC",
           "format": "table",
           "refId": "A"
         }
