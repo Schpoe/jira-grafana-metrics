@@ -1,0 +1,235 @@
+{
+  "id": null,
+  "uid": "jira-quality-bugs",
+  "title": "Quality & Bugs",
+  "tags": ["jira", "quality"],
+  "timezone": "browser",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "1h",
+  "time": { "from": "now-90d", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Open Critical Bugs",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+          "rawSql": "SELECT COUNT(*) AS value FROM issues WHERE issue_type = 'Bug' AND status_category != 'Done' AND priority = 'Highest'",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "none" },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 1 }] },
+          "color": { "mode": "thresholds" },
+          "mappings": []
+        }
+      }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Open High Bugs",
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+      "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+          "rawSql": "SELECT COUNT(*) AS value FROM issues WHERE issue_type = 'Bug' AND status_category != 'Done' AND priority = 'High'",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "none" },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 3 }, { "color": "red", "value": 10 }] },
+          "color": { "mode": "thresholds" }
+        }
+      }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Open Medium Bugs",
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+      "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+          "rawSql": "SELECT COUNT(*) AS value FROM issues WHERE issue_type = 'Bug' AND status_category != 'Done' AND priority = 'Medium'",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "none" },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 10 }, { "color": "orange", "value": 25 }] },
+          "color": { "mode": "thresholds" }
+        }
+      }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Open Low Bugs",
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+      "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+          "rawSql": "SELECT COUNT(*) AS value FROM issues WHERE issue_type = 'Bug' AND status_category != 'Done' AND priority IN ('Low', 'Lowest')",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "none" },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 20 }] },
+          "color": { "mode": "thresholds" }
+        }
+      }
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Bug Creation Rate by Priority (per week)",
+      "description": "New bugs reported each week. A rising trend in high/critical bugs signals quality risk.",
+      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 4 },
+      "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+          "rawSql": "SELECT DATE_TRUNC('week', created_at) AS time, SUM(CASE WHEN priority = 'Highest' THEN 1 ELSE 0 END) AS \"Critical\", SUM(CASE WHEN priority = 'High' THEN 1 ELSE 0 END) AS \"High\", SUM(CASE WHEN priority = 'Medium' THEN 1 ELSE 0 END) AS \"Medium\", SUM(CASE WHEN priority IN ('Low','Lowest') THEN 1 ELSE 0 END) AS \"Low\" FROM issues WHERE issue_type = 'Bug' AND $__timeFilter(created_at) GROUP BY 1 ORDER BY 1",
+          "format": "time_series",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      },
+      "fieldConfig": {
+        "defaults": { "unit": "short", "custom": { "lineWidth": 2, "fillOpacity": 10 } },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "Critical" }, "properties": [{ "id": "color", "value": { "fixedColor": "dark-red", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "High" }, "properties": [{ "id": "color", "value": { "fixedColor": "orange", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "Medium" }, "properties": [{ "id": "color", "value": { "fixedColor": "yellow", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "Low" }, "properties": [{ "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } }] }
+        ]
+      }
+    },
+    {
+      "id": 6,
+      "type": "barchart",
+      "title": "Bugs per Release / Fix Version",
+      "description": "Total and resolved bugs per release. High unresolved count before a release date is a risk signal.",
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 13 },
+      "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+          "rawSql": "SELECT UNNEST(fix_versions) AS \"Release\", COUNT(*) AS \"Total Bugs\", COUNT(*) FILTER (WHERE status_category = 'Done') AS \"Resolved\", COUNT(*) FILTER (WHERE status_category != 'Done') AS \"Open\" FROM issues WHERE issue_type = 'Bug' AND fix_versions != '{}' GROUP BY 1 ORDER BY \"Total Bugs\" DESC LIMIT 20",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "xField": "Release",
+        "stacking": "none",
+        "fillOpacity": 80,
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      },
+      "fieldConfig": {
+        "defaults": { "unit": "short", "color": { "mode": "palette-classic" } },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "Open" }, "properties": [{ "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "Resolved" }, "properties": [{ "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } }] }
+        ]
+      }
+    },
+    {
+      "id": 7,
+      "type": "table",
+      "title": "Open Bugs — Critical & High",
+      "description": "All open critical and high priority bugs, sorted by age.",
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 13 },
+      "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+          "rawSql": "SELECT key AS \"Key\", priority AS \"Priority\", status AS \"Status\", COALESCE(assignee, 'Unassigned') AS \"Assignee\", ARRAY_TO_STRING(fix_versions, ', ') AS \"Fix Version\", TO_CHAR(created_at, 'YYYY-MM-DD') AS \"Created\", DATE_PART('day', NOW() - created_at)::int AS \"Age (days)\" FROM issues WHERE issue_type = 'Bug' AND status_category != 'Done' AND priority IN ('Highest','High') ORDER BY CASE priority WHEN 'Highest' THEN 1 WHEN 'High' THEN 2 ELSE 3 END, created_at ASC",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": { "sortBy": [{ "displayName": "Age (days)", "desc": true }] },
+      "fieldConfig": {
+        "defaults": { "custom": { "align": "left" } },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Priority" },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [{ "type": "value", "options": { "Highest": { "color": "dark-red" }, "High": { "color": "orange" } } }]
+              },
+              { "id": "custom.displayMode", "value": "color-background" }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Age (days)" },
+            "properties": [
+              {
+                "id": "thresholds",
+                "value": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 7 }, { "color": "orange", "value": 14 }, { "color": "red", "value": 30 }] }
+              },
+              { "id": "custom.displayMode", "value": "color-background" }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "Bug Resolution Rate vs Creation Rate (per week)",
+      "description": "When resolution rate consistently falls below creation rate, the backlog is growing.",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 22 },
+      "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+          "rawSql": "SELECT DATE_TRUNC('week', created_at) AS time, COUNT(*) AS \"Created\" FROM issues WHERE issue_type = 'Bug' AND $__timeFilter(created_at) GROUP BY 1 ORDER BY 1",
+          "format": "time_series",
+          "refId": "A"
+        },
+        {
+          "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+          "rawSql": "SELECT DATE_TRUNC('week', resolved_at) AS time, COUNT(*) AS \"Resolved\" FROM issues WHERE issue_type = 'Bug' AND resolved_at IS NOT NULL AND $__timeFilter(resolved_at) GROUP BY 1 ORDER BY 1",
+          "format": "time_series",
+          "refId": "B"
+        }
+      ],
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      },
+      "fieldConfig": {
+        "defaults": { "unit": "short", "custom": { "lineWidth": 2, "fillOpacity": 10 } },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "Created" }, "properties": [{ "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "Resolved" }, "properties": [{ "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } }] }
+        ]
+      }
+    }
+  ]
+}

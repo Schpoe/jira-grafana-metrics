@@ -1,0 +1,193 @@
+{
+  "id": null,
+  "uid": "jira-flow-cycle-time",
+  "title": "Flow & Cycle Time",
+  "tags": ["jira", "flow"],
+  "timezone": "browser",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "1h",
+  "time": { "from": "now-90d", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Cycle Time: Ready For Testing → Done (hours)",
+      "description": "Average, median and 85th percentile cycle time per week. Lower and stable p85 indicates a predictable flow.",
+      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 0 },
+      "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+          "rawSql": "SELECT DATE_TRUNC('week', resolved_at) AS time, ROUND(AVG(hours_rft_to_done)::numeric, 1) AS \"Avg\", ROUND(PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY hours_rft_to_done)::numeric, 1) AS \"Median\", ROUND(PERCENTILE_CONT(0.85) WITHIN GROUP (ORDER BY hours_rft_to_done)::numeric, 1) AS \"p85\" FROM v_cycle_time_rft_to_done WHERE $__timeFilter(resolved_at) GROUP BY 1 ORDER BY 1",
+          "format": "time_series",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "h",
+          "custom": { "lineWidth": 2, "fillOpacity": 10 }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "p85" },
+            "properties": [
+              { "id": "color", "value": { "fixedColor": "orange", "mode": "fixed" } },
+              { "id": "custom.lineStyle", "value": { "dash": [10, 10], "fill": "dash" } }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Median" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Avg" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "blue", "mode": "fixed" } }]
+          }
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "type": "barchart",
+      "title": "Weekly Throughput (Issues Completed)",
+      "description": "Number of issues reaching Done per week.",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 9 },
+      "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+          "rawSql": "SELECT DATE_TRUNC('week', resolved_at) AS time, COUNT(*) AS \"Issues Completed\" FROM issues WHERE resolved_at IS NOT NULL AND status_category = 'Done' AND $__timeFilter(resolved_at) GROUP BY 1 ORDER BY 1",
+          "format": "time_series",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "fillOpacity": 80,
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "fixedColor": "green", "mode": "fixed" }
+        }
+      }
+    },
+    {
+      "id": 3,
+      "type": "barchart",
+      "title": "Current WIP by Status",
+      "description": "Issues currently In Progress, grouped by status.",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 9 },
+      "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+          "rawSql": "SELECT status AS \"Status\", COUNT(*) AS \"Issues\", COALESCE(SUM(story_points), 0) AS \"Story Points\" FROM issues WHERE status_category = 'In Progress' GROUP BY status ORDER BY \"Issues\" DESC",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "xField": "Status",
+        "fillOpacity": 80,
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      },
+      "fieldConfig": {
+        "defaults": { "unit": "short", "color": { "mode": "palette-classic" } }
+      }
+    },
+    {
+      "id": 4,
+      "type": "barchart",
+      "title": "Avg Cycle Time (RFT → Done) by Issue Type",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 17 },
+      "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+          "rawSql": "SELECT issue_type AS \"Issue Type\", ROUND(AVG(hours_rft_to_done)::numeric, 1) AS \"Avg Hours\", ROUND(PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY hours_rft_to_done)::numeric, 1) AS \"Median Hours\", COUNT(*) AS \"Sample Size\" FROM v_cycle_time_rft_to_done GROUP BY issue_type ORDER BY \"Avg Hours\" DESC",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "xField": "Issue Type",
+        "fillOpacity": 80,
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      },
+      "fieldConfig": {
+        "defaults": { "unit": "h", "color": { "mode": "palette-classic" } }
+      }
+    },
+    {
+      "id": 5,
+      "type": "barchart",
+      "title": "Avg Cycle Time (RFT → Done) by Priority",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 17 },
+      "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+          "rawSql": "SELECT priority AS \"Priority\", ROUND(AVG(hours_rft_to_done)::numeric, 1) AS \"Avg Hours\", ROUND(PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY hours_rft_to_done)::numeric, 1) AS \"Median Hours\", COUNT(*) AS \"Sample Size\" FROM v_cycle_time_rft_to_done WHERE priority IS NOT NULL GROUP BY priority ORDER BY CASE priority WHEN 'Highest' THEN 1 WHEN 'High' THEN 2 WHEN 'Medium' THEN 3 WHEN 'Low' THEN 4 WHEN 'Lowest' THEN 5 ELSE 6 END",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "xField": "Priority",
+        "fillOpacity": 80,
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      },
+      "fieldConfig": {
+        "defaults": { "unit": "h", "color": { "mode": "palette-classic" } }
+      }
+    },
+    {
+      "id": 6,
+      "type": "table",
+      "title": "Slowest Issues (RFT → Done)",
+      "description": "Issues that took the longest to move from Ready For Testing to Done.",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 25 },
+      "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+          "rawSql": "SELECT issue_key AS \"Key\", issue_type AS \"Type\", priority AS \"Priority\", COALESCE(story_points::text, '-') AS \"Points\", ROUND(hours_rft_to_done::numeric, 1) AS \"Hours (RFT→Done)\", TO_CHAR(entered_rft_at, 'YYYY-MM-DD') AS \"Entered RFT\", TO_CHAR(resolved_at, 'YYYY-MM-DD') AS \"Resolved\" FROM v_cycle_time_rft_to_done WHERE $__timeFilter(resolved_at) ORDER BY hours_rft_to_done DESC LIMIT 25",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": { "sortBy": [{ "displayName": "Hours (RFT→Done)", "desc": true }] },
+      "fieldConfig": {
+        "defaults": { "custom": { "align": "left" } },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Hours (RFT→Done)" },
+            "properties": [
+              { "id": "unit", "value": "h" },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    { "color": "green", "value": null },
+                    { "color": "yellow", "value": 24 },
+                    { "color": "orange", "value": 72 },
+                    { "color": "red", "value": 168 }
+                  ]
+                }
+              },
+              { "id": "custom.displayMode", "value": "color-background" }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

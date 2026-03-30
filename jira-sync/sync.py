@@ -383,6 +383,22 @@ def _sync_sprint_members(conn, sprint_id):
         return
 
     with conn.cursor() as cur:
+        # Filter to only issue keys that exist in the issues table.
+        # Sprints can contain issues from projects outside JIRA_PROJECT_KEYS
+        # (e.g. cross-team epics) which were never synced — inserting them
+        # would violate the foreign key constraint.
+        all_keys = [r[1] for r in rows]
+        cur.execute("SELECT key FROM issues WHERE key = ANY(%s)", (all_keys,))
+        known_keys = {r[0] for r in cur.fetchall()}
+        skipped = len(rows) - len(known_keys)
+        if skipped:
+            log.debug("Sprint %d: skipping %d issues not in synced projects", sprint_id, skipped)
+        rows = [r for r in rows if r[1] in known_keys]
+        current_keys = current_keys & known_keys
+
+        if not rows:
+            return
+
         # Upsert membership
         execute_values(
             cur,

@@ -1,0 +1,172 @@
+{
+  "id": null,
+  "uid": "jira-sprint-health",
+  "title": "Sprint Health",
+  "tags": ["jira", "sprints"],
+  "timezone": "browser",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "1h",
+  "time": { "from": "now-6M", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "type": "barchart",
+      "title": "Sprint Velocity — Committed vs Delivered (Story Points)",
+      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 0 },
+      "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+          "rawSql": "SELECT sprint_name, COALESCE(committed_points, 0) AS \"Committed\", COALESCE(delivered_points, 0) AS \"Delivered\" FROM v_planning_deviation WHERE state = 'closed' ORDER BY complete_date DESC LIMIT 20",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "xField": "sprint_name",
+        "stacking": "none",
+        "fillOpacity": 80,
+        "gradientMode": "none",
+        "barWidth": 0.6,
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      },
+      "fieldConfig": {
+        "defaults": { "unit": "short", "color": { "mode": "palette-classic" } },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Committed" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "blue", "mode": "fixed" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Delivered" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } }]
+          }
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "type": "barchart",
+      "title": "Delivery % per Sprint",
+      "description": "Percentage of committed story points actually delivered. Green ≥ 90%, yellow ≥ 70%, red < 70%.",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 9 },
+      "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+          "rawSql": "SELECT sprint_name, COALESCE(delivery_pct, 0) AS \"Delivery %\" FROM v_planning_deviation WHERE state = 'closed' ORDER BY complete_date DESC LIMIT 20",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "xField": "sprint_name",
+        "fillOpacity": 80,
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 130,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 70 },
+              { "color": "green", "value": 90 }
+            ]
+          },
+          "color": { "mode": "thresholds" }
+        }
+      }
+    },
+    {
+      "id": 3,
+      "type": "barchart",
+      "title": "Scope Changes per Sprint (Issues Added / Removed after Start)",
+      "description": "Issues added to or removed from a sprint after it started — a key indicator of planning stability.",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 9 },
+      "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+          "rawSql": "SELECT sprint_name, SUM(CASE WHEN scope_change_type = 'added' THEN 1 ELSE 0 END) AS \"Added\", SUM(CASE WHEN scope_change_type = 'removed' THEN 1 ELSE 0 END) AS \"Removed\" FROM v_sprint_scope_changes WHERE sprint_state IN ('active','closed') GROUP BY sprint_name ORDER BY sprint_name",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "xField": "sprint_name",
+        "stacking": "none",
+        "fillOpacity": 80,
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      },
+      "fieldConfig": {
+        "defaults": { "unit": "short", "color": { "mode": "palette-classic" } },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Added" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "orange", "mode": "fixed" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Removed" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }]
+          }
+        ]
+      }
+    },
+    {
+      "id": 4,
+      "type": "table",
+      "title": "Sprint Summary Table",
+      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 17 },
+      "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+          "rawSql": "SELECT sprint_name AS \"Sprint\", state AS \"State\", TO_CHAR(start_date, 'YYYY-MM-DD') AS \"Start\", TO_CHAR(complete_date, 'YYYY-MM-DD') AS \"Completed\", COALESCE(committed_points, 0) AS \"Committed\", COALESCE(delivered_points, 0) AS \"Delivered\", COALESCE(delivery_pct, 0) AS \"Delivery %\", COALESCE(deviation_points, 0) AS \"Deviation\" FROM v_planning_deviation ORDER BY CASE state WHEN 'active' THEN 0 WHEN 'closed' THEN 1 ELSE 2 END, complete_date DESC NULLS LAST LIMIT 30",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": { "sortBy": [{ "displayName": "Completed", "desc": true }] },
+      "fieldConfig": {
+        "defaults": { "custom": { "align": "left" } },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Delivery %" },
+            "properties": [
+              { "id": "unit", "value": "percent" },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    { "color": "red", "value": null },
+                    { "color": "yellow", "value": 70 },
+                    { "color": "green", "value": 90 }
+                  ]
+                }
+              },
+              { "id": "custom.displayMode", "value": "color-background" }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "State" },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  { "type": "value", "options": { "active":  { "text": "Active",  "color": "green" }, "closed": { "text": "Closed", "color": "blue" }, "future": { "text": "Future", "color": "grey" } } }
+                ]
+              },
+              { "id": "custom.displayMode", "value": "color-background" }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
