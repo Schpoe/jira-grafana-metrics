@@ -8,7 +8,7 @@
 #   2. Install cifs-utils:  sudo apt install cifs-utils
 #   3. Make executable:     chmod +x backup.sh
 #   4. Add cron job:        sudo crontab -e
-#      Add line:  0 22 * * * TZ=Europe/Berlin /path/to/jira-grafana-metrics/backup.sh
+#      Add line:  0 23 * * * TZ=Europe/Berlin /path/to/jira-grafana-metrics/backup.sh
 # =============================================================================
 
 set -euo pipefail
