@@ -1,0 +1,12 @@
+# Backup configuration for jira-grafana-metrics
+# Copy this file to .backup.conf and fill in your values
+#
+#   cp .backup.conf.example .backup.conf
+#   chmod 600 .backup.conf   # keep credentials private
+
+# NAS credentials for 192.168.1.5
+NAS_USER=your_nas_username
+NAS_PASS=your_nas_password
+
+# How many days of backups to keep on the NAS (default: 30)
+RETENTION_DAYS=30
