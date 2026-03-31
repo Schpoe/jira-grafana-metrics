@@ -7,7 +7,7 @@
   "schemaVersion": 38,
   "version": 1,
   "refresh": "1h",
-  "time": { "from": "now-90d", "to": "now" },
+  "time": { "from": "now-3M", "to": "now" },
   "links": [
     {
       "title": "Sprint Health",
@@ -328,7 +328,7 @@
       "targets": [
         {
           "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
-          "rawSql": "SELECT DATE_TRUNC('week', created_at) AS time, SUM(CASE WHEN priority = 'Blocker' THEN 1 ELSE 0 END) AS \"Blocker\", SUM(CASE WHEN priority = 'Critical' THEN 1 ELSE 0 END) AS \"Critical\", SUM(CASE WHEN priority = 'High' THEN 1 ELSE 0 END) AS \"High\", SUM(CASE WHEN priority = 'Medium' THEN 1 ELSE 0 END) AS \"Medium\", SUM(CASE WHEN priority = 'Low' THEN 1 ELSE 0 END) AS \"Low\" FROM issues WHERE project_key IN ($project) AND issue_type = 'Bug' AND created_at >= NOW() - INTERVAL '12 weeks' GROUP BY 1 ORDER BY 1",
+          "rawSql": "SELECT DATE_TRUNC('week', created_at) AS time, SUM(CASE WHEN priority = 'Blocker' THEN 1 ELSE 0 END) AS \"Blocker\", SUM(CASE WHEN priority = 'Critical' THEN 1 ELSE 0 END) AS \"Critical\", SUM(CASE WHEN priority = 'High' THEN 1 ELSE 0 END) AS \"High\", SUM(CASE WHEN priority = 'Medium' THEN 1 ELSE 0 END) AS \"Medium\", SUM(CASE WHEN priority = 'Low' THEN 1 ELSE 0 END) AS \"Low\" FROM issues WHERE project_key IN ($project) AND issue_type = 'Bug' AND $__timeFilter(created_at) GROUP BY 1 ORDER BY 1",
           "format": "time_series",
           "refId": "A"
         }
