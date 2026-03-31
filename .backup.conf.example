@@ -4,7 +4,10 @@
 #   cp .backup.conf.example .backup.conf
 #   chmod 600 .backup.conf   # keep credentials private
 
-# NAS credentials for 192.168.1.5
+# NAS connection
+NAS_HOST=192.168.1.5
+NAS_SHARE=downloads
+NAS_PATH=backups/jira-metrics
 NAS_USER=your_nas_username
 NAS_PASS=your_nas_password
 

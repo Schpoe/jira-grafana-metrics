@@ -28,12 +28,14 @@ fi
 source "$CONF_FILE"
 
 # Required vars from config
+: "${NAS_HOST:?NAS_HOST not set in .backup.conf}"
+: "${NAS_SHARE:?NAS_SHARE not set in .backup.conf}"
+: "${NAS_PATH:?NAS_PATH not set in .backup.conf}"
 : "${NAS_USER:?NAS_USER not set in .backup.conf}"
 : "${NAS_PASS:?NAS_PASS not set in .backup.conf}"
 : "${RETENTION_DAYS:=30}"
 
-NAS_SHARE="//192.168.1.5/downloads"
-NAS_PATH="backups/jira-metrics"
+NAS_SHARE="//${NAS_HOST}/${NAS_SHARE}"
 POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-$(grep POSTGRES_PASSWORD "$SCRIPT_DIR/.env" | cut -d= -f2)}"
 
 # ── Logging ──────────────────────────────────────────────────────────────────
