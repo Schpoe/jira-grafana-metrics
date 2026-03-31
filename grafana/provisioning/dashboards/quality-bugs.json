@@ -35,7 +35,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT COUNT(*) AS value FROM issues WHERE project_key IN ($project) AND issue_type = 'Bug' AND status_category != 'Done' AND priority = 'Blocker'",
+          "rawSql": "SELECT COUNT(*) AS value FROM issues WHERE project_key IN ($project) AND issue_type = 'Bug' AND status_category != 'Done' AND priority = 'Blocker' AND ('$release' = 'ALL' OR '$release' = ANY(fix_versions))",
           "format": "table",
           "refId": "A"
         }
@@ -91,7 +91,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT COUNT(*) AS value FROM issues WHERE project_key IN ($project) AND issue_type = 'Bug' AND status_category != 'Done' AND priority = 'Critical'",
+          "rawSql": "SELECT COUNT(*) AS value FROM issues WHERE project_key IN ($project) AND issue_type = 'Bug' AND status_category != 'Done' AND priority = 'Critical' AND ('$release' = 'ALL' OR '$release' = ANY(fix_versions))",
           "format": "table",
           "refId": "A"
         }
@@ -150,7 +150,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT COUNT(*) AS value FROM issues WHERE project_key IN ($project) AND issue_type = 'Bug' AND status_category != 'Done' AND priority = 'High'",
+          "rawSql": "SELECT COUNT(*) AS value FROM issues WHERE project_key IN ($project) AND issue_type = 'Bug' AND status_category != 'Done' AND priority = 'High' AND ('$release' = 'ALL' OR '$release' = ANY(fix_versions))",
           "format": "table",
           "refId": "A"
         }
@@ -209,7 +209,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT COUNT(*) AS value FROM issues WHERE project_key IN ($project) AND issue_type = 'Bug' AND status_category != 'Done' AND priority IN ('Medium', 'Low')",
+          "rawSql": "SELECT COUNT(*) AS value FROM issues WHERE project_key IN ($project) AND issue_type = 'Bug' AND status_category != 'Done' AND priority IN ('Medium', 'Low') AND ('$release' = 'ALL' OR '$release' = ANY(fix_versions))",
           "format": "table",
           "refId": "A"
         }
