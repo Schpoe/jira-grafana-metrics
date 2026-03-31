@@ -35,7 +35,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT COUNT(*) AS value FROM issues WHERE project_key IN ($project) AND issue_type = 'Bug' AND status_category != 'Done' AND priority ILIKE '%blocker%'",
+          "rawSql": "SELECT COUNT(*) AS value FROM issues WHERE project_key IN ($project) AND issue_type = 'Bug' AND status_category != 'Done' AND priority = 'Blocker'",
           "format": "table",
           "refId": "A"
         }
@@ -91,7 +91,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT COUNT(*) AS value FROM issues WHERE project_key IN ($project) AND issue_type = 'Bug' AND status_category != 'Done' AND priority ILIKE '%critical%'",
+          "rawSql": "SELECT COUNT(*) AS value FROM issues WHERE project_key IN ($project) AND issue_type = 'Bug' AND status_category != 'Done' AND priority = 'Critical'",
           "format": "table",
           "refId": "A"
         }
@@ -150,7 +150,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT COUNT(*) AS value FROM issues WHERE project_key IN ($project) AND issue_type = 'Bug' AND status_category != 'Done' AND priority ILIKE '%high%'",
+          "rawSql": "SELECT COUNT(*) AS value FROM issues WHERE project_key IN ($project) AND issue_type = 'Bug' AND status_category != 'Done' AND priority = 'High'",
           "format": "table",
           "refId": "A"
         }
@@ -209,7 +209,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT COUNT(*) AS value FROM issues WHERE project_key IN ($project) AND issue_type = 'Bug' AND status_category != 'Done' AND priority ILIKE '%medium%' OR (project_key IN ($project) AND issue_type = 'Bug' AND status_category != 'Done' AND priority ILIKE '%low%')",
+          "rawSql": "SELECT COUNT(*) AS value FROM issues WHERE project_key IN ($project) AND issue_type = 'Bug' AND status_category != 'Done' AND priority IN ('Medium', 'Low')",
           "format": "table",
           "refId": "A"
         }
@@ -265,7 +265,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT DATE_TRUNC('week', created_at) AS time, SUM(CASE WHEN priority ILIKE '%blocker%' THEN 1 ELSE 0 END) AS \"Blocker\", SUM(CASE WHEN priority ILIKE '%critical%' THEN 1 ELSE 0 END) AS \"Critical\", SUM(CASE WHEN priority ILIKE '%high%' AND priority NOT ILIKE '%critical%' THEN 1 ELSE 0 END) AS \"High\", SUM(CASE WHEN priority ILIKE '%medium%' THEN 1 ELSE 0 END) AS \"Medium\", SUM(CASE WHEN priority ILIKE '%low%' THEN 1 ELSE 0 END) AS \"Low\" FROM issues WHERE project_key IN ($project) AND issue_type = 'Bug' AND ('$release' = 'ALL' OR '$release' = ANY(fix_versions)) AND date_trunc('quarter', created_at) = '$quarter'::date GROUP BY 1 ORDER BY 1",
+          "rawSql": "SELECT DATE_TRUNC('week', created_at) AS time, SUM(CASE WHEN priority = 'Blocker' THEN 1 ELSE 0 END) AS \"Blocker\", SUM(CASE WHEN priority = 'Critical' THEN 1 ELSE 0 END) AS \"Critical\", SUM(CASE WHEN priority = 'High' THEN 1 ELSE 0 END) AS \"High\", SUM(CASE WHEN priority = 'Medium' THEN 1 ELSE 0 END) AS \"Medium\", SUM(CASE WHEN priority = 'Low' THEN 1 ELSE 0 END) AS \"Low\" FROM issues WHERE project_key IN ($project) AND issue_type = 'Bug' AND ('$release' = 'ALL' OR '$release' = ANY(fix_versions)) AND date_trunc('quarter', created_at) = '$quarter'::date GROUP BY 1 ORDER BY 1",
           "format": "time_series",
           "refId": "A"
         }
@@ -448,7 +448,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT key AS \"Key\", priority AS \"Priority\", status AS \"Status\", COALESCE(assignee, 'Unassigned') AS \"Assignee\", ARRAY_TO_STRING(fix_versions, ', ') AS \"Fix Version\", TO_CHAR(created_at, 'YYYY-MM-DD') AS \"Created\", DATE_PART('day', NOW() - created_at)::int AS \"Age (days)\" FROM issues WHERE project_key IN ($project) AND issue_type = 'Bug' AND status_category != 'Done' AND (priority ILIKE '%blocker%' OR priority ILIKE '%critical%') AND ('$release' = 'ALL' OR '$release' = ANY(fix_versions)) ORDER BY CASE WHEN priority ILIKE '%blocker%' THEN 1 ELSE 2 END, created_at ASC",
+          "rawSql": "SELECT key AS \"Key\", priority AS \"Priority\", status AS \"Status\", COALESCE(assignee, 'Unassigned') AS \"Assignee\", ARRAY_TO_STRING(fix_versions, ', ') AS \"Fix Version\", TO_CHAR(created_at, 'YYYY-MM-DD') AS \"Created\", DATE_PART('day', NOW() - created_at)::int AS \"Age (days)\" FROM issues WHERE project_key IN ($project) AND issue_type = 'Bug' AND status_category != 'Done' AND priority IN ('Blocker', 'Critical') AND ('$release' = 'ALL' OR '$release' = ANY(fix_versions)) ORDER BY CASE priority WHEN 'Blocker' THEN 1 ELSE 2 END, created_at ASC",
           "format": "table",
           "refId": "A"
         }

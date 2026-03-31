@@ -327,7 +327,7 @@ def sync_issues(conn, sync_id, since=None, last_sync_duration=None, resume_token
                 f["issuetype"]["name"],
                 f["status"]["name"],
                 f["status"]["statusCategory"]["name"],
-                f["priority"]["name"] if f.get("priority") else None,
+                f["priority"]["name"].split("(")[0].strip() if f.get("priority") else None,
                 story_points,
                 f["assignee"]["displayName"] if f.get("assignee") else None,
                 f["reporter"]["displayName"] if f.get("reporter") else None,
