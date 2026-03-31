@@ -664,7 +664,7 @@
           "type": "postgres",
           "uid": "jira-metrics-pg"
         },
-        "query": "SELECT DISTINCT unnest(fix_versions) FROM issues WHERE project_key IN ($project) AND fix_versions != '{}' ORDER BY 1",
+        "query": "SELECT DISTINCT unnest(fix_versions) FROM issues WHERE project_key IN ($project) AND issue_type = 'Bug' AND fix_versions != '{}' ORDER BY 1",
         "refresh": 2,
         "includeAll": true,
         "multi": false,
