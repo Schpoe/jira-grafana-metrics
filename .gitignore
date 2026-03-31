@@ -1,3 +1,4 @@
 .env
 .backup.conf
 backup.log
+*.swp
