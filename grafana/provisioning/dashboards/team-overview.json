@@ -11,7 +11,7 @@
   "version": 1,
   "refresh": "1h",
   "time": {
-    "from": "now-3y",
+    "from": "now-1y",
     "to": "now"
   },
   "panels": [
