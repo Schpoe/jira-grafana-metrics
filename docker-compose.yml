@@ -17,6 +17,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - default
 
   grafana:
     image: grafana/grafana:11.1.0
@@ -35,6 +37,9 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    networks:
+      - default
+      - proxy_net
 
   adminer:
     image: adminer:4
@@ -44,6 +49,9 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    networks:
+      - default
+      - proxy_net
 
   jira-sync:
     build: ./jira-sync
@@ -61,6 +69,14 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    networks:
+      - default
+
+networks:
+  default:
+    driver: bridge
+  proxy_net:
+    external: true
 
 volumes:
   postgres_data:
