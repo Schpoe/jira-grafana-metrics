@@ -371,6 +371,121 @@
         ]
       }
     }
+    ,
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "Cycle Time: In Progress \u2192 Ready For Testing (hours)",
+      "description": "Average, median and 85th percentile of the time issues spend in active development before reaching Ready For Testing.",
+      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 33 },
+      "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+          "rawSql": "SELECT DATE_TRUNC('week', entered_rft_at) AS time, ROUND(AVG(hours_in_progress_to_rft)::numeric, 1) AS \"Avg\", ROUND(PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY hours_in_progress_to_rft)::numeric, 1) AS \"Median\", ROUND(PERCENTILE_CONT(0.85) WITHIN GROUP (ORDER BY hours_in_progress_to_rft)::numeric, 1) AS \"p85\" FROM v_cycle_time_in_progress_to_rft WHERE project_key IN ($project) AND $__timeFilter(entered_rft_at) GROUP BY 1 ORDER BY 1",
+          "format": "time_series",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      },
+      "fieldConfig": {
+        "defaults": { "unit": "h", "custom": { "lineWidth": 2, "fillOpacity": 5 } }
+      }
+    },
+    {
+      "id": 8,
+      "type": "barchart",
+      "title": "Avg Cycle Time (In Progress \u2192 RFT) by Issue Type",
+      "description": "Average development time per issue type. Helps identify which types take longest to develop.",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 42 },
+      "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+          "rawSql": "SELECT issue_type AS \"Issue Type\", ROUND(AVG(hours_in_progress_to_rft)::numeric, 1) AS \"Avg Hours\" FROM v_cycle_time_in_progress_to_rft WHERE project_key IN ($project) AND date_trunc('quarter', entered_rft_at) = '$quarter'::date AND hours_in_progress_to_rft > 0 GROUP BY 1 ORDER BY 2 DESC",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "xField": "Issue Type",
+        "fillOpacity": 80,
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      },
+      "fieldConfig": {
+        "defaults": { "unit": "h", "color": { "mode": "palette-classic" } }
+      }
+    },
+    {
+      "id": 9,
+      "type": "barchart",
+      "title": "Avg Cycle Time (In Progress \u2192 RFT) by Priority",
+      "description": "Average development time per priority. High-priority issues should move faster.",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 42 },
+      "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+          "rawSql": "SELECT priority AS \"Priority\", ROUND(AVG(hours_in_progress_to_rft)::numeric, 1) AS \"Avg Hours\" FROM v_cycle_time_in_progress_to_rft WHERE project_key IN ($project) AND date_trunc('quarter', entered_rft_at) = '$quarter'::date AND hours_in_progress_to_rft > 0 GROUP BY 1 ORDER BY CASE priority WHEN 'Blocker' THEN 1 WHEN 'Critical' THEN 2 WHEN 'High' THEN 3 WHEN 'Medium' THEN 4 WHEN 'Low' THEN 5 ELSE 6 END",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "xField": "Priority",
+        "fillOpacity": 80,
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      },
+      "fieldConfig": {
+        "defaults": { "unit": "h", "color": { "mode": "palette-classic" } }
+      }
+    },
+    {
+      "id": 10,
+      "type": "table",
+      "title": "Slowest Issues (In Progress \u2192 RFT)",
+      "description": "Issues that spent the longest in active development before reaching Ready For Testing.",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 50 },
+      "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+          "rawSql": "SELECT issue_key AS \"Key\", issue_type AS \"Type\", priority AS \"Priority\", COALESCE(story_points::text, '-') AS \"Points\", ROUND(hours_in_progress_to_rft::numeric, 1) AS \"Hours (IP\u2192RFT)\", TO_CHAR(entered_in_progress_at, 'YYYY-MM-DD') AS \"In Progress\", TO_CHAR(entered_rft_at, 'YYYY-MM-DD') AS \"Reached RFT\" FROM v_cycle_time_in_progress_to_rft WHERE project_key IN ($project) AND date_trunc('quarter', entered_rft_at) = '$quarter'::date ORDER BY hours_in_progress_to_rft DESC LIMIT 25",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "sortBy": [{ "displayName": "Hours (IP\u2192RFT)", "desc": true }]
+      },
+      "fieldConfig": {
+        "defaults": { "custom": { "align": "left" } },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Hours (IP\u2192RFT)" },
+            "properties": [
+              { "id": "unit", "value": "h" },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    { "color": "green", "value": null },
+                    { "color": "yellow", "value": 24 },
+                    { "color": "orange", "value": 72 },
+                    { "color": "red", "value": 168 }
+                  ]
+                }
+              },
+              { "id": "custom.displayMode", "value": "color-background" }
+            ]
+          }
+        ]
+      }
+    }
   ],
   "templating": {
     "list": [

@@ -135,6 +135,36 @@ SELECT
     )) / 3600.0                                                     AS hours_in_status
 FROM issue_transitions t;
 
+-- Cycle time: In Progress → Ready For Testing (in hours)
+CREATE OR REPLACE VIEW v_cycle_time_in_progress_to_rft AS
+SELECT
+    rft.issue_key,
+    i.issue_type,
+    i.priority,
+    i.story_points,
+    i.project_key,
+    ip.transitioned_at                                              AS entered_in_progress_at,
+    rft.transitioned_at                                             AS entered_rft_at,
+    ROUND(
+        EXTRACT(EPOCH FROM (rft.transitioned_at - ip.transitioned_at)) / 3600.0,
+        2
+    )                                                               AS hours_in_progress_to_rft
+FROM issue_transitions rft
+JOIN issue_transitions ip
+    ON  ip.issue_key          = rft.issue_key
+    AND LOWER(ip.to_status)   = 'in progress'
+    AND ip.transitioned_at    < rft.transitioned_at
+JOIN issues i ON i.key = rft.issue_key
+WHERE LOWER(rft.to_status) = 'ready for testing'
+  -- most recent In Progress before this RFT entry
+  AND NOT EXISTS (
+      SELECT 1 FROM issue_transitions x
+      WHERE x.issue_key          = ip.issue_key
+        AND LOWER(x.to_status)   = 'in progress'
+        AND x.transitioned_at    > ip.transitioned_at
+        AND x.transitioned_at    < rft.transitioned_at
+  );
+
 -- Cycle time: Ready For Testing → Done (in hours)
 CREATE OR REPLACE VIEW v_cycle_time_rft_to_done AS
 SELECT
