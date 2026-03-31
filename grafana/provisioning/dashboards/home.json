@@ -1,14 +1,30 @@
 {
   "id": null,
   "uid": "jira-home",
-  "title": "Jira Metrics \u2014 Home",
-  "tags": ["jira", "home"],
+  "title": "Jira Metrics — Home",
+  "tags": [
+    "jira",
+    "home"
+  ],
   "timezone": "browser",
   "schemaVersion": 38,
   "version": 1,
   "refresh": "1h",
-  "time": { "from": "now-3M", "to": "now" },
+  "time": {
+    "from": "now-3M",
+    "to": "now"
+  },
   "links": [
+    {
+      "title": "Home",
+      "url": "/d/jira-home",
+      "type": "link",
+      "icon": "home",
+      "targetBlank": false,
+      "includeVars": true,
+      "keepTime": false,
+      "asDropdown": false
+    },
     {
       "title": "Sprint Health",
       "url": "/d/jira-sprint-health",
@@ -20,7 +36,7 @@
       "asDropdown": false
     },
     {
-      "title": "Flow \u0026 Cycle Time",
+      "title": "Flow & Cycle Time",
       "url": "/d/jira-flow-cycle-time",
       "type": "link",
       "icon": "external link",
@@ -30,7 +46,7 @@
       "asDropdown": false
     },
     {
-      "title": "Quality \u0026 Bugs",
+      "title": "Quality & Bugs",
       "url": "/d/jira-quality-bugs",
       "type": "link",
       "icon": "external link",
@@ -55,7 +71,12 @@
       "id": 1,
       "type": "text",
       "title": "",
-      "gridPos": { "h": 3, "w": 16, "x": 0, "y": 0 },
+      "gridPos": {
+        "h": 3,
+        "w": 16,
+        "x": 0,
+        "y": 0
+      },
       "options": {
         "mode": "markdown",
         "content": "# Jira Metrics\nKey engineering metrics across all teams and projects. Use the **Team / Project** filter to scope to your team. Use the links in the top-right to navigate to detailed dashboards."
@@ -65,10 +86,15 @@
       "id": 2,
       "type": "text",
       "title": "Dashboards",
-      "gridPos": { "h": 3, "w": 8, "x": 16, "y": 0 },
+      "gridPos": {
+        "h": 3,
+        "w": 8,
+        "x": 16,
+        "y": 0
+      },
       "options": {
         "mode": "markdown",
-        "content": "**[\ud83c\udfcb Sprint Health](/d/jira-sprint-health)**  \u2014 Velocity, delivery %, scope changes\n\n**[\u23f1 Flow \u0026 Cycle Time](/d/jira-flow-cycle-time)**  \u2014 RFT\u2192Done, throughput, WIP\n\n**[\ud83d\udc1b Quality \u0026 Bugs](/d/jira-quality-bugs)**  \u2014 Bug rates, priorities, releases\n\n**[\ud83d\udc65 Team Overview](/d/jira-team-overview)**  \u2014 Per-assignee metrics"
+        "content": "**[🏋 Sprint Health](/d/jira-sprint-health)**  — Velocity, delivery %, scope changes\n\n**[⏱ Flow & Cycle Time](/d/jira-flow-cycle-time)**  — RFT→Done, throughput, WIP\n\n**[🐛 Quality & Bugs](/d/jira-quality-bugs)**  — Bug rates, priorities, releases\n\n**[👥 Team Overview](/d/jira-team-overview)**  — Per-assignee metrics"
       }
     },
     {
@@ -76,18 +102,35 @@
       "type": "stat",
       "title": "Active Sprints",
       "description": "Number of sprints currently running across all selected teams.",
-      "gridPos": { "h": 5, "w": 4, "x": 0, "y": 3 },
-      "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+      "gridPos": {
+        "h": 5,
+        "w": 4,
+        "x": 0,
+        "y": 3
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
       "targets": [
         {
-          "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
           "rawSql": "SELECT COUNT(DISTINCT s.id) AS value FROM sprints s JOIN sprint_issues si ON si.sprint_id = s.id JOIN issues i ON i.key = si.issue_key WHERE s.state = 'active' AND i.project_key IN ($project)",
           "format": "table",
           "refId": "A"
         }
       ],
       "options": {
-        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
         "orientation": "auto",
         "textMode": "auto",
         "colorMode": "background",
@@ -97,7 +140,10 @@
       "fieldConfig": {
         "defaults": {
           "unit": "short",
-          "color": { "mode": "fixed", "fixedColor": "blue" }
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          }
         }
       }
     },
@@ -106,18 +152,35 @@
       "type": "stat",
       "title": "Avg Delivery %",
       "description": "Average delivery rate across the last 5 closed sprints (story points delivered / committed).",
-      "gridPos": { "h": 5, "w": 4, "x": 4, "y": 3 },
-      "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+      "gridPos": {
+        "h": 5,
+        "w": 4,
+        "x": 4,
+        "y": 3
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
       "targets": [
         {
-          "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
           "rawSql": "SELECT ROUND(AVG(delivery_pct)::numeric, 1) AS value FROM (SELECT delivery_pct FROM v_planning_deviation WHERE state = 'closed' AND sprint_id IN (SELECT DISTINCT si.sprint_id FROM sprint_issues si JOIN issues i ON i.key = si.issue_key WHERE i.project_key IN ($project)) ORDER BY complete_date DESC NULLS LAST LIMIT 5) t",
           "format": "table",
           "refId": "A"
         }
       ],
       "options": {
-        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
         "orientation": "auto",
         "textMode": "auto",
         "colorMode": "background",
@@ -127,13 +190,24 @@
       "fieldConfig": {
         "defaults": {
           "unit": "percent",
-          "color": { "mode": "thresholds" },
+          "color": {
+            "mode": "thresholds"
+          },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "red", "value": null },
-              { "color": "yellow", "value": 60 },
-              { "color": "green", "value": 80 }
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 60
+              },
+              {
+                "color": "green",
+                "value": 80
+              }
             ]
           }
         }
@@ -144,18 +218,35 @@
       "type": "stat",
       "title": "Open Blocker & Critical Bugs",
       "description": "Unresolved bugs with Blocker or Critical priority across selected projects.",
-      "gridPos": { "h": 5, "w": 4, "x": 8, "y": 3 },
-      "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+      "gridPos": {
+        "h": 5,
+        "w": 4,
+        "x": 8,
+        "y": 3
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
       "targets": [
         {
-          "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
           "rawSql": "SELECT COUNT(*) AS value FROM issues WHERE project_key IN ($project) AND issue_type = 'Bug' AND status_category != 'Done' AND priority IN ('Blocker', 'Critical')",
           "format": "table",
           "refId": "A"
         }
       ],
       "options": {
-        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
         "orientation": "auto",
         "textMode": "auto",
         "colorMode": "background",
@@ -165,13 +256,24 @@
       "fieldConfig": {
         "defaults": {
           "unit": "short",
-          "color": { "mode": "thresholds" },
+          "color": {
+            "mode": "thresholds"
+          },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "green", "value": null },
-              { "color": "yellow", "value": 5 },
-              { "color": "red", "value": 20 }
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 5
+              },
+              {
+                "color": "red",
+                "value": 20
+              }
             ]
           }
         }
@@ -180,20 +282,37 @@
     {
       "id": 6,
       "type": "stat",
-      "title": "Avg Cycle Time (RFT \u2192 Done)",
+      "title": "Avg Cycle Time (RFT → Done)",
       "description": "Average hours from Ready For Testing to Done this quarter.",
-      "gridPos": { "h": 5, "w": 4, "x": 12, "y": 3 },
-      "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+      "gridPos": {
+        "h": 5,
+        "w": 4,
+        "x": 12,
+        "y": 3
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
       "targets": [
         {
-          "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
           "rawSql": "SELECT ROUND(AVG(hours_rft_to_done)::numeric, 0) AS value FROM v_cycle_time_rft_to_done WHERE project_key IN ($project) AND hours_rft_to_done > 0 AND date_trunc('quarter', resolved_at) = date_trunc('quarter', NOW())",
           "format": "table",
           "refId": "A"
         }
       ],
       "options": {
-        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
         "orientation": "auto",
         "textMode": "auto",
         "colorMode": "background",
@@ -203,13 +322,24 @@
       "fieldConfig": {
         "defaults": {
           "unit": "h",
-          "color": { "mode": "thresholds" },
+          "color": {
+            "mode": "thresholds"
+          },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "green", "value": null },
-              { "color": "yellow", "value": 72 },
-              { "color": "red", "value": 168 }
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 72
+              },
+              {
+                "color": "red",
+                "value": 168
+              }
             ]
           }
         }
@@ -220,18 +350,35 @@
       "type": "stat",
       "title": "Issues Completed This Quarter",
       "description": "Total issues resolved in the current quarter.",
-      "gridPos": { "h": 5, "w": 4, "x": 16, "y": 3 },
-      "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+      "gridPos": {
+        "h": 5,
+        "w": 4,
+        "x": 16,
+        "y": 3
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
       "targets": [
         {
-          "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
           "rawSql": "SELECT COUNT(*) AS value FROM issues WHERE project_key IN ($project) AND status_category = 'Done' AND date_trunc('quarter', resolved_at) = date_trunc('quarter', NOW())",
           "format": "table",
           "refId": "A"
         }
       ],
       "options": {
-        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
         "orientation": "auto",
         "textMode": "auto",
         "colorMode": "background",
@@ -241,7 +388,10 @@
       "fieldConfig": {
         "defaults": {
           "unit": "short",
-          "color": { "mode": "fixed", "fixedColor": "green" }
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "green"
+          }
         }
       }
     },
@@ -250,18 +400,35 @@
       "type": "stat",
       "title": "Bugs Created This Quarter",
       "description": "Total new bug reports created in the current quarter.",
-      "gridPos": { "h": 5, "w": 4, "x": 20, "y": 3 },
-      "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+      "gridPos": {
+        "h": 5,
+        "w": 4,
+        "x": 20,
+        "y": 3
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
       "targets": [
         {
-          "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
           "rawSql": "SELECT COUNT(*) AS value FROM issues WHERE project_key IN ($project) AND issue_type = 'Bug' AND date_trunc('quarter', created_at) = date_trunc('quarter', NOW())",
           "format": "table",
           "refId": "A"
         }
       ],
       "options": {
-        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
         "orientation": "auto",
         "textMode": "auto",
         "colorMode": "background",
@@ -271,13 +438,24 @@
       "fieldConfig": {
         "defaults": {
           "unit": "short",
-          "color": { "mode": "thresholds" },
+          "color": {
+            "mode": "thresholds"
+          },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "green", "value": null },
-              { "color": "yellow", "value": 50 },
-              { "color": "red", "value": 100 }
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 50
+              },
+              {
+                "color": "red",
+                "value": 100
+              }
             ]
           }
         }
@@ -286,13 +464,24 @@
     {
       "id": 9,
       "type": "barchart",
-      "title": "Sprint Velocity \u2014 Last 10 Closed Sprints",
+      "title": "Sprint Velocity — Last 10 Closed Sprints",
       "description": "Story points committed vs delivered for the most recently closed sprints.",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
-      "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
       "targets": [
         {
-          "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
           "rawSql": "SELECT sprint_name, COALESCE(committed_points, 0) AS \"Committed\", COALESCE(delivered_points, 0) AS \"Delivered\" FROM v_planning_deviation WHERE sprint_id IN (SELECT DISTINCT si.sprint_id FROM sprint_issues si JOIN issues i ON i.key = si.issue_key WHERE i.project_key IN ($project)) AND state = 'closed' ORDER BY complete_date DESC NULLS LAST LIMIT 10",
           "format": "table",
           "refId": "A"
@@ -302,18 +491,48 @@
         "xField": "sprint_name",
         "stacking": "none",
         "fillOpacity": 80,
-        "legend": { "displayMode": "list", "placement": "bottom" }
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
       },
       "fieldConfig": {
-        "defaults": { "unit": "short", "color": { "mode": "palette-classic" } },
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
         "overrides": [
           {
-            "matcher": { "id": "byName", "options": "Committed" },
-            "properties": [{ "id": "color", "value": { "fixedColor": "blue", "mode": "fixed" } }]
+            "matcher": {
+              "id": "byName",
+              "options": "Committed"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "blue",
+                  "mode": "fixed"
+                }
+              }
+            ]
           },
           {
-            "matcher": { "id": "byName", "options": "Delivered" },
-            "properties": [{ "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } }]
+            "matcher": {
+              "id": "byName",
+              "options": "Delivered"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "green",
+                  "mode": "fixed"
+                }
+              }
+            ]
           }
         ]
       }
@@ -321,30 +540,122 @@
     {
       "id": 10,
       "type": "timeseries",
-      "title": "Weekly Bug Creation \u2014 Last 12 Weeks",
+      "title": "Weekly Bug Creation — Last 12 Weeks",
       "description": "New bugs reported per week broken down by priority.",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
-      "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
       "targets": [
         {
-          "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
           "rawSql": "SELECT DATE_TRUNC('week', created_at) AS time, SUM(CASE WHEN priority = 'Blocker' THEN 1 ELSE 0 END) AS \"Blocker\", SUM(CASE WHEN priority = 'Critical' THEN 1 ELSE 0 END) AS \"Critical\", SUM(CASE WHEN priority = 'High' THEN 1 ELSE 0 END) AS \"High\", SUM(CASE WHEN priority = 'Medium' THEN 1 ELSE 0 END) AS \"Medium\", SUM(CASE WHEN priority = 'Low' THEN 1 ELSE 0 END) AS \"Low\" FROM issues WHERE project_key IN ($project) AND issue_type = 'Bug' AND $__timeFilter(created_at) GROUP BY 1 ORDER BY 1",
           "format": "time_series",
           "refId": "A"
         }
       ],
       "options": {
-        "legend": { "displayMode": "list", "placement": "bottom" },
-        "tooltip": { "mode": "multi" }
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
       },
       "fieldConfig": {
-        "defaults": { "unit": "short", "custom": { "lineWidth": 2, "fillOpacity": 10 } },
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 10
+          }
+        },
         "overrides": [
-          { "matcher": { "id": "byName", "options": "Blocker" }, "properties": [{ "id": "color", "value": { "fixedColor": "dark-red", "mode": "fixed" } }] },
-          { "matcher": { "id": "byName", "options": "Critical" }, "properties": [{ "id": "color", "value": { "fixedColor": "orange", "mode": "fixed" } }] },
-          { "matcher": { "id": "byName", "options": "High" }, "properties": [{ "id": "color", "value": { "fixedColor": "yellow", "mode": "fixed" } }] },
-          { "matcher": { "id": "byName", "options": "Medium" }, "properties": [{ "id": "color", "value": { "fixedColor": "blue", "mode": "fixed" } }] },
-          { "matcher": { "id": "byName", "options": "Low" }, "properties": [{ "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } }] }
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Blocker"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "dark-red",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Critical"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "orange",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "High"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "yellow",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Medium"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "blue",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Low"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "green",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          }
         ]
       }
     }
@@ -355,7 +666,10 @@
         "name": "project",
         "label": "Team / Project",
         "type": "query",
-        "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+        "datasource": {
+          "type": "postgres",
+          "uid": "jira-metrics-pg"
+        },
         "query": "SELECT key FROM projects ORDER BY key",
         "refresh": 2,
         "includeAll": true,

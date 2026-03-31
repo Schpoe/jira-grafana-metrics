@@ -430,7 +430,7 @@
     {
       "id": 7,
       "type": "table",
-      "title": "Open Bugs \u2014 Critical & High",
+      "title": "Open Bugs — Critical & High",
       "description": "All open critical and high priority bugs, sorted by age.",
       "gridPos": {
         "h": 9,
@@ -673,5 +673,57 @@
         "hide": 0
       }
     ]
-  }
+  },
+  "links": [
+    {
+      "title": "Home",
+      "url": "/d/jira-home",
+      "type": "link",
+      "icon": "home",
+      "targetBlank": false,
+      "includeVars": true,
+      "keepTime": false,
+      "asDropdown": false
+    },
+    {
+      "title": "Sprint Health",
+      "url": "/d/jira-sprint-health",
+      "type": "link",
+      "icon": "external link",
+      "targetBlank": false,
+      "includeVars": true,
+      "keepTime": false,
+      "asDropdown": false
+    },
+    {
+      "title": "Flow & Cycle Time",
+      "url": "/d/jira-flow-cycle-time",
+      "type": "link",
+      "icon": "external link",
+      "targetBlank": false,
+      "includeVars": true,
+      "keepTime": false,
+      "asDropdown": false
+    },
+    {
+      "title": "Quality & Bugs",
+      "url": "/d/jira-quality-bugs",
+      "type": "link",
+      "icon": "external link",
+      "targetBlank": false,
+      "includeVars": true,
+      "keepTime": false,
+      "asDropdown": false
+    },
+    {
+      "title": "Team Overview",
+      "url": "/d/jira-team-overview",
+      "type": "link",
+      "icon": "external link",
+      "targetBlank": false,
+      "includeVars": true,
+      "keepTime": false,
+      "asDropdown": false
+    }
+  ]
 }
