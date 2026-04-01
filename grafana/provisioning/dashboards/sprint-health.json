@@ -430,6 +430,16 @@
       "includeVars": true,
       "keepTime": false,
       "asDropdown": false
+    },
+    {
+      "title": "PO KPIs",
+      "url": "/d/jira-po-kpis",
+      "type": "link",
+      "icon": "external link",
+      "targetBlank": false,
+      "includeVars": true,
+      "keepTime": false,
+      "asDropdown": false
     }
   ]
 }

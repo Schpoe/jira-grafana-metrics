@@ -1,0 +1,807 @@
+{
+  "id": null,
+  "uid": "jira-po-kpis",
+  "title": "PO KPIs",
+  "tags": [
+    "jira",
+    "po",
+    "kpis"
+  ],
+  "timezone": "browser",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "1h",
+  "time": {
+    "from": "now-1y",
+    "to": "now"
+  },
+  "links": [
+    {
+      "title": "Home",
+      "url": "/d/jira-home",
+      "type": "link",
+      "icon": "home",
+      "targetBlank": false,
+      "includeVars": true,
+      "keepTime": false,
+      "asDropdown": false
+    },
+    {
+      "title": "Sprint Health",
+      "url": "/d/jira-sprint-health",
+      "type": "link",
+      "icon": "external link",
+      "targetBlank": false,
+      "includeVars": true,
+      "keepTime": false,
+      "asDropdown": false
+    },
+    {
+      "title": "Flow & Cycle Time",
+      "url": "/d/jira-flow-cycle-time",
+      "type": "link",
+      "icon": "external link",
+      "targetBlank": false,
+      "includeVars": true,
+      "keepTime": false,
+      "asDropdown": false
+    },
+    {
+      "title": "Quality & Bugs",
+      "url": "/d/jira-quality-bugs",
+      "type": "link",
+      "icon": "external link",
+      "targetBlank": false,
+      "includeVars": true,
+      "keepTime": false,
+      "asDropdown": false
+    },
+    {
+      "title": "Team Overview",
+      "url": "/d/jira-team-overview",
+      "type": "link",
+      "icon": "external link",
+      "targetBlank": false,
+      "includeVars": true,
+      "keepTime": false,
+      "asDropdown": false
+    },
+    {
+      "title": "PO KPIs",
+      "url": "/d/jira-po-kpis",
+      "type": "link",
+      "icon": "external link",
+      "targetBlank": false,
+      "includeVars": true,
+      "keepTime": false,
+      "asDropdown": false
+    }
+  ],
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Avg Scope Change %",
+      "description": "Average % of story points added or removed after sprint start (lower = more stable plans). Target: ≤ 10%",
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 0,
+        "y": 0
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT ROUND(AVG(\n  100.0 * (COALESCE(added.sp,0) + COALESCE(removed.sp,0))\n  / NULLIF(snap.total_story_points,0)\n)::numeric, 1) AS value\nFROM sprints s\nJOIN sprint_snapshots snap ON snap.sprint_id = s.id AND snap.snapshot_type = 'start'\nLEFT JOIN (SELECT sprint_id, SUM(COALESCE(story_points_at_add,0)) AS sp FROM sprint_issues WHERE was_in_initial_scope = FALSE AND removed_at IS NULL GROUP BY sprint_id) added ON added.sprint_id = s.id\nLEFT JOIN (SELECT sprint_id, SUM(COALESCE(story_points_at_add,0)) AS sp FROM sprint_issues WHERE removed_at IS NOT NULL GROUP BY sprint_id) removed ON removed.sprint_id = s.id\nWHERE s.id IN (SELECT DISTINCT si.sprint_id FROM sprint_issues si JOIN issues i ON i.key = si.issue_key WHERE i.project_key IN ($project)) AND s.state = 'closed' AND snap.total_story_points > 0\nAND date_trunc('quarter', COALESCE(s.complete_date, s.start_date)) = '$quarter'::date",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 10
+              },
+              {
+                "color": "red",
+                "value": 25
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Avg Planning Accuracy %",
+      "description": "Average % of committed story points delivered (delivery % per sprint). Target: ≥ 80%",
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 6,
+        "y": 0
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT ROUND(AVG(delivery_pct)::numeric, 1) AS value\nFROM v_planning_deviation pd\nWHERE pd.sprint_id IN (SELECT DISTINCT si.sprint_id FROM sprint_issues si JOIN issues i ON i.key = si.issue_key WHERE i.project_key IN ($project))\nAND pd.state = 'closed' AND pd.delivery_pct IS NOT NULL\nAND date_trunc('quarter', COALESCE(pd.complete_date, pd.start_date)) = '$quarter'::date",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 60
+              },
+              {
+                "color": "green",
+                "value": 80
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Ticket Reopens",
+      "description": "Issues sent back from testing to In Progress this quarter. Lower = better quality.",
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 12,
+        "y": 0
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT COUNT(DISTINCT t.issue_key) AS value\nFROM issue_transitions t JOIN issues i ON i.key = t.issue_key\nWHERE i.project_key IN ($project)\n  AND LOWER(t.from_status) LIKE '%test%'\n  AND LOWER(t.to_status) LIKE '%progress%'\n  AND date_trunc('quarter', t.transitioned_at) = '$quarter'::date",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 10
+              },
+              {
+                "color": "red",
+                "value": 25
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Avg Blocker Resolution Time",
+      "description": "Average hours from creation to resolution for Blocker-priority issues. Target: ≤ 1 sprint.",
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 18,
+        "y": 0
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT ROUND(AVG(EXTRACT(EPOCH FROM (resolved_at - created_at))/3600.0)::numeric, 1) AS value\nFROM issues\nWHERE project_key IN ($project) AND priority = 'Blocker'\n  AND resolved_at IS NOT NULL\n  AND date_trunc('quarter', resolved_at) = '$quarter'::date",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "h",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 72
+              },
+              {
+                "color": "red",
+                "value": 168
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 5,
+      "type": "barchart",
+      "title": "Scope Change % per Sprint",
+      "description": "Story points added + removed after sprint start as % of committed SP. Target ≤ 10%.",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 5
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT s.name AS \"Sprint\",\n  COALESCE(ROUND(100.0*(COALESCE(added.sp,0)+COALESCE(removed.sp,0))/NULLIF(snap.total_story_points,0)::numeric,1),0) AS \"Scope Change %\",\n  COALESCE(added.cnt,0) AS \"Issues Added\",\n  COALESCE(removed.cnt,0) AS \"Issues Removed\"\nFROM sprints s\nJOIN sprint_snapshots snap ON snap.sprint_id = s.id AND snap.snapshot_type = 'start'\nLEFT JOIN (SELECT sprint_id, SUM(COALESCE(story_points_at_add,0)) AS sp, COUNT(*) AS cnt FROM sprint_issues WHERE was_in_initial_scope=FALSE AND removed_at IS NULL GROUP BY sprint_id) added ON added.sprint_id=s.id\nLEFT JOIN (SELECT sprint_id, SUM(COALESCE(story_points_at_add,0)) AS sp, COUNT(*) AS cnt FROM sprint_issues WHERE removed_at IS NOT NULL GROUP BY sprint_id) removed ON removed.sprint_id=s.id\nWHERE s.id IN (SELECT DISTINCT si.sprint_id FROM sprint_issues si JOIN issues i ON i.key = si.issue_key WHERE i.project_key IN ($project)) AND s.state='closed' AND snap.total_story_points>0\nAND date_trunc('quarter', COALESCE(s.complete_date, s.start_date)) = '$quarter'::date\nORDER BY s.complete_date DESC LIMIT 20",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "xField": "Sprint",
+        "fillOpacity": 80,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Scope Change %"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 6,
+      "type": "barchart",
+      "title": "Planning Accuracy % per Sprint",
+      "description": "Delivered story points as % of committed SP per sprint. Target ≥ 80%.",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 5
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT pd.sprint_name AS \"Sprint\", COALESCE(pd.delivery_pct,0) AS \"Planning Accuracy %\"\nFROM v_planning_deviation pd\nWHERE pd.sprint_id IN (SELECT DISTINCT si.sprint_id FROM sprint_issues si JOIN issues i ON i.key=si.issue_key WHERE i.project_key IN ($project))\n  AND pd.state='closed'\n  AND date_trunc('quarter', COALESCE(pd.complete_date, pd.start_date)) = '$quarter'::date\nORDER BY pd.complete_date DESC LIMIT 20",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "xField": "Sprint",
+        "fillOpacity": 80,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Planning Accuracy %"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "red",
+                      "value": null
+                    },
+                    {
+                      "color": "yellow",
+                      "value": 60
+                    },
+                    {
+                      "color": "green",
+                      "value": 80
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "custom.displayMode",
+                "value": "color-background"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "Weekly Ticket Reopen Rate",
+      "description": "Issues returned from testing to In Progress per week. Spike = quality issues escaping.",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 13
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT DATE_TRUNC('week', t.transitioned_at) AS time, COUNT(DISTINCT t.issue_key) AS \"Reopened Issues\"\nFROM issue_transitions t JOIN issues i ON i.key=t.issue_key\nWHERE i.project_key IN ($project)\n  AND LOWER(t.from_status) LIKE '%test%'\n  AND LOWER(t.to_status) LIKE '%progress%'\n  AND $__timeFilter(t.transitioned_at)\nGROUP BY 1 ORDER BY 1",
+          "format": "time_series",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 10
+          }
+        }
+      }
+    },
+    {
+      "id": 8,
+      "type": "table",
+      "title": "Most Reopened Issues",
+      "description": "Issues that required the most rework this quarter.",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 13
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT t.issue_key AS \"Key\", i.summary AS \"Summary\", i.assignee AS \"Assignee\",\n  i.priority AS \"Priority\", COUNT(*) AS \"Times Reopened\"\nFROM issue_transitions t JOIN issues i ON i.key=t.issue_key\nWHERE i.project_key IN ($project)\n  AND LOWER(t.from_status) LIKE '%test%'\n  AND LOWER(t.to_status) LIKE '%progress%'\n  AND date_trunc('quarter', t.transitioned_at) = '$quarter'::date\nGROUP BY t.issue_key, i.summary, i.assignee, i.priority\nORDER BY 5 DESC LIMIT 20",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "sortBy": [
+          {
+            "displayName": "Times Reopened",
+            "desc": true
+          }
+        ]
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "left"
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 9,
+      "type": "barchart",
+      "title": "Blocker Resolution Time per Sprint",
+      "description": "Average hours to resolve Blocker-priority issues per sprint. Target: ≤ 168h (1 sprint).",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 21
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT s.name AS \"Sprint\",\n  ROUND(AVG(EXTRACT(EPOCH FROM (i.resolved_at - i.created_at))/3600.0)::numeric,1) AS \"Avg Hours to Resolve\"\nFROM issues i\nJOIN sprint_issues si ON si.issue_key=i.key\nJOIN sprints s ON s.id=si.sprint_id\nWHERE i.project_key IN ($project) AND i.priority='Blocker'\n  AND i.resolved_at IS NOT NULL\n  AND date_trunc('quarter', COALESCE(s.complete_date, s.start_date)) = '$quarter'::date\nGROUP BY s.name, s.complete_date ORDER BY s.complete_date DESC LIMIT 20",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "xField": "Sprint",
+        "fillOpacity": 80,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Avg Hours to Resolve"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "h"
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "yellow",
+                      "value": 72
+                    },
+                    {
+                      "color": "red",
+                      "value": 168
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "custom.displayMode",
+                "value": "color-background"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 10,
+      "type": "table",
+      "title": "Open Blockers",
+      "description": "Currently open Blocker-priority issues ordered by age.",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 21
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT key AS \"Key\", summary AS \"Summary\",\n  COALESCE(assignee,'Unassigned') AS \"Assignee\",\n  status AS \"Status\",\n  DATE_PART('day', NOW()-created_at)::int AS \"Age (days)\"\nFROM issues\nWHERE project_key IN ($project) AND priority='Blocker' AND status_category!='Done'\nORDER BY created_at ASC LIMIT 25",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "sortBy": [
+          {
+            "displayName": "Age (days)",
+            "desc": true
+          }
+        ]
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "left"
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 11,
+      "type": "barchart",
+      "title": "Sprint Velocity — Committed vs Delivered",
+      "description": "Story points committed at sprint start vs actually delivered.",
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 29
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT pd.sprint_name AS \"Sprint\",\n  COALESCE(pd.committed_points,0) AS \"Committed\",\n  COALESCE(pd.delivered_points,0) AS \"Delivered\"\nFROM v_planning_deviation pd\nWHERE pd.sprint_id IN (SELECT DISTINCT si.sprint_id FROM sprint_issues si JOIN issues i ON i.key=si.issue_key WHERE i.project_key IN ($project))\n  AND pd.state='closed'\n  AND date_trunc('quarter', COALESCE(pd.complete_date, pd.start_date)) = '$quarter'::date\nORDER BY pd.complete_date DESC LIMIT 20",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "xField": "Sprint",
+        "fillOpacity": 80,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Committed"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "blue",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Delivered"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "green",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "project",
+        "label": "Team / Project",
+        "type": "query",
+        "datasource": {
+          "type": "postgres",
+          "uid": "jira-metrics-pg"
+        },
+        "query": "SELECT key FROM projects ORDER BY key",
+        "refresh": 2,
+        "includeAll": true,
+        "multi": true,
+        "allValue": null,
+        "sort": 1,
+        "hide": 0
+      },
+      {
+        "name": "quarter",
+        "label": "Quarter",
+        "type": "query",
+        "datasource": {
+          "type": "postgres",
+          "uid": "jira-metrics-pg"
+        },
+        "query": "SELECT CONCAT('Q', EXTRACT(QUARTER FROM created_at)::int, ' ', EXTRACT(YEAR FROM created_at)::int) AS __text, TO_CHAR(date_trunc('quarter', created_at), 'YYYY-MM-DD') AS __value FROM issues WHERE created_at IS NOT NULL GROUP BY 1, 2 ORDER BY 2 DESC",
+        "refresh": 2,
+        "includeAll": false,
+        "multi": false,
+        "allValue": null,
+        "sort": 0,
+        "hide": 0
+      }
+    ]
+  }
+}
