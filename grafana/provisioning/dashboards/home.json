@@ -198,7 +198,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT COALESCE(ROUND(delivery_pct::numeric, 1), 0) AS value FROM v_planning_deviation WHERE sprint_id = $sprint::bigint",
+          "rawSql": "SELECT COALESCE(ROUND(delivery_pct::numeric, 1), 0) AS value FROM v_planning_deviation WHERE ($sprint::bigint = 0 OR sprint_id = $sprint::bigint)",
           "format": "table",
           "refId": "A"
         }
@@ -330,7 +330,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT ROUND(AVG(hours_rft_to_done)::numeric, 0) AS value FROM v_cycle_time_rft_to_done WHERE project_key IN ($project) AND hours_rft_to_done > 0 AND date_trunc('quarter', resolved_at) = '$quarter'::date",
+          "rawSql": "SELECT ROUND(AVG(hours_rft_to_done)::numeric, 0) AS value FROM v_cycle_time_rft_to_done WHERE project_key IN ($project) AND hours_rft_to_done > 0 AND ('$quarter' = 'all' OR date_trunc('quarter', resolved_at) = '$quarter'::date)",
           "format": "table",
           "refId": "A"
         }
@@ -396,7 +396,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT COUNT(*) AS value FROM issues i JOIN sprint_issues si ON si.issue_key = i.key WHERE i.project_key IN ($project) AND si.sprint_id = $sprint::bigint AND i.status_category = 'Done'",
+          "rawSql": "SELECT COUNT(*) AS value FROM issues i JOIN sprint_issues si ON si.issue_key = i.key WHERE i.project_key IN ($project) AND si.($sprint::bigint = 0 OR sprint_id = $sprint::bigint) AND i.status_category = 'Done'",
           "format": "table",
           "refId": "A"
         }
@@ -446,7 +446,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT COUNT(*) AS value FROM issues WHERE project_key IN ($project) AND issue_type = 'Bug' AND date_trunc('quarter', created_at) = '$quarter'::date",
+          "rawSql": "SELECT COUNT(*) AS value FROM issues WHERE project_key IN ($project) AND issue_type = 'Bug' AND ('$quarter' = 'all' OR date_trunc('quarter', created_at) = '$quarter'::date)",
           "format": "table",
           "refId": "A"
         }
@@ -727,22 +727,6 @@
         "hide": 0
       },
       {
-        "name": "sprint",
-        "label": "Sprint",
-        "type": "query",
-        "datasource": {
-          "type": "postgres",
-          "uid": "jira-metrics-pg"
-        },
-        "query": "SELECT CONCAT(s.name, CASE WHEN s.state = 'active' THEN ' \u2605' ELSE '' END) AS __text, s.id::text AS __value FROM sprints s WHERE s.id IN (SELECT DISTINCT si.sprint_id FROM sprint_issues si JOIN issues i ON i.key = si.issue_key WHERE i.project_key IN ($project)) ORDER BY s.start_date DESC NULLS LAST LIMIT 40",
-        "refresh": 2,
-        "includeAll": false,
-        "multi": false,
-        "allValue": null,
-        "sort": 0,
-        "hide": 0
-      },
-      {
         "name": "quarter",
         "label": "Quarter",
         "type": "query",
@@ -750,13 +734,37 @@
           "type": "postgres",
           "uid": "jira-metrics-pg"
         },
-        "query": "SELECT CONCAT('Q', EXTRACT(QUARTER FROM created_at)::int, ' ', EXTRACT(YEAR FROM created_at)::int) AS __text, TO_CHAR(date_trunc('quarter', created_at), 'YYYY-MM-DD') AS __value FROM issues WHERE created_at IS NOT NULL GROUP BY 1, 2 ORDER BY 2 DESC",
+        "query": {
+          "query": "SELECT CONCAT('Q', EXTRACT(QUARTER FROM gs)::int, ' ', EXTRACT(YEAR FROM gs)::int) AS __text, TO_CHAR(gs, 'YYYY-MM-DD') AS __value FROM (SELECT DISTINCT date_trunc('quarter', created_at) AS gs FROM issues WHERE created_at IS NOT NULL AND project_key IN ($project)) q ORDER BY gs DESC",
+          "refId": "StandardVariableQuery"
+        },
         "refresh": 2,
-        "includeAll": false,
+        "includeAll": true,
         "multi": false,
-        "allValue": null,
+        "allValue": "all",
         "sort": 0,
-        "hide": 0
+        "hide": 0,
+        "definition": "SELECT CONCAT('Q', EXTRACT(QUARTER FROM gs)::int, ' ', EXTRACT(YEAR FROM gs)::int) AS __text, TO_CHAR(gs, 'YYYY-MM-DD') AS __value FROM (SELECT DISTINCT date_trunc('quarter', created_at) AS gs FROM issues WHERE created_at IS NOT NULL AND project_key IN ($project)) q ORDER BY gs DESC"
+      },
+      {
+        "name": "sprint",
+        "label": "Sprint",
+        "type": "query",
+        "datasource": {
+          "type": "postgres",
+          "uid": "jira-metrics-pg"
+        },
+        "query": {
+          "query": "SELECT CONCAT(s.name, CASE WHEN s.state = 'active' THEN ' \u2605' ELSE '' END) AS __text, s.id::text AS __value FROM sprints s WHERE s.id IN (SELECT DISTINCT si.sprint_id FROM sprint_issues si JOIN issues i ON i.key = si.issue_key WHERE i.project_key IN ($project)) AND ('$quarter' = 'all' OR date_trunc('quarter', COALESCE(s.complete_date, s.start_date)) = '$quarter'::date) ORDER BY CASE WHEN s.state = 'active' THEN 0 ELSE 1 END, s.start_date DESC NULLS LAST",
+          "refId": "StandardVariableQuery"
+        },
+        "refresh": 2,
+        "includeAll": true,
+        "multi": false,
+        "allValue": "0",
+        "sort": 0,
+        "hide": 0,
+        "definition": "SELECT CONCAT(s.name, CASE WHEN s.state = 'active' THEN ' \u2605' ELSE '' END) AS __text, s.id::text AS __value FROM sprints s WHERE s.id IN (SELECT DISTINCT si.sprint_id FROM sprint_issues si JOIN issues i ON i.key = si.issue_key WHERE i.project_key IN ($project)) AND ('$quarter' = 'all' OR date_trunc('quarter', COALESCE(s.complete_date, s.start_date)) = '$quarter'::date) ORDER BY CASE WHEN s.state = 'active' THEN 0 ELSE 1 END, s.start_date DESC NULLS LAST"
       }
     ]
   }
