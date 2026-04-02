@@ -611,14 +611,6 @@ def _take_sprint_snapshot(conn, sprint):
         return
 
     with conn.cursor() as cur:
-        # Check if we already have this snapshot
-        cur.execute(
-            "SELECT 1 FROM sprint_snapshots WHERE sprint_id = %s AND snapshot_type = %s",
-            (sprint_id, snapshot_type),
-        )
-        if cur.fetchone():
-            return  # don't overwrite existing snapshots
-
         cur.execute(
             """
             INSERT INTO sprint_snapshots (
@@ -636,6 +628,7 @@ def _take_sprint_snapshot(conn, sprint):
             JOIN issues i ON i.key = si.issue_key
             WHERE si.sprint_id = %s
               AND si.removed_at IS NULL
+            ON CONFLICT (sprint_id, snapshot_type) DO NOTHING
             """,
             (sprint_id, snapshot_type, sprint_id),
         )
