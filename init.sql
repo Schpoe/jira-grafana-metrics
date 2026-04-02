@@ -261,27 +261,41 @@ JOIN sprints s  ON s.id  = si.sprint_id
 JOIN issues  i  ON i.key = si.issue_key;
 
 -- Planning deviation per sprint (committed vs delivered story points)
+-- Committed is derived from was_in_initial_scope=TRUE in sprint_issues, which is
+-- populated from the Jira sprint report API and reflects the true scope at sprint start.
+-- This is more accurate than the start snapshot, which is taken mid-sprint during sync.
 CREATE OR REPLACE VIEW v_planning_deviation AS
+WITH committed AS (
+    SELECT
+        si.sprint_id,
+        COUNT(*)                                                                AS committed_issues,
+        COALESCE(SUM(COALESCE(si.story_points_at_add, i.story_points, 0)), 0)  AS committed_points
+    FROM sprint_issues si
+    JOIN issues i ON i.key = si.issue_key
+    WHERE si.was_in_initial_scope = TRUE
+    GROUP BY si.sprint_id
+)
 SELECT
     s.id                                                            AS sprint_id,
     s.name                                                          AS sprint_name,
     s.state,
     s.start_date,
     s.complete_date,
-    start_snap.total_story_points                                   AS committed_points,
-    close_snap.completed_story_points                               AS delivered_points,
-    close_snap.completed_story_points - start_snap.total_story_points AS deviation_points,
+    COALESCE(c.committed_points, 0)                                AS committed_points,
+    COALESCE(c.committed_issues, 0)                                AS committed_issues,
+    close_snap.completed_story_points                              AS delivered_points,
+    close_snap.completed_issues                                    AS delivered_issues,
+    close_snap.completed_story_points - COALESCE(c.committed_points, 0) AS deviation_points,
     CASE
-        WHEN start_snap.total_story_points > 0
+        WHEN COALESCE(c.committed_points, 0) > 0
         THEN ROUND(
-            100.0 * close_snap.completed_story_points / start_snap.total_story_points,
+            100.0 * close_snap.completed_story_points / c.committed_points,
             1
         )
         ELSE NULL
     END                                                             AS delivery_pct
 FROM sprints s
-LEFT JOIN sprint_snapshots start_snap
-    ON start_snap.sprint_id = s.id AND start_snap.snapshot_type = 'start'
+LEFT JOIN committed c ON c.sprint_id = s.id
 LEFT JOIN sprint_snapshots close_snap
     ON close_snap.sprint_id = s.id AND close_snap.snapshot_type = 'close';
 
