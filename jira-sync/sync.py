@@ -408,13 +408,50 @@ def sync_issues(conn, sync_id, since=None, last_sync_duration=None, resume_token
                     transition_rows,
                 )
 
-            # Delete existing links for all issues on this page (handles removed links),
-            # then re-insert current links.
+            # Diff issue links against DB state: record added/removed in history,
+            # then update the current snapshot in issue_links.
             synced_keys = [row[0] for row in issue_rows]
+
+            # Fetch existing links for this page's issues
             cur.execute(
-                "DELETE FROM issue_links WHERE from_key = ANY(%s)",
+                """
+                SELECT from_key, to_key, to_summary, link_type, link_label, direction
+                FROM issue_links WHERE from_key = ANY(%s)
+                """,
                 (synced_keys,),
             )
+            existing = {
+                (r[0], r[1], r[3], r[5]): r  # key: (from,to,type,dir)
+                for r in cur.fetchall()
+            }
+            incoming = {
+                (r[0], r[1], r[3], r[5]): r  # (from,to,type,dir)
+                for r in link_rows
+            }
+
+            history_rows = []
+            # Removed links
+            for k, r in existing.items():
+                if k not in incoming:
+                    history_rows.append((r[0], r[1], r[2], r[3], r[4], r[5], "removed"))
+            # Added links
+            for k, r in incoming.items():
+                if k not in existing:
+                    history_rows.append((r[0], r[1], r[2], r[3], r[4], r[5], "added"))
+
+            if history_rows:
+                execute_values(
+                    cur,
+                    """
+                    INSERT INTO issue_link_history
+                        (from_key, to_key, to_summary, link_type, link_label, direction, event)
+                    VALUES %s
+                    """,
+                    history_rows,
+                )
+
+            # Delete all existing links for synced issues and re-insert current state
+            cur.execute("DELETE FROM issue_links WHERE from_key = ANY(%s)", (synced_keys,))
             if link_rows:
                 execute_values(
                     cur,

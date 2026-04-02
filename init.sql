@@ -136,6 +136,23 @@ ALTER TABLE issue_links ADD COLUMN IF NOT EXISTS to_summary TEXT;
 CREATE INDEX IF NOT EXISTS idx_issue_links_from ON issue_links(from_key);
 CREATE INDEX IF NOT EXISTS idx_issue_links_to   ON issue_links(to_key);
 
+-- History of link additions and removals
+CREATE TABLE IF NOT EXISTS issue_link_history (
+    id          SERIAL PRIMARY KEY,
+    from_key    TEXT NOT NULL,
+    to_key      TEXT NOT NULL,
+    to_summary  TEXT,
+    link_type   TEXT NOT NULL,
+    link_label  TEXT,
+    direction   TEXT NOT NULL,
+    event       TEXT NOT NULL,       -- 'added' or 'removed'
+    occurred_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_link_history_from ON issue_link_history(from_key);
+CREATE INDEX IF NOT EXISTS idx_link_history_to   ON issue_link_history(to_key);
+CREATE INDEX IF NOT EXISTS idx_link_history_at   ON issue_link_history(occurred_at);
+
 -- ─── Useful Views ────────────────────────────────────────────────────────────
 
 -- Cycle time: time in each status per issue
