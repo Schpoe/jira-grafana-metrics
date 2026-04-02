@@ -1210,17 +1210,13 @@
           "type": "postgres",
           "uid": "jira-metrics-pg"
         },
-        "query": {
-          "query": "SELECT CONCAT('Q', EXTRACT(QUARTER FROM gs)::int, ' ', EXTRACT(YEAR FROM gs)::int) AS __text, TO_CHAR(gs, 'YYYY-MM-DD') AS __value FROM (SELECT DISTINCT date_trunc('quarter', created_at) AS gs FROM issues WHERE created_at IS NOT NULL AND project_key IN ($project)) q ORDER BY gs DESC",
-          "refId": "StandardVariableQuery"
-        },
+        "query": "SELECT CONCAT('Q', EXTRACT(QUARTER FROM created_at)::int, ' ', EXTRACT(YEAR FROM created_at)::int) AS __text, TO_CHAR(date_trunc('quarter', created_at), 'YYYY-MM-DD') AS __value FROM issues WHERE created_at IS NOT NULL GROUP BY 1, 2 ORDER BY 2 DESC",
         "refresh": 2,
-        "includeAll": true,
+        "includeAll": false,
         "multi": false,
-        "allValue": "all",
+        "allValue": null,
         "sort": 0,
-        "hide": 0,
-        "definition": "SELECT CONCAT('Q', EXTRACT(QUARTER FROM gs)::int, ' ', EXTRACT(YEAR FROM gs)::int) AS __text, TO_CHAR(gs, 'YYYY-MM-DD') AS __value FROM (SELECT DISTINCT date_trunc('quarter', created_at) AS gs FROM issues WHERE created_at IS NOT NULL AND project_key IN ($project)) q ORDER BY gs DESC"
+        "hide": 0
       },
       {
         "name": "sprint",
@@ -1230,17 +1226,13 @@
           "type": "postgres",
           "uid": "jira-metrics-pg"
         },
-        "query": {
-          "query": "SELECT CONCAT(s.name, CASE WHEN s.state = 'active' THEN ' \u2605' ELSE '' END) AS __text, s.id::text AS __value FROM sprints s WHERE s.id IN (SELECT DISTINCT si.sprint_id FROM sprint_issues si JOIN issues i ON i.key = si.issue_key WHERE i.project_key IN ($project)) AND ('$quarter' = 'all' OR date_trunc('quarter', COALESCE(s.complete_date, s.start_date)) = '$quarter'::date) ORDER BY CASE WHEN s.state = 'active' THEN 0 ELSE 1 END, s.start_date DESC NULLS LAST",
-          "refId": "StandardVariableQuery"
-        },
+        "query": "SELECT CONCAT(s.name, CASE WHEN s.state = 'active' THEN ' \u2605' ELSE '' END) AS __text, s.id::text AS __value FROM sprints s WHERE s.id IN (SELECT DISTINCT si.sprint_id FROM sprint_issues si JOIN issues i ON i.key = si.issue_key WHERE i.project_key IN ($project)) AND date_trunc('quarter', COALESCE(s.complete_date, s.start_date)) = '$quarter'::date ORDER BY CASE WHEN s.state = 'active' THEN 0 ELSE 1 END, s.start_date DESC NULLS LAST",
         "refresh": 2,
         "includeAll": false,
         "multi": false,
         "allValue": null,
         "sort": 0,
-        "hide": 0,
-        "definition": "SELECT CONCAT(s.name, CASE WHEN s.state = 'active' THEN ' \u2605' ELSE '' END) AS __text, s.id::text AS __value FROM sprints s WHERE s.id IN (SELECT DISTINCT si.sprint_id FROM sprint_issues si JOIN issues i ON i.key = si.issue_key WHERE i.project_key IN ($project)) AND ('$quarter' = 'all' OR date_trunc('quarter', COALESCE(s.complete_date, s.start_date)) = '$quarter'::date) ORDER BY CASE WHEN s.state = 'active' THEN 0 ELSE 1 END, s.start_date DESC NULLS LAST"
+        "hide": 0
       }
     ]
   }

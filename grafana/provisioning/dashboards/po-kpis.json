@@ -251,7 +251,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT COUNT(DISTINCT t.issue_key) AS value\nFROM issue_transitions t JOIN issues i ON i.key = t.issue_key\nWHERE i.project_key IN ($project)\n  AND LOWER(t.from_status) LIKE '%test%'\n  AND LOWER(t.to_status) LIKE '%progress%'\n  AND ('$quarter' = 'all' OR date_trunc('quarter', t.transitioned_at) = '$quarter'::date)",
+          "rawSql": "SELECT COUNT(DISTINCT t.issue_key) AS value\nFROM issue_transitions t JOIN issues i ON i.key = t.issue_key\nWHERE i.project_key IN ($project)\n  AND LOWER(t.from_status) LIKE '%test%'\n  AND LOWER(t.to_status) LIKE '%progress%'\n  AND date_trunc('quarter', t.transitioned_at) = '$quarter'::date",
           "format": "table",
           "refId": "A"
         }
@@ -317,7 +317,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT ROUND(AVG(EXTRACT(EPOCH FROM (resolved_at - created_at))/3600.0)::numeric, 1) AS value\nFROM issues\nWHERE project_key IN ($project) AND priority = 'Blocker'\n  AND resolved_at IS NOT NULL\n  AND ('$quarter' = 'all' OR date_trunc('quarter', resolved_at) = '$quarter'::date)",
+          "rawSql": "SELECT ROUND(AVG(EXTRACT(EPOCH FROM (resolved_at - created_at))/3600.0)::numeric, 1) AS value\nFROM issues\nWHERE project_key IN ($project) AND priority = 'Blocker'\n  AND resolved_at IS NOT NULL\n  AND date_trunc('quarter', resolved_at) = '$quarter'::date",
           "format": "table",
           "refId": "A"
         }
@@ -570,7 +570,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT t.issue_key AS \"Key\", i.summary AS \"Summary\", i.assignee AS \"Assignee\",\n  i.priority AS \"Priority\", COUNT(*) AS \"Times Reopened\"\nFROM issue_transitions t JOIN issues i ON i.key=t.issue_key\nWHERE i.project_key IN ($project)\n  AND LOWER(t.from_status) LIKE '%test%'\n  AND LOWER(t.to_status) LIKE '%progress%'\n  AND ('$quarter' = 'all' OR date_trunc('quarter', t.transitioned_at) = '$quarter'::date)\nGROUP BY t.issue_key, i.summary, i.assignee, i.priority\nORDER BY 5 DESC LIMIT 20",
+          "rawSql": "SELECT t.issue_key AS \"Key\", i.summary AS \"Summary\", i.assignee AS \"Assignee\",\n  i.priority AS \"Priority\", COUNT(*) AS \"Times Reopened\"\nFROM issue_transitions t JOIN issues i ON i.key=t.issue_key\nWHERE i.project_key IN ($project)\n  AND LOWER(t.from_status) LIKE '%test%'\n  AND LOWER(t.to_status) LIKE '%progress%'\n  AND date_trunc('quarter', t.transitioned_at) = '$quarter'::date\nGROUP BY t.issue_key, i.summary, i.assignee, i.priority\nORDER BY 5 DESC LIMIT 20",
           "format": "table",
           "refId": "A"
         }
@@ -938,17 +938,13 @@
           "type": "postgres",
           "uid": "jira-metrics-pg"
         },
-        "query": {
-          "query": "SELECT CONCAT('Q', EXTRACT(QUARTER FROM gs)::int, ' ', EXTRACT(YEAR FROM gs)::int) AS __text, TO_CHAR(gs, 'YYYY-MM-DD') AS __value FROM (SELECT DISTINCT date_trunc('quarter', created_at) AS gs FROM issues WHERE created_at IS NOT NULL AND project_key IN ($project)) q ORDER BY gs DESC",
-          "refId": "StandardVariableQuery"
-        },
+        "query": "SELECT CONCAT('Q', EXTRACT(QUARTER FROM created_at)::int, ' ', EXTRACT(YEAR FROM created_at)::int) AS __text, TO_CHAR(date_trunc('quarter', created_at), 'YYYY-MM-DD') AS __value FROM issues WHERE created_at IS NOT NULL GROUP BY 1, 2 ORDER BY 2 DESC",
         "refresh": 2,
-        "includeAll": true,
+        "includeAll": false,
         "multi": false,
-        "allValue": "all",
+        "allValue": null,
         "sort": 0,
-        "hide": 0,
-        "definition": "SELECT CONCAT('Q', EXTRACT(QUARTER FROM gs)::int, ' ', EXTRACT(YEAR FROM gs)::int) AS __text, TO_CHAR(gs, 'YYYY-MM-DD') AS __value FROM (SELECT DISTINCT date_trunc('quarter', created_at) AS gs FROM issues WHERE created_at IS NOT NULL AND project_key IN ($project)) q ORDER BY gs DESC"
+        "hide": 0
       }
     ]
   }
