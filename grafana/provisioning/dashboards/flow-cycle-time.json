@@ -18,7 +18,7 @@
     {
       "id": 1,
       "type": "timeseries",
-      "title": "Cycle Time: Ready For Testing → Done (hours)",
+      "title": "Cycle Time: Ready For Testing \u2192 Done (hours)",
       "description": "Average, median and 85th percentile cycle time per week. Lower and stable p85 indicates a predictable flow.",
       "gridPos": {
         "h": 9,
@@ -206,7 +206,7 @@
     {
       "id": 4,
       "type": "barchart",
-      "title": "Avg Cycle Time (RFT → Done) by Issue Type",
+      "title": "Avg Cycle Time (RFT \u2192 Done) by Issue Type",
       "gridPos": {
         "h": 8,
         "w": 12,
@@ -248,7 +248,7 @@
     {
       "id": 5,
       "type": "barchart",
-      "title": "Avg Cycle Time (RFT → Done) by Priority",
+      "title": "Avg Cycle Time (RFT \u2192 Done) by Priority",
       "gridPos": {
         "h": 8,
         "w": 12,
@@ -290,7 +290,7 @@
     {
       "id": 6,
       "type": "table",
-      "title": "Slowest Issues (RFT → Done)",
+      "title": "Slowest Issues (RFT \u2192 Done)",
       "description": "Issues that took the longest to move from Ready For Testing to Done.",
       "gridPos": {
         "h": 8,
@@ -308,7 +308,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT issue_key AS \"Key\", issue_type AS \"Type\", priority AS \"Priority\", COALESCE(story_points::text, '-') AS \"Points\", ROUND(hours_rft_to_done::numeric, 1) AS \"Hours (RFT→Done)\", TO_CHAR(entered_rft_at, 'YYYY-MM-DD') AS \"Entered RFT\", TO_CHAR(resolved_at, 'YYYY-MM-DD') AS \"Resolved\" FROM v_cycle_time_rft_to_done WHERE project_key IN ($project) AND date_trunc('quarter', resolved_at) = '$quarter'::date ORDER BY hours_rft_to_done DESC LIMIT 25",
+          "rawSql": "SELECT issue_key AS \"Key\", issue_type AS \"Type\", priority AS \"Priority\", COALESCE(story_points::text, '-') AS \"Points\", ROUND(hours_rft_to_done::numeric, 1) AS \"Hours (RFT\u2192Done)\", TO_CHAR(entered_rft_at, 'YYYY-MM-DD') AS \"Entered RFT\", TO_CHAR(resolved_at, 'YYYY-MM-DD') AS \"Resolved\" FROM v_cycle_time_rft_to_done WHERE project_key IN ($project) AND date_trunc('quarter', resolved_at) = '$quarter'::date ORDER BY hours_rft_to_done DESC LIMIT 25",
           "format": "table",
           "refId": "A"
         }
@@ -316,7 +316,7 @@
       "options": {
         "sortBy": [
           {
-            "displayName": "Hours (RFT→Done)",
+            "displayName": "Hours (RFT\u2192Done)",
             "desc": true
           }
         ]
@@ -331,7 +331,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Hours (RFT→Done)"
+              "options": "Hours (RFT\u2192Done)"
             },
             "properties": [
               {
@@ -374,7 +374,7 @@
     {
       "id": 7,
       "type": "timeseries",
-      "title": "Cycle Time: In Progress → Ready For Testing (hours)",
+      "title": "Cycle Time: In Progress \u2192 Ready For Testing (hours)",
       "description": "Average, median and 85th percentile of the time issues spend in active development before reaching Ready For Testing.",
       "gridPos": {
         "h": 9,
@@ -419,7 +419,7 @@
     {
       "id": 8,
       "type": "barchart",
-      "title": "Avg Cycle Time (In Progress → RFT) by Issue Type",
+      "title": "Avg Cycle Time (In Progress \u2192 RFT) by Issue Type",
       "description": "Average development time per issue type. Helps identify which types take longest to develop.",
       "gridPos": {
         "h": 8,
@@ -462,7 +462,7 @@
     {
       "id": 9,
       "type": "barchart",
-      "title": "Avg Cycle Time (In Progress → RFT) by Priority",
+      "title": "Avg Cycle Time (In Progress \u2192 RFT) by Priority",
       "description": "Average development time per priority. High-priority issues should move faster.",
       "gridPos": {
         "h": 8,
@@ -505,7 +505,7 @@
     {
       "id": 10,
       "type": "table",
-      "title": "Slowest Issues (In Progress → RFT)",
+      "title": "Slowest Issues (In Progress \u2192 RFT)",
       "description": "Issues that spent the longest in active development before reaching Ready For Testing.",
       "gridPos": {
         "h": 8,
@@ -523,7 +523,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT issue_key AS \"Key\", issue_type AS \"Type\", priority AS \"Priority\", COALESCE(story_points::text, '-') AS \"Points\", ROUND(hours_in_progress_to_rft::numeric, 1) AS \"Hours (IP→RFT)\", TO_CHAR(entered_in_progress_at, 'YYYY-MM-DD') AS \"In Progress\", TO_CHAR(entered_rft_at, 'YYYY-MM-DD') AS \"Reached RFT\" FROM v_cycle_time_in_progress_to_rft WHERE project_key IN ($project) AND date_trunc('quarter', entered_rft_at) = '$quarter'::date ORDER BY hours_in_progress_to_rft DESC LIMIT 25",
+          "rawSql": "SELECT issue_key AS \"Key\", issue_type AS \"Type\", priority AS \"Priority\", COALESCE(story_points::text, '-') AS \"Points\", ROUND(hours_in_progress_to_rft::numeric, 1) AS \"Hours (IP\u2192RFT)\", TO_CHAR(entered_in_progress_at, 'YYYY-MM-DD') AS \"In Progress\", TO_CHAR(entered_rft_at, 'YYYY-MM-DD') AS \"Reached RFT\" FROM v_cycle_time_in_progress_to_rft WHERE project_key IN ($project) AND date_trunc('quarter', entered_rft_at) = '$quarter'::date ORDER BY hours_in_progress_to_rft DESC LIMIT 25",
           "format": "table",
           "refId": "A"
         }
@@ -531,7 +531,7 @@
       "options": {
         "sortBy": [
           {
-            "displayName": "Hours (IP→RFT)",
+            "displayName": "Hours (IP\u2192RFT)",
             "desc": true
           }
         ]
@@ -546,7 +546,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Hours (IP→RFT)"
+              "options": "Hours (IP\u2192RFT)"
             },
             "properties": [
               {
@@ -687,6 +687,16 @@
     {
       "title": "Sprint Detail",
       "url": "/d/jira-sprint-detail",
+      "type": "link",
+      "icon": "external link",
+      "targetBlank": false,
+      "includeVars": true,
+      "keepTime": false,
+      "asDropdown": false
+    },
+    {
+      "title": "PROD Alignment",
+      "url": "/d/jira-prod-alignment",
       "type": "link",
       "icon": "external link",
       "targetBlank": false,

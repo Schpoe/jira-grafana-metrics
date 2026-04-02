@@ -62,7 +62,7 @@
     {
       "id": 2,
       "type": "barchart",
-      "title": "Avg Cycle Time (RFT → Done) per Assignee",
+      "title": "Avg Cycle Time (RFT \u2192 Done) per Assignee",
       "description": "Average hours from Ready For Testing to Done per assignee, over the selected time range.",
       "gridPos": {
         "h": 8,
@@ -237,7 +237,7 @@
     {
       "id": 6,
       "type": "table",
-      "title": "Assignee Detail — Selected Period",
+      "title": "Assignee Detail \u2014 Selected Period",
       "description": "Per-person summary: issues completed, story points delivered, and avg cycle time. Filtered by selected quarter, or last 90 days when All is selected.",
       "gridPos": {
         "h": 8,
@@ -419,6 +419,16 @@
     {
       "title": "Sprint Detail",
       "url": "/d/jira-sprint-detail",
+      "type": "link",
+      "icon": "external link",
+      "targetBlank": false,
+      "includeVars": true,
+      "keepTime": false,
+      "asDropdown": false
+    },
+    {
+      "title": "PROD Alignment",
+      "url": "/d/jira-prod-alignment",
       "type": "link",
       "icon": "external link",
       "targetBlank": false,

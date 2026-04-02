@@ -18,7 +18,7 @@
     {
       "id": 1,
       "type": "barchart",
-      "title": "Sprint Velocity — Committed vs Delivered (Story Points)",
+      "title": "Sprint Velocity \u2014 Committed vs Delivered (Story Points)",
       "gridPos": {
         "h": 9,
         "w": 24,
@@ -96,7 +96,7 @@
       "id": 2,
       "type": "barchart",
       "title": "Delivery % per Sprint",
-      "description": "Percentage of committed story points actually delivered. Green ≥ 90%, yellow ≥ 70%, red < 70%.",
+      "description": "Percentage of committed story points actually delivered. Green \u2265 90%, yellow \u2265 70%, red < 70%.",
       "gridPos": {
         "h": 8,
         "w": 12,
@@ -157,7 +157,7 @@
     {
       "id": 3,
       "type": "barchart",
-      "title": "Sprint Issue Count — Committed vs Delivered",
+      "title": "Sprint Issue Count \u2014 Committed vs Delivered",
       "description": "Number of issues scoped (committed) vs completed (delivered) per sprint. Complements the story points velocity chart.",
       "gridPos": {
         "h": 8,
@@ -444,6 +444,16 @@
     {
       "title": "Sprint Detail",
       "url": "/d/jira-sprint-detail",
+      "type": "link",
+      "icon": "external link",
+      "targetBlank": false,
+      "includeVars": true,
+      "keepTime": false,
+      "asDropdown": false
+    },
+    {
+      "title": "PROD Alignment",
+      "url": "/d/jira-prod-alignment",
       "type": "link",
       "icon": "external link",
       "targetBlank": false,

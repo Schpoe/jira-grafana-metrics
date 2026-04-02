@@ -430,7 +430,7 @@
     {
       "id": 7,
       "type": "table",
-      "title": "Open Bugs — Critical & High",
+      "title": "Open Bugs \u2014 Critical & High",
       "description": "All open critical and high priority bugs, sorted by age.",
       "gridPos": {
         "h": 9,
@@ -738,6 +738,16 @@
     {
       "title": "Sprint Detail",
       "url": "/d/jira-sprint-detail",
+      "type": "link",
+      "icon": "external link",
+      "targetBlank": false,
+      "includeVars": true,
+      "keepTime": false,
+      "asDropdown": false
+    },
+    {
+      "title": "PROD Alignment",
+      "url": "/d/jira-prod-alignment",
       "type": "link",
       "icon": "external link",
       "targetBlank": false,

@@ -297,7 +297,7 @@ def sync_issues(conn, sync_id, since=None, last_sync_duration=None, resume_token
     fields = [
         "summary", "issuetype", "status", "priority", STORY_POINTS_FIELD,
         "assignee", "reporter", "created", "updated", "resolutiondate",
-        "fixVersions", "labels", "project", "parent",
+        "fixVersions", "labels", "project", "parent", "issuelinks",
     ]
 
     while True:
@@ -309,6 +309,7 @@ def sync_issues(conn, sync_id, since=None, last_sync_duration=None, resume_token
 
         issue_rows = []
         transition_rows = []
+        link_rows = []
 
         for issue in issues:
             f = issue["fields"]
@@ -344,6 +345,23 @@ def sync_issues(conn, sync_id, since=None, last_sync_duration=None, resume_token
                 labels,
                 epic_key,
             ))
+
+            # Extract all issue links (both directions)
+            for link in f.get("issuelinks", []):
+                link_type = link.get("type", {}).get("name", "")
+                for direction, side_key in [("outward", "outwardIssue"), ("inward", "inwardIssue")]:
+                    if side_key not in link:
+                        continue
+                    linked = link[side_key]
+                    label = link.get("type", {}).get(direction, "")
+                    link_rows.append((
+                        key,
+                        linked["key"],
+                        linked.get("fields", {}).get("summary"),
+                        link_type,
+                        label,
+                        direction,
+                    ))
 
             transition_rows.extend(_fetch_changelog(key))
 
@@ -388,6 +406,28 @@ def sync_issues(conn, sync_id, since=None, last_sync_duration=None, resume_token
                     ON CONFLICT (issue_key, transitioned_at, to_status) DO NOTHING
                     """,
                     transition_rows,
+                )
+
+            # Delete existing links for all issues on this page (handles removed links),
+            # then re-insert current links.
+            synced_keys = [row[0] for row in issue_rows]
+            cur.execute(
+                "DELETE FROM issue_links WHERE from_key = ANY(%s)",
+                (synced_keys,),
+            )
+            if link_rows:
+                execute_values(
+                    cur,
+                    """
+                    INSERT INTO issue_links
+                        (from_key, to_key, to_summary, link_type, link_label, direction)
+                    VALUES %s
+                    ON CONFLICT (from_key, to_key, link_type, direction) DO UPDATE SET
+                        to_summary = EXCLUDED.to_summary,
+                        link_label = EXCLUDED.link_label,
+                        synced_at  = NOW()
+                    """,
+                    link_rows,
                 )
 
             # Save checkpoint after every page so a restart can resume here

@@ -1,0 +1,633 @@
+{
+  "id": null,
+  "uid": "jira-prod-alignment",
+  "title": "PROD Alignment",
+  "tags": [
+    "jira",
+    "prod"
+  ],
+  "timezone": "browser",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "5m",
+  "time": {
+    "from": "now-1y",
+    "to": "now"
+  },
+  "links": [
+    {
+      "title": "Home",
+      "url": "/d/jira-home",
+      "type": "link",
+      "icon": "home",
+      "targetBlank": false,
+      "includeVars": true,
+      "keepTime": false,
+      "asDropdown": false
+    },
+    {
+      "title": "Sprint Health",
+      "url": "/d/jira-sprint-health",
+      "type": "link",
+      "icon": "external link",
+      "targetBlank": false,
+      "includeVars": true,
+      "keepTime": false,
+      "asDropdown": false
+    },
+    {
+      "title": "Flow & Cycle Time",
+      "url": "/d/jira-flow-cycle-time",
+      "type": "link",
+      "icon": "external link",
+      "targetBlank": false,
+      "includeVars": true,
+      "keepTime": false,
+      "asDropdown": false
+    },
+    {
+      "title": "Quality & Bugs",
+      "url": "/d/jira-quality-bugs",
+      "type": "link",
+      "icon": "external link",
+      "targetBlank": false,
+      "includeVars": true,
+      "keepTime": false,
+      "asDropdown": false
+    },
+    {
+      "title": "Team Overview",
+      "url": "/d/jira-team-overview",
+      "type": "link",
+      "icon": "external link",
+      "targetBlank": false,
+      "includeVars": true,
+      "keepTime": false,
+      "asDropdown": false
+    },
+    {
+      "title": "PO KPIs",
+      "url": "/d/jira-po-kpis",
+      "type": "link",
+      "icon": "external link",
+      "targetBlank": false,
+      "includeVars": true,
+      "keepTime": false,
+      "asDropdown": false
+    },
+    {
+      "title": "Sprint Detail",
+      "url": "/d/jira-sprint-detail",
+      "type": "link",
+      "icon": "external link",
+      "targetBlank": false,
+      "includeVars": true,
+      "keepTime": false,
+      "asDropdown": false
+    },
+    {
+      "title": "PROD Alignment",
+      "url": "/d/jira-prod-alignment",
+      "type": "link",
+      "icon": "external link",
+      "targetBlank": false,
+      "includeVars": true,
+      "keepTime": false,
+      "asDropdown": false
+    }
+  ],
+  "panels": [
+    {
+      "id": 1,
+      "type": "text",
+      "title": "",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "## PROD Item Overview"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "PROD Items Linked",
+      "description": "Distinct PROD items referenced by at least one linked Epic",
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 1
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT COUNT(DISTINCT to_key) FROM v_prod_epic_progress WHERE ($project = 'ALL' OR project_key = ANY(string_to_array('$project', ',')))",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "background",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          },
+          "unit": "short",
+          "custom": {}
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Epics Linked to PROD",
+      "description": "Epics implementing at least one PROD item",
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 1
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT COUNT(DISTINCT epic_key) FROM v_prod_epic_progress WHERE ($project = 'ALL' OR project_key = ANY(string_to_array('$project', ',')))",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "background",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "green"
+          },
+          "unit": "short",
+          "custom": {}
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Epics Without PROD Link",
+      "description": "Epics with no implements link to any PROD item",
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 1
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT COUNT(*) FROM issues WHERE issue_type='Epic' AND key NOT IN (SELECT DISTINCT from_key FROM issue_links WHERE to_key LIKE 'PROD-%') AND ($project = 'ALL' OR project_key = ANY(string_to_array('$project', ',')))",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "background",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "orange"
+          },
+          "unit": "short",
+          "custom": {}
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "Avg Completion %",
+      "description": "Average PROD item completion by story points",
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 1
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT ROUND(AVG(completion_pct_sp),1) FROM v_prod_item_progress WHERE prod_key IN (SELECT DISTINCT to_key FROM v_prod_epic_progress WHERE ($project = 'ALL' OR project_key = ANY(string_to_array('$project', ','))))",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "background",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "purple"
+          },
+          "unit": "percent",
+          "custom": {}
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 6,
+      "type": "text",
+      "title": "",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 5
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "## PROD Items Progress"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      }
+    },
+    {
+      "id": 7,
+      "type": "table",
+      "title": "All PROD Items",
+      "description": "PROD items with linked Epics filtered by project. Completion based on child issues of linked Epics.",
+      "gridPos": {
+        "h": 12,
+        "w": 24,
+        "x": 0,
+        "y": 6
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT\n  p.prod_key                       AS \"PROD Key\",\n  p.prod_summary                   AS \"PROD Item\",\n  p.epic_count                     AS \"Epics\",\n  p.total_issues                   AS \"Total Issues\",\n  p.done_issues                    AS \"Done\",\n  p.total_sp                       AS \"Total SP\",\n  p.done_sp                        AS \"Done SP\",\n  COALESCE(p.completion_pct_sp,0)  AS \"Completion %\"\nFROM v_prod_item_progress p\nWHERE p.prod_key IN (\n  SELECT DISTINCT to_key FROM v_prod_epic_progress WHERE ($project = 'ALL' OR project_key = ANY(string_to_array('$project', ',')))\n)\nORDER BY p.completion_pct_sp DESC NULLS LAST",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "sortBy": []
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "left"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Completion %"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "custom.displayMode",
+                "value": "basic"
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "red",
+                      "value": null
+                    },
+                    {
+                      "color": "orange",
+                      "value": 25
+                    },
+                    {
+                      "color": "yellow",
+                      "value": 50
+                    },
+                    {
+                      "color": "green",
+                      "value": 75
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "thresholds"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 8,
+      "type": "text",
+      "title": "",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 18
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "## Epic Breakdown \u2013 $prod_item"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      }
+    },
+    {
+      "id": 9,
+      "type": "table",
+      "title": "Linked Epics for $prod_item",
+      "description": "All Epics implementing the selected PROD item, with child issue completion.",
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 19
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT\n  e.epic_key                       AS \"Epic\",\n  e.epic_summary                   AS \"Epic Summary\",\n  e.project_key                    AS \"Project\",\n  e.epic_status                    AS \"Status\",\n  e.total_issues                   AS \"Total Issues\",\n  e.done_issues                    AS \"Done\",\n  e.total_sp                       AS \"Total SP\",\n  e.done_sp                        AS \"Done SP\",\n  COALESCE(e.completion_pct,0)     AS \"Completion %\"\nFROM v_prod_epic_progress e\nWHERE e.prod_key = '$prod_item'\nORDER BY e.completion_pct DESC NULLS LAST",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "sortBy": []
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "left"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Completion %"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "custom.displayMode",
+                "value": "basic"
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "red",
+                      "value": null
+                    },
+                    {
+                      "color": "orange",
+                      "value": 25
+                    },
+                    {
+                      "color": "yellow",
+                      "value": 50
+                    },
+                    {
+                      "color": "green",
+                      "value": 75
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "thresholds"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 10,
+      "type": "text",
+      "title": "",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 29
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "## Coverage Gaps \u2013 Epics Without PROD Link"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      }
+    },
+    {
+      "id": 11,
+      "type": "table",
+      "title": "Epics Without PROD Link",
+      "description": "Epics that have no implements link to any PROD item.",
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 30
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT\n  i.key                            AS \"Epic Key\",\n  i.summary                        AS \"Summary\",\n  i.project_key                    AS \"Project\",\n  i.status                         AS \"Status\",\n  i.story_points                   AS \"SP\",\n  TO_CHAR(i.created_at,'YYYY-MM-DD') AS \"Created\"\nFROM issues i\nWHERE i.issue_type = 'Epic'\n  AND i.key NOT IN (SELECT DISTINCT from_key FROM issue_links WHERE to_key LIKE 'PROD-%')\n  AND ($project = 'ALL' OR project_key = ANY(string_to_array('$project', ',')))\nORDER BY i.created_at DESC",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "sortBy": []
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "left"
+          }
+        },
+        "overrides": []
+      }
+    }
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "project",
+        "label": "Project",
+        "type": "query",
+        "datasource": {
+          "type": "postgres",
+          "uid": "jira-metrics-pg"
+        },
+        "query": "SELECT 'ALL' AS __text, 'ALL' AS __value\nUNION ALL\nSELECT name AS __text, key AS __value FROM projects ORDER BY 1",
+        "multi": true,
+        "includeAll": true,
+        "allValue": "ALL",
+        "current": {},
+        "refresh": 1,
+        "sort": 0,
+        "hide": 0,
+        "options": []
+      },
+      {
+        "name": "prod_item",
+        "label": "PROD Item",
+        "type": "query",
+        "datasource": {
+          "type": "postgres",
+          "uid": "jira-metrics-pg"
+        },
+        "query": "SELECT to_key || ' \u2013 ' || COALESCE(MAX(to_summary), to_key) AS __text, to_key AS __value\nFROM issue_links\nWHERE to_key LIKE 'PROD-%'\nGROUP BY to_key\nORDER BY to_key",
+        "multi": false,
+        "includeAll": false,
+        "current": {},
+        "refresh": 2,
+        "sort": 1,
+        "hide": 0,
+        "options": []
+      }
+    ]
+  },
+  "annotations": {
+    "list": []
+  },
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0
+}

@@ -1,7 +1,7 @@
 {
   "id": null,
   "uid": "jira-home",
-  "title": "Jira Metrics — Home",
+  "title": "Jira Metrics \u2014 Home",
   "tags": [
     "jira",
     "home"
@@ -84,6 +84,16 @@
       "includeVars": true,
       "keepTime": false,
       "asDropdown": false
+    },
+    {
+      "title": "PROD Alignment",
+      "url": "/d/jira-prod-alignment",
+      "type": "link",
+      "icon": "external link",
+      "targetBlank": false,
+      "includeVars": true,
+      "keepTime": false,
+      "asDropdown": false
     }
   ],
   "panels": [
@@ -114,7 +124,7 @@
       },
       "options": {
         "mode": "markdown",
-        "content": "**[🏋 Sprint Health](/d/jira-sprint-health)**  — Velocity, delivery %, scope changes\n\n**[⏱ Flow & Cycle Time](/d/jira-flow-cycle-time)**  — RFT→Done, throughput, WIP\n\n**[🐛 Quality & Bugs](/d/jira-quality-bugs)**  — Bug rates, priorities, releases\n\n**[👥 Team Overview](/d/jira-team-overview)**  — Per-assignee metrics"
+        "content": "**[\ud83c\udfcb Sprint Health](/d/jira-sprint-health)**  \u2014 Velocity, delivery %, scope changes\n\n**[\u23f1 Flow & Cycle Time](/d/jira-flow-cycle-time)**  \u2014 RFT\u2192Done, throughput, WIP\n\n**[\ud83d\udc1b Quality & Bugs](/d/jira-quality-bugs)**  \u2014 Bug rates, priorities, releases\n\n**[\ud83d\udc65 Team Overview](/d/jira-team-overview)**  \u2014 Per-assignee metrics"
       }
     },
     {
@@ -302,7 +312,7 @@
     {
       "id": 6,
       "type": "stat",
-      "title": "Avg Cycle Time (RFT → Done)",
+      "title": "Avg Cycle Time (RFT \u2192 Done)",
       "description": "Average hours from Ready For Testing to Done this quarter.",
       "gridPos": {
         "h": 5,
@@ -484,7 +494,7 @@
     {
       "id": 9,
       "type": "barchart",
-      "title": "Sprint Velocity — Last 10 Closed Sprints",
+      "title": "Sprint Velocity \u2014 Last 10 Closed Sprints",
       "description": "Story points committed vs delivered for the most recently closed sprints.",
       "gridPos": {
         "h": 8,
@@ -560,7 +570,7 @@
     {
       "id": 10,
       "type": "timeseries",
-      "title": "Weekly Bug Creation — Last 12 Weeks",
+      "title": "Weekly Bug Creation \u2014 Last 12 Weeks",
       "description": "New bugs reported per week broken down by priority.",
       "gridPos": {
         "h": 8,
@@ -706,7 +716,7 @@
           "type": "postgres",
           "uid": "jira-metrics-pg"
         },
-        "query": "SELECT CONCAT(s.name, CASE WHEN s.state = 'active' THEN ' ★' ELSE '' END) AS __text, s.id::text AS __value FROM sprints s WHERE s.id IN (SELECT DISTINCT si.sprint_id FROM sprint_issues si JOIN issues i ON i.key = si.issue_key WHERE i.project_key IN ($project)) ORDER BY s.start_date DESC NULLS LAST LIMIT 40",
+        "query": "SELECT CONCAT(s.name, CASE WHEN s.state = 'active' THEN ' \u2605' ELSE '' END) AS __text, s.id::text AS __value FROM sprints s WHERE s.id IN (SELECT DISTINCT si.sprint_id FROM sprint_issues si JOIN issues i ON i.key = si.issue_key WHERE i.project_key IN ($project)) ORDER BY s.start_date DESC NULLS LAST LIMIT 40",
         "refresh": 2,
         "includeAll": false,
         "multi": false,

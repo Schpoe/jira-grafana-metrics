@@ -84,6 +84,16 @@
       "includeVars": true,
       "keepTime": false,
       "asDropdown": false
+    },
+    {
+      "title": "PROD Alignment",
+      "url": "/d/jira-prod-alignment",
+      "type": "link",
+      "icon": "external link",
+      "targetBlank": false,
+      "includeVars": true,
+      "keepTime": false,
+      "asDropdown": false
     }
   ],
   "panels": [
@@ -146,7 +156,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT COALESCE(s.goal, '— No sprint goal defined —') AS \"Sprint Goal\"\nFROM sprints s WHERE s.id = $sprint::bigint",
+          "rawSql": "SELECT COALESCE(s.goal, '\u2014 No sprint goal defined \u2014') AS \"Sprint Goal\"\nFROM sprints s WHERE s.id = $sprint::bigint",
           "format": "table",
           "refId": "A"
         }
@@ -236,7 +246,7 @@
       "id": 5,
       "type": "stat",
       "title": "Unplanned",
-      "description": "SP added after sprint start. Target ≤ 10% of committed.",
+      "description": "SP added after sprint start. Target \u2264 10% of committed.",
       "gridPos": {
         "h": 4,
         "w": 4,
@@ -302,7 +312,7 @@
       "id": 6,
       "type": "stat",
       "title": "Total in Sprint",
-      "description": "All active SP (committed + unplanned – removed).",
+      "description": "All active SP (committed + unplanned \u2013 removed).",
       "gridPos": {
         "h": 4,
         "w": 4,
@@ -402,7 +412,7 @@
       "id": 8,
       "type": "stat",
       "title": "Delivery %",
-      "description": "Completed / Committed SP. Target ≥ 80%.",
+      "description": "Completed / Committed SP. Target \u2265 80%.",
       "gridPos": {
         "h": 4,
         "w": 4,
@@ -476,7 +486,7 @@
       },
       "options": {
         "mode": "markdown",
-        "content": "## Story Readiness  *(Stories & Tasks — excludes Epics and Sub-tasks. Acceptance Criteria requires a custom Jira field — contact your admin for the field ID.)*"
+        "content": "## Story Readiness  *(Stories & Tasks \u2014 excludes Epics and Sub-tasks. Acceptance Criteria requires a custom Jira field \u2014 contact your admin for the field ID.)*"
       },
       "fieldConfig": {
         "defaults": {},
@@ -669,7 +679,7 @@
       "id": 13,
       "type": "stat",
       "title": "Readiness %",
-      "description": "% of Stories/Tasks that have SP + Epic. Target ≥ 90%.",
+      "description": "% of Stories/Tasks that have SP + Epic. Target \u2265 90%.",
       "gridPos": {
         "h": 4,
         "w": 4,
@@ -752,7 +762,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT i.key AS \"Key\", i.summary AS \"Summary\", i.issue_type AS \"Type\",\n  i.assignee AS \"Assignee\",\n  CASE WHEN i.story_points IS NULL OR i.story_points=0 THEN '❌' ELSE '✅' END AS \"SP\",\n  CASE WHEN i.epic_key IS NOT NULL THEN '✅' ELSE '❌' END AS \"Epic\",\n  COALESCE(i.epic_key,'—') AS \"Epic Key\"\nFROM sprint_issues si JOIN issues i ON i.key=si.issue_key\nWHERE si.sprint_id=$sprint::bigint AND si.removed_at IS NULL AND i.issue_type NOT IN ('Epic','Sub-task')\n  AND ((i.story_points IS NULL OR i.story_points=0) OR i.epic_key IS NULL)\nORDER BY\n  CASE i.priority WHEN 'Blocker' THEN 1 WHEN 'Critical' THEN 2 WHEN 'High' THEN 3 WHEN 'Medium' THEN 4 ELSE 5 END",
+          "rawSql": "SELECT i.key AS \"Key\", i.summary AS \"Summary\", i.issue_type AS \"Type\",\n  i.assignee AS \"Assignee\",\n  CASE WHEN i.story_points IS NULL OR i.story_points=0 THEN '\u274c' ELSE '\u2705' END AS \"SP\",\n  CASE WHEN i.epic_key IS NOT NULL THEN '\u2705' ELSE '\u274c' END AS \"Epic\",\n  COALESCE(i.epic_key,'\u2014') AS \"Epic Key\"\nFROM sprint_issues si JOIN issues i ON i.key=si.issue_key\nWHERE si.sprint_id=$sprint::bigint AND si.removed_at IS NULL AND i.issue_type NOT IN ('Epic','Sub-task')\n  AND ((i.story_points IS NULL OR i.story_points=0) OR i.epic_key IS NULL)\nORDER BY\n  CASE i.priority WHEN 'Blocker' THEN 1 WHEN 'Critical' THEN 2 WHEN 'High' THEN 3 WHEN 'Medium' THEN 4 ELSE 5 END",
           "format": "table",
           "refId": "A"
         }
@@ -866,7 +876,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT i.key AS \"Key\", i.summary AS \"Summary\", i.issue_type AS \"Type\",\n  i.priority AS \"Priority\",\n  COALESCE(i.assignee,'Unassigned') AS \"Assignee\",\n  i.status AS \"Status\",\n  COALESCE(si.story_points_at_add::text, i.story_points::text,'—') AS \"SP\",\n  COALESCE(i.epic_key,'—') AS \"Epic\",\n  CASE WHEN si.was_in_initial_scope THEN 'Committed' ELSE 'Unplanned' END AS \"Scope\",\n  CASE WHEN si.removed_at IS NOT NULL THEN '✕' ELSE '' END AS \"Rmvd\"\nFROM sprint_issues si JOIN issues i ON i.key=si.issue_key\nWHERE si.sprint_id=$sprint::bigint\nORDER BY\n  CASE WHEN si.removed_at IS NOT NULL THEN 2 ELSE 1 END,\n  CASE i.status_category WHEN 'Done' THEN 3 WHEN 'In Progress' THEN 1 ELSE 2 END,\n  CASE i.priority WHEN 'Blocker' THEN 1 WHEN 'Critical' THEN 2 WHEN 'High' THEN 3 WHEN 'Medium' THEN 4 ELSE 5 END",
+          "rawSql": "SELECT i.key AS \"Key\", i.summary AS \"Summary\", i.issue_type AS \"Type\",\n  i.priority AS \"Priority\",\n  COALESCE(i.assignee,'Unassigned') AS \"Assignee\",\n  i.status AS \"Status\",\n  COALESCE(si.story_points_at_add::text, i.story_points::text,'\u2014') AS \"SP\",\n  COALESCE(i.epic_key,'\u2014') AS \"Epic\",\n  CASE WHEN si.was_in_initial_scope THEN 'Committed' ELSE 'Unplanned' END AS \"Scope\",\n  CASE WHEN si.removed_at IS NOT NULL THEN '\u2715' ELSE '' END AS \"Rmvd\"\nFROM sprint_issues si JOIN issues i ON i.key=si.issue_key\nWHERE si.sprint_id=$sprint::bigint\nORDER BY\n  CASE WHEN si.removed_at IS NOT NULL THEN 2 ELSE 1 END,\n  CASE i.status_category WHEN 'Done' THEN 3 WHEN 'In Progress' THEN 1 ELSE 2 END,\n  CASE i.priority WHEN 'Blocker' THEN 1 WHEN 'Critical' THEN 2 WHEN 'High' THEN 3 WHEN 'Medium' THEN 4 ELSE 5 END",
           "format": "table",
           "refId": "A"
         }
@@ -946,7 +956,7 @@
           "type": "postgres",
           "uid": "jira-metrics-pg"
         },
-        "query": "SELECT CONCAT(s.name, CASE WHEN s.state = 'active' THEN ' ★' ELSE '' END) AS __text, s.id::text AS __value FROM sprints s WHERE s.id IN (SELECT DISTINCT si.sprint_id FROM sprint_issues si JOIN issues i ON i.key = si.issue_key WHERE i.project_key IN ($project)) AND date_trunc('quarter', COALESCE(s.complete_date, s.start_date)) = '$quarter'::date ORDER BY s.start_date DESC NULLS LAST",
+        "query": "SELECT CONCAT(s.name, CASE WHEN s.state = 'active' THEN ' \u2605' ELSE '' END) AS __text, s.id::text AS __value FROM sprints s WHERE s.id IN (SELECT DISTINCT si.sprint_id FROM sprint_issues si JOIN issues i ON i.key = si.issue_key WHERE i.project_key IN ($project)) AND date_trunc('quarter', COALESCE(s.complete_date, s.start_date)) = '$quarter'::date ORDER BY s.start_date DESC NULLS LAST",
         "refresh": 2,
         "includeAll": false,
         "multi": false,
