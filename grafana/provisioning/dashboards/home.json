@@ -161,7 +161,7 @@
       "id": 4,
       "type": "stat",
       "title": "Avg Delivery %",
-      "description": "Average delivery rate across the last 5 closed sprints (story points delivered / committed).",
+      "description": "Story points delivered vs committed for the selected sprint.",
       "gridPos": {
         "h": 5,
         "w": 4,
@@ -178,7 +178,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT ROUND(AVG(delivery_pct)::numeric, 1) AS value FROM (SELECT delivery_pct FROM v_planning_deviation WHERE state = 'closed' AND sprint_id IN (SELECT DISTINCT si.sprint_id FROM sprint_issues si JOIN issues i ON i.key = si.issue_key WHERE i.project_key IN ($project)) ORDER BY complete_date DESC NULLS LAST LIMIT 5) t",
+          "rawSql": "SELECT COALESCE(ROUND(delivery_pct::numeric, 1), 0) AS value FROM v_planning_deviation WHERE sprint_id = $sprint::bigint",
           "format": "table",
           "refId": "A"
         }
@@ -358,8 +358,8 @@
     {
       "id": 7,
       "type": "stat",
-      "title": "Issues Completed This Quarter",
-      "description": "Total issues resolved in the current quarter.",
+      "title": "Issues Completed in Sprint",
+      "description": "Total issues with status Done in the selected sprint.",
       "gridPos": {
         "h": 5,
         "w": 4,
@@ -376,7 +376,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT COUNT(*) AS value FROM issues WHERE project_key IN ($project) AND status_category = 'Done' AND date_trunc('quarter', resolved_at) = '$quarter'::date",
+          "rawSql": "SELECT COUNT(*) AS value FROM issues i JOIN sprint_issues si ON si.issue_key = i.key WHERE i.project_key IN ($project) AND si.sprint_id = $sprint::bigint AND i.status_category = 'Done'",
           "format": "table",
           "refId": "A"
         }
@@ -686,6 +686,22 @@
         "multi": true,
         "allValue": null,
         "sort": 1,
+        "hide": 0
+      },
+      {
+        "name": "sprint",
+        "label": "Sprint",
+        "type": "query",
+        "datasource": {
+          "type": "postgres",
+          "uid": "jira-metrics-pg"
+        },
+        "query": "SELECT CONCAT(s.name, CASE WHEN s.state = 'active' THEN ' ★' ELSE '' END) AS __text, s.id::text AS __value FROM sprints s WHERE s.id IN (SELECT DISTINCT si.sprint_id FROM sprint_issues si JOIN issues i ON i.key = si.issue_key WHERE i.project_key IN ($project)) ORDER BY s.start_date DESC NULLS LAST LIMIT 40",
+        "refresh": 2,
+        "includeAll": false,
+        "multi": false,
+        "allValue": null,
+        "sort": 0,
         "hide": 0
       },
       {
