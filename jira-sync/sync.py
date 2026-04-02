@@ -747,6 +747,111 @@ def sync_releases(conn):
     log.info("Releases synced: %d", len(rows))
 
 
+def sync_sprint_reports(conn):
+    """Fetch Jira sprint reports for closed sprints and update scope change data.
+
+    Jira's sprint report exposes which issues were added after sprint start
+    (issueKeysAddedDuringSprint) and which were removed mid-sprint (puntedIssues).
+    This data is not available from the regular sprint/issue APIs.
+
+    Already-processed sprints are skipped via report_synced_at on the sprints table.
+    """
+    log.info("Syncing sprint reports")
+
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT id, board_id, complete_date
+            FROM sprints
+            WHERE state = 'closed'
+              AND report_synced_at IS NULL
+              AND board_id IS NOT NULL
+            ORDER BY complete_date DESC NULLS LAST
+            """
+        )
+        pending = cur.fetchall()
+
+    log.info("Found %d closed sprints without report data", len(pending))
+    synced = 0
+
+    for sprint_id, board_id, complete_date in pending:
+        try:
+            data = jira_get(
+                f"agile/1.0/board/{board_id}/report",
+                params={"sprintId": sprint_id},
+            )
+        except Exception as exc:
+            log.warning("Sprint %d report unavailable (board %d): %s", sprint_id, board_id, exc)
+            # Mark as synced anyway so we don't retry a permanently broken sprint
+            with conn.cursor() as cur:
+                cur.execute(
+                    "UPDATE sprints SET report_synced_at = NOW() WHERE id = %s",
+                    (sprint_id,),
+                )
+            conn.commit()
+            continue
+
+        # Issues added after sprint start: dict {issue_key: True}
+        added_keys = list(data.get("issueKeysAddedDuringSprint", {}).keys())
+
+        # Issues removed/punted mid-sprint: list of issue objects
+        punted_keys = [i["key"] for i in data.get("puntedIssues", [])]
+
+        removed_ts = complete_date or datetime.now(timezone.utc)
+
+        with conn.cursor() as cur:
+            # Mark added-during-sprint issues as unplanned (not initial scope)
+            if added_keys:
+                cur.execute(
+                    """
+                    UPDATE sprint_issues
+                       SET was_in_initial_scope = FALSE
+                     WHERE sprint_id = %s AND issue_key = ANY(%s)
+                    """,
+                    (sprint_id, added_keys),
+                )
+
+            # Mark punted issues as removed; insert if missing but only when
+            # the issue key already exists in our issues table (FK constraint).
+            if punted_keys:
+                cur.execute(
+                    """
+                    UPDATE sprint_issues
+                       SET removed_at = COALESCE(removed_at, %s)
+                     WHERE sprint_id = %s AND issue_key = ANY(%s)
+                    """,
+                    (removed_ts, sprint_id, punted_keys),
+                )
+                cur.execute(
+                    """
+                    INSERT INTO sprint_issues
+                        (sprint_id, issue_key, was_in_initial_scope, removed_at)
+                    SELECT %s, i.key, TRUE, %s
+                    FROM issues i
+                    WHERE i.key = ANY(%s)
+                      AND NOT EXISTS (
+                          SELECT 1 FROM sprint_issues si2
+                          WHERE si2.sprint_id = %s AND si2.issue_key = i.key
+                      )
+                    ON CONFLICT DO NOTHING
+                    """,
+                    (sprint_id, removed_ts, punted_keys, sprint_id),
+                )
+
+            cur.execute(
+                "UPDATE sprints SET report_synced_at = NOW() WHERE id = %s",
+                (sprint_id,),
+            )
+
+        conn.commit()
+        synced += 1
+        if synced % 50 == 0:
+            log.info("Sprint reports synced: %d / %d", synced, len(pending))
+
+    log.info("Sprint reports synced: %d total", synced)
+    return synced
+
+
 # ─── Entry point ─────────────────────────────────────────────────────────────
 
 def main():
@@ -811,6 +916,12 @@ def main():
     except Exception as exc:
         log.error("Sprints sync failed: %s", exc, exc_info=True)
         errors.append(f"sprints: {exc}")
+
+    try:
+        sync_sprint_reports(conn)
+    except Exception as exc:
+        log.error("Sprint reports sync failed: %s", exc, exc_info=True)
+        errors.append(f"sprint_reports: {exc}")
 
     try:
         sync_releases(conn)

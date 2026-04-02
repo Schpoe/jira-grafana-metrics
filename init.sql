@@ -14,9 +14,11 @@ CREATE TABLE IF NOT EXISTS sprints (
     start_date     TIMESTAMPTZ,
     end_date       TIMESTAMPTZ,
     complete_date  TIMESTAMPTZ,
-    goal           TEXT,
-    synced_at      TIMESTAMPTZ DEFAULT NOW()
+    goal             TEXT,
+    report_synced_at TIMESTAMPTZ,   -- set after sprint report is fetched from Jira
+    synced_at        TIMESTAMPTZ DEFAULT NOW()
 );
+ALTER TABLE sprints ADD COLUMN IF NOT EXISTS report_synced_at TIMESTAMPTZ;
 
 CREATE TABLE IF NOT EXISTS issues (
     key             TEXT PRIMARY KEY,
