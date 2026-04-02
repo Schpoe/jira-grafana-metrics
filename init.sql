@@ -120,6 +120,13 @@ CREATE INDEX IF NOT EXISTS idx_sprint_issues_issue  ON sprint_issues(issue_key);
 CREATE INDEX IF NOT EXISTS idx_releases_project    ON releases(project_key);
 CREATE INDEX IF NOT EXISTS idx_releases_date       ON releases(release_date);
 
+-- Application settings (key/value pairs written by the sync process)
+CREATE TABLE IF NOT EXISTS app_settings (
+    key        TEXT PRIMARY KEY,
+    value      TEXT,
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- Issue links (e.g., Epic "implements" PROD item)
 CREATE TABLE IF NOT EXISTS issue_links (
     from_key    TEXT NOT NULL,   -- source issue (e.g. Epic key)
@@ -275,6 +282,25 @@ LEFT JOIN sprint_snapshots start_snap
     ON start_snap.sprint_id = s.id AND start_snap.snapshot_type = 'start'
 LEFT JOIN sprint_snapshots close_snap
     ON close_snap.sprint_id = s.id AND close_snap.snapshot_type = 'close';
+
+-- Lead time: created → resolved (excludes Epics and Sub-tasks)
+CREATE OR REPLACE VIEW v_lead_time AS
+SELECT
+    key,
+    issue_type,
+    priority,
+    story_points,
+    project_key,
+    assignee,
+    summary,
+    created_at,
+    resolved_at,
+    ROUND(EXTRACT(EPOCH FROM (resolved_at - created_at)) / 3600.0,  2) AS hours_lead_time,
+    ROUND(EXTRACT(EPOCH FROM (resolved_at - created_at)) / 86400.0, 2) AS days_lead_time
+FROM issues
+WHERE resolved_at IS NOT NULL
+  AND created_at  IS NOT NULL
+  AND issue_type NOT IN ('Epic', 'Sub-task');
 
 -- PROD item progress: aggregated completion across all linked Epics + their child issues
 CREATE OR REPLACE VIEW v_prod_item_progress AS

@@ -782,6 +782,20 @@ def main():
     errors = []
 
     try:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO app_settings (key, value, updated_at)
+                VALUES ('jira_url', %s, NOW())
+                ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()
+                """,
+                (JIRA_URL,),
+            )
+        conn.commit()
+    except Exception as exc:
+        log.warning("Could not write jira_url to app_settings: %s", exc)
+
+    try:
         last_sync_start, last_sync_finish = _last_successful_sync(conn)
         last_sync_duration = (last_sync_finish - last_sync_start) if (last_sync_start and last_sync_finish) else None
         sync_projects(conn)

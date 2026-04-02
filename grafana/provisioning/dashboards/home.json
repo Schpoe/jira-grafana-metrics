@@ -693,6 +693,22 @@
   "templating": {
     "list": [
       {
+        "name": "jira_url",
+        "label": "Jira URL",
+        "type": "query",
+        "datasource": {
+          "type": "postgres",
+          "uid": "jira-metrics-pg"
+        },
+        "query": "SELECT value FROM app_settings WHERE key = 'jira_url'",
+        "hide": 2,
+        "refresh": 1,
+        "multi": false,
+        "includeAll": false,
+        "current": {},
+        "options": []
+      },
+      {
         "name": "project",
         "label": "Team / Project",
         "type": "query",

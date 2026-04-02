@@ -585,7 +585,26 @@
             "align": "left"
           }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Key"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Open in Jira",
+                    "url": "${jira_url}/browse/${__value.text}",
+                    "targetBlank": true
+                  }
+                ]
+              }
+            ]
+          }
+        ]
       }
     },
     {
@@ -709,7 +728,88 @@
             "align": "left"
           }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Key"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Open in Jira",
+                    "url": "${jira_url}/browse/${__value.text}",
+                    "targetBlank": true
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Status"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "Done": {
+                        "color": "green",
+                        "index": 0,
+                        "text": "Done"
+                      },
+                      "In Progress": {
+                        "color": "yellow",
+                        "index": 1,
+                        "text": "In Progress"
+                      },
+                      "Ready For Testing": {
+                        "color": "blue",
+                        "index": 2,
+                        "text": "Ready For Testing"
+                      },
+                      "Blocked": {
+                        "color": "red",
+                        "index": 3,
+                        "text": "Blocked"
+                      },
+                      "To Do": {
+                        "color": "text",
+                        "index": 4,
+                        "text": "To Do"
+                      },
+                      "Backlog": {
+                        "color": "text",
+                        "index": 5,
+                        "text": "Backlog"
+                      },
+                      "Reopened": {
+                        "color": "orange",
+                        "index": 6,
+                        "text": "Reopened"
+                      },
+                      "Closed": {
+                        "color": "green",
+                        "index": 7,
+                        "text": "Closed"
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.displayMode",
+                "value": "color-text"
+              }
+            ]
+          }
+        ]
       }
     },
     {
@@ -790,6 +890,22 @@
   ],
   "templating": {
     "list": [
+      {
+        "name": "jira_url",
+        "label": "Jira URL",
+        "type": "query",
+        "datasource": {
+          "type": "postgres",
+          "uid": "jira-metrics-pg"
+        },
+        "query": "SELECT value FROM app_settings WHERE key = 'jira_url'",
+        "hide": 2,
+        "refresh": 1,
+        "multi": false,
+        "includeAll": false,
+        "current": {},
+        "options": []
+      },
       {
         "name": "project",
         "label": "Team / Project",

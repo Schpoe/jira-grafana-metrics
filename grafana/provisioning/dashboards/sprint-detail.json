@@ -132,7 +132,70 @@
             "align": "left"
           }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "State"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "Done": {
+                        "color": "green",
+                        "index": 0,
+                        "text": "Done"
+                      },
+                      "In Progress": {
+                        "color": "yellow",
+                        "index": 1,
+                        "text": "In Progress"
+                      },
+                      "Ready For Testing": {
+                        "color": "blue",
+                        "index": 2,
+                        "text": "Ready For Testing"
+                      },
+                      "Blocked": {
+                        "color": "red",
+                        "index": 3,
+                        "text": "Blocked"
+                      },
+                      "To Do": {
+                        "color": "text",
+                        "index": 4,
+                        "text": "To Do"
+                      },
+                      "Backlog": {
+                        "color": "text",
+                        "index": 5,
+                        "text": "Backlog"
+                      },
+                      "Reopened": {
+                        "color": "orange",
+                        "index": 6,
+                        "text": "Reopened"
+                      },
+                      "Closed": {
+                        "color": "green",
+                        "index": 7,
+                        "text": "Closed"
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.displayMode",
+                "value": "color-text"
+              }
+            ]
+          }
+        ]
       }
     },
     {
@@ -776,7 +839,62 @@
             "align": "left"
           }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Epic"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Open in Jira",
+                    "url": "${jira_url}/browse/${__value.text}",
+                    "targetBlank": true
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Epic Key"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Open in Jira",
+                    "url": "${jira_url}/browse/${__value.text}",
+                    "targetBlank": true
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Key"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Open in Jira",
+                    "url": "${jira_url}/browse/${__value.text}",
+                    "targetBlank": true
+                  }
+                ]
+              }
+            ]
+          }
+        ]
       }
     },
     {
@@ -876,7 +994,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT i.key AS \"Key\", i.summary AS \"Summary\", i.issue_type AS \"Type\",\n  i.priority AS \"Priority\",\n  COALESCE(i.assignee,'Unassigned') AS \"Assignee\",\n  i.status AS \"Status\",\n  COALESCE(si.story_points_at_add::text, i.story_points::text,'\u2014') AS \"SP\",\n  COALESCE(i.epic_key,'\u2014') AS \"Epic\",\n  CASE WHEN si.was_in_initial_scope THEN 'Committed' ELSE 'Unplanned' END AS \"Scope\",\n  CASE WHEN si.removed_at IS NOT NULL THEN '\u2715' ELSE '' END AS \"Rmvd\"\nFROM sprint_issues si JOIN issues i ON i.key=si.issue_key\nWHERE si.sprint_id=$sprint::bigint\nORDER BY\n  CASE WHEN si.removed_at IS NOT NULL THEN 2 ELSE 1 END,\n  CASE i.status_category WHEN 'Done' THEN 3 WHEN 'In Progress' THEN 1 ELSE 2 END,\n  CASE i.priority WHEN 'Blocker' THEN 1 WHEN 'Critical' THEN 2 WHEN 'High' THEN 3 WHEN 'Medium' THEN 4 ELSE 5 END",
+          "rawSql": "SELECT i.key AS \"Key\", i.summary AS \"Summary\", i.issue_type AS \"Type\",\n  i.priority AS \"Priority\",\n  COALESCE(i.assignee,'Unassigned') AS \"Assignee\",\n  i.status AS \"Status\",\n  COALESCE(si.story_points_at_add::text, i.story_points::text,'\u2014') AS \"SP\",\n  COALESCE(i.epic_key,'\u2014') AS \"Epic\",\n  CASE WHEN si.was_in_initial_scope THEN 'Committed' ELSE 'Unplanned' END AS \"Scope\",\n  CASE WHEN si.removed_at IS NOT NULL THEN '\u2715' ELSE '' END AS \"Rmvd\",\n  (SELECT COUNT(DISTINCT si2.sprint_id)\n   FROM sprint_issues si2\n   WHERE si2.issue_key = si.issue_key\n     AND si2.sprint_id < $sprint::bigint) AS \"Times Carried\",\nFROM sprint_issues si JOIN issues i ON i.key=si.issue_key\nWHERE si.sprint_id=$sprint::bigint\nORDER BY\n  CASE WHEN si.removed_at IS NOT NULL THEN 2 ELSE 1 END,\n  CASE i.status_category WHEN 'Done' THEN 3 WHEN 'In Progress' THEN 1 ELSE 2 END,\n  CASE i.priority WHEN 'Blocker' THEN 1 WHEN 'Critical' THEN 2 WHEN 'High' THEN 3 WHEN 'Medium' THEN 4 ELSE 5 END",
           "format": "table",
           "refId": "A"
         }
@@ -909,6 +1027,142 @@
                 "value": "color-text"
               }
             ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Epic"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Open in Jira",
+                    "url": "${jira_url}/browse/${__value.text}",
+                    "targetBlank": true
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Key"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Open in Jira",
+                    "url": "${jira_url}/browse/${__value.text}",
+                    "targetBlank": true
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Status"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "Done": {
+                        "color": "green",
+                        "index": 0,
+                        "text": "Done"
+                      },
+                      "In Progress": {
+                        "color": "yellow",
+                        "index": 1,
+                        "text": "In Progress"
+                      },
+                      "Ready For Testing": {
+                        "color": "blue",
+                        "index": 2,
+                        "text": "Ready For Testing"
+                      },
+                      "Blocked": {
+                        "color": "red",
+                        "index": 3,
+                        "text": "Blocked"
+                      },
+                      "To Do": {
+                        "color": "text",
+                        "index": 4,
+                        "text": "To Do"
+                      },
+                      "Backlog": {
+                        "color": "text",
+                        "index": 5,
+                        "text": "Backlog"
+                      },
+                      "Reopened": {
+                        "color": "orange",
+                        "index": 6,
+                        "text": "Reopened"
+                      },
+                      "Closed": {
+                        "color": "green",
+                        "index": 7,
+                        "text": "Closed"
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.displayMode",
+                "value": "color-text"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Times Carried"
+            },
+            "properties": [
+              {
+                "id": "custom.displayMode",
+                "value": "color-text"
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "text",
+                      "value": null
+                    },
+                    {
+                      "color": "orange",
+                      "value": 1
+                    },
+                    {
+                      "color": "red",
+                      "value": 3
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "thresholds"
+                }
+              }
+            ]
           }
         ]
       }
@@ -916,6 +1170,22 @@
   ],
   "templating": {
     "list": [
+      {
+        "name": "jira_url",
+        "label": "Jira URL",
+        "type": "query",
+        "datasource": {
+          "type": "postgres",
+          "uid": "jira-metrics-pg"
+        },
+        "query": "SELECT value FROM app_settings WHERE key = 'jira_url'",
+        "hide": 2,
+        "refresh": 1,
+        "multi": false,
+        "includeAll": false,
+        "current": {},
+        "options": []
+      },
       {
         "name": "project",
         "label": "Team / Project",
@@ -956,7 +1226,7 @@
           "type": "postgres",
           "uid": "jira-metrics-pg"
         },
-        "query": "SELECT CONCAT(s.name, CASE WHEN s.state = 'active' THEN ' \u2605' ELSE '' END) AS __text, s.id::text AS __value FROM sprints s WHERE s.id IN (SELECT DISTINCT si.sprint_id FROM sprint_issues si JOIN issues i ON i.key = si.issue_key WHERE i.project_key IN ($project)) AND date_trunc('quarter', COALESCE(s.complete_date, s.start_date)) = '$quarter'::date ORDER BY s.start_date DESC NULLS LAST",
+        "query": "SELECT CONCAT(s.name, CASE WHEN s.state = 'active' THEN ' \u2605' ELSE '' END) AS __text, s.id::text AS __value FROM sprints s WHERE s.id IN (SELECT DISTINCT si.sprint_id FROM sprint_issues si JOIN issues i ON i.key = si.issue_key WHERE i.project_key IN ($project)) AND date_trunc('quarter', COALESCE(s.complete_date, s.start_date)) = '$quarter'::date ORDER BY CASE WHEN s.state = 'active' THEN 0 ELSE 1 END, s.start_date DESC NULLS LAST",
         "refresh": 2,
         "includeAll": false,
         "multi": false,

@@ -367,6 +367,24 @@
                 "value": "color-background"
               }
             ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Key"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Open in Jira",
+                    "url": "${jira_url}/browse/${__value.text}",
+                    "targetBlank": true
+                  }
+                ]
+              }
+            ]
           }
         ]
       }
@@ -582,6 +600,422 @@
                 "value": "color-background"
               }
             ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Key"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Open in Jira",
+                    "url": "${jira_url}/browse/${__value.text}",
+                    "targetBlank": true
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 11,
+      "type": "text",
+      "title": "",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 58
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "## Lead Time (Created \u2192 Resolved)"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      }
+    },
+    {
+      "id": 12,
+      "type": "stat",
+      "title": "Avg Lead Time",
+      "description": "Average days from ticket creation to resolution in selected period.",
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 0,
+        "y": 59
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT ROUND(AVG(days_lead_time),1) FROM v_lead_time WHERE $__timeFilter(resolved_at) AND ($project = 'ALL' OR project_key = ANY(string_to_array('$project', ',')))",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "background",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "d",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 7
+              },
+              {
+                "color": "orange",
+                "value": 14
+              },
+              {
+                "color": "red",
+                "value": 30
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 13,
+      "type": "stat",
+      "title": "Median Lead Time",
+      "description": "Median days from ticket creation to resolution.",
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 4,
+        "y": 59
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT ROUND(PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY days_lead_time)::numeric, 1) FROM v_lead_time WHERE $__timeFilter(resolved_at) AND ($project = 'ALL' OR project_key = ANY(string_to_array('$project', ',')))",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "background",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "d",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 7
+              },
+              {
+                "color": "orange",
+                "value": 14
+              },
+              {
+                "color": "red",
+                "value": 30
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 14,
+      "type": "timeseries",
+      "title": "Lead Time Trend (avg days per week)",
+      "description": "Average lead time per week for resolved issues.",
+      "gridPos": {
+        "h": 9,
+        "w": 16,
+        "x": 8,
+        "y": 59
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT DATE_TRUNC('week', resolved_at) AS time,\n  ROUND(AVG(days_lead_time),1) AS \"Avg Lead Time (days)\"\nFROM v_lead_time\nWHERE $__timeFilter(resolved_at) AND ($project = 'ALL' OR project_key = ANY(string_to_array('$project', ',')))\nGROUP BY 1 ORDER BY 1",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "tooltip": {
+          "mode": "single"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "d",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 10
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 15,
+      "type": "barchart",
+      "title": "Avg Lead Time by Issue Type (days)",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 68
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT issue_type AS \"Type\", ROUND(AVG(days_lead_time),1) AS \"Avg Days\"\nFROM v_lead_time WHERE $__timeFilter(resolved_at) AND ($project = 'ALL' OR project_key = ANY(string_to_array('$project', ',')))\nGROUP BY 1 ORDER BY 2 DESC",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "xField": "Type",
+        "orientation": "auto",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "d",
+          "custom": {
+            "fillOpacity": 80
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 16,
+      "type": "barchart",
+      "title": "Avg Lead Time by Priority (days)",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 68
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT priority AS \"Priority\", ROUND(AVG(days_lead_time),1) AS \"Avg Days\"\nFROM v_lead_time WHERE $__timeFilter(resolved_at) AND ($project = 'ALL' OR project_key = ANY(string_to_array('$project', ',')))\n  AND priority IS NOT NULL\nGROUP BY 1 ORDER BY 2 DESC",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "xField": "Priority",
+        "orientation": "auto",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "d",
+          "custom": {
+            "fillOpacity": 80
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 17,
+      "type": "table",
+      "title": "Slowest Issues by Lead Time",
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 76
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT key AS \"Key\", issue_type AS \"Type\", priority AS \"Priority\",\n  COALESCE(story_points::text,'\u2014') AS \"SP\",\n  COALESCE(assignee,'Unassigned') AS \"Assignee\",\n  days_lead_time AS \"Lead Time (days)\",\n  TO_CHAR(created_at,'YYYY-MM-DD') AS \"Created\",\n  TO_CHAR(resolved_at,'YYYY-MM-DD') AS \"Resolved\",\n  summary AS \"Summary\"\nFROM v_lead_time\nWHERE $__timeFilter(resolved_at) AND ($project = 'ALL' OR project_key = ANY(string_to_array('$project', ',')))\nORDER BY days_lead_time DESC LIMIT 50",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "sortBy": [
+          {
+            "displayName": "Lead Time (days)",
+            "desc": true
+          }
+        ]
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "left"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Key"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Open in Jira",
+                    "url": "${jira_url}/browse/${__value.text}",
+                    "targetBlank": true
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Lead Time (days)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "d"
+              },
+              {
+                "id": "custom.displayMode",
+                "value": "basic"
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "yellow",
+                      "value": 7
+                    },
+                    {
+                      "color": "orange",
+                      "value": 14
+                    },
+                    {
+                      "color": "red",
+                      "value": 30
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "thresholds"
+                }
+              }
+            ]
           }
         ]
       }
@@ -589,6 +1023,22 @@
   ],
   "templating": {
     "list": [
+      {
+        "name": "jira_url",
+        "label": "Jira URL",
+        "type": "query",
+        "datasource": {
+          "type": "postgres",
+          "uid": "jira-metrics-pg"
+        },
+        "query": "SELECT value FROM app_settings WHERE key = 'jira_url'",
+        "hide": 2,
+        "refresh": 1,
+        "multi": false,
+        "includeAll": false,
+        "current": {},
+        "options": []
+      },
       {
         "name": "project",
         "label": "Team / Project",
