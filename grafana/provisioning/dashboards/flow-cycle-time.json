@@ -662,7 +662,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT ROUND(AVG(days_lead_time),1) FROM v_lead_time WHERE $__timeFilter(resolved_at) AND ($project = 'ALL' OR project_key = ANY(string_to_array('$project', ',')))",
+          "rawSql": "SELECT ROUND(AVG(days_lead_time),1) FROM v_lead_time WHERE $__timeFilter(resolved_at) AND project_key IN ($project)",
           "format": "table",
           "refId": "A"
         }
@@ -732,7 +732,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT ROUND(PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY days_lead_time)::numeric, 1) FROM v_lead_time WHERE $__timeFilter(resolved_at) AND ($project = 'ALL' OR project_key = ANY(string_to_array('$project', ',')))",
+          "rawSql": "SELECT ROUND(PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY days_lead_time)::numeric, 1) FROM v_lead_time WHERE $__timeFilter(resolved_at) AND project_key IN ($project)",
           "format": "table",
           "refId": "A"
         }
@@ -802,7 +802,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT DATE_TRUNC('week', resolved_at) AS time,\n  ROUND(AVG(days_lead_time),1) AS \"Avg Lead Time (days)\"\nFROM v_lead_time\nWHERE $__timeFilter(resolved_at) AND ($project = 'ALL' OR project_key = ANY(string_to_array('$project', ',')))\nGROUP BY 1 ORDER BY 1",
+          "rawSql": "SELECT DATE_TRUNC('week', resolved_at) AS time,\n  ROUND(AVG(days_lead_time),1) AS \"Avg Lead Time (days)\"\nFROM v_lead_time\nWHERE $__timeFilter(resolved_at) AND project_key IN ($project)\nGROUP BY 1 ORDER BY 1",
           "format": "table",
           "refId": "A"
         }
@@ -847,7 +847,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT issue_type AS \"Type\", ROUND(AVG(days_lead_time),1) AS \"Avg Days\"\nFROM v_lead_time WHERE $__timeFilter(resolved_at) AND ($project = 'ALL' OR project_key = ANY(string_to_array('$project', ',')))\nGROUP BY 1 ORDER BY 2 DESC",
+          "rawSql": "SELECT issue_type AS \"Type\", ROUND(AVG(days_lead_time),1) AS \"Avg Days\"\nFROM v_lead_time WHERE $__timeFilter(resolved_at) AND project_key IN ($project)\nGROUP BY 1 ORDER BY 2 DESC",
           "format": "table",
           "refId": "A"
         }
@@ -890,7 +890,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT priority AS \"Priority\", ROUND(AVG(days_lead_time),1) AS \"Avg Days\"\nFROM v_lead_time WHERE $__timeFilter(resolved_at) AND ($project = 'ALL' OR project_key = ANY(string_to_array('$project', ',')))\n  AND priority IS NOT NULL\nGROUP BY 1 ORDER BY 2 DESC",
+          "rawSql": "SELECT priority AS \"Priority\", ROUND(AVG(days_lead_time),1) AS \"Avg Days\"\nFROM v_lead_time WHERE $__timeFilter(resolved_at) AND project_key IN ($project)\n  AND priority IS NOT NULL\nGROUP BY 1 ORDER BY 2 DESC",
           "format": "table",
           "refId": "A"
         }
@@ -933,7 +933,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT key AS \"Key\", issue_type AS \"Type\", priority AS \"Priority\",\n  COALESCE(story_points::text,'\u2014') AS \"SP\",\n  COALESCE(assignee,'Unassigned') AS \"Assignee\",\n  days_lead_time AS \"Lead Time (days)\",\n  TO_CHAR(created_at,'YYYY-MM-DD') AS \"Created\",\n  TO_CHAR(resolved_at,'YYYY-MM-DD') AS \"Resolved\",\n  summary AS \"Summary\"\nFROM v_lead_time\nWHERE $__timeFilter(resolved_at) AND ($project = 'ALL' OR project_key = ANY(string_to_array('$project', ',')))\nORDER BY days_lead_time DESC LIMIT 50",
+          "rawSql": "SELECT key AS \"Key\", issue_type AS \"Type\", priority AS \"Priority\",\n  COALESCE(story_points::text,'\u2014') AS \"SP\",\n  COALESCE(assignee,'Unassigned') AS \"Assignee\",\n  days_lead_time AS \"Lead Time (days)\",\n  TO_CHAR(created_at,'YYYY-MM-DD') AS \"Created\",\n  TO_CHAR(resolved_at,'YYYY-MM-DD') AS \"Resolved\",\n  summary AS \"Summary\"\nFROM v_lead_time\nWHERE $__timeFilter(resolved_at) AND project_key IN ($project)\nORDER BY days_lead_time DESC LIMIT 50",
           "format": "table",
           "refId": "A"
         }
