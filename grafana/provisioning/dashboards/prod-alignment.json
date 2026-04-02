@@ -137,7 +137,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT COALESCE(COUNT(DISTINCT to_key), 0) AS value FROM v_prod_epic_progress WHERE project_key IN ($project)",
+          "rawSql": "SELECT COALESCE(COUNT(DISTINCT prod_key), 0) AS value FROM v_prod_epic_progress WHERE project_key IN ($project)",
           "format": "table",
           "refId": "A"
         }
@@ -290,7 +290,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT COALESCE(ROUND(AVG(completion_pct_issues), 1), 0) AS value FROM v_prod_item_progress WHERE prod_key IN (SELECT DISTINCT to_key FROM v_prod_epic_progress WHERE project_key IN ($project))",
+          "rawSql": "SELECT COALESCE(ROUND(AVG(completion_pct_issues), 1), 0) AS value FROM v_prod_item_progress WHERE prod_key IN (SELECT DISTINCT prod_key FROM v_prod_epic_progress WHERE project_key IN ($project))",
           "format": "table",
           "refId": "A"
         }
@@ -360,7 +360,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT\n  p.prod_key                       AS \"PROD Key\",\n  p.prod_summary                   AS \"PROD Item\",\n  p.epic_count                     AS \"Epics\",\n  p.total_issues                   AS \"Total Issues\",\n  p.done_issues                    AS \"Done\",\n  p.total_sp                       AS \"Total SP\",\n  p.done_sp                        AS \"Done SP\",\n  COALESCE(p.completion_pct_sp,0)  AS \"Completion %\"\nFROM v_prod_item_progress p\nWHERE p.prod_key IN (\n  SELECT DISTINCT to_key FROM v_prod_epic_progress WHERE project_key IN ($project)\n)\nORDER BY p.completion_pct_sp DESC NULLS LAST",
+          "rawSql": "SELECT\n  p.prod_key                       AS \"PROD Key\",\n  p.prod_summary                   AS \"PROD Item\",\n  p.epic_count                     AS \"Epics\",\n  p.total_issues                   AS \"Total Issues\",\n  p.done_issues                    AS \"Done\",\n  p.total_sp                       AS \"Total SP\",\n  p.done_sp                        AS \"Done SP\",\n  COALESCE(p.completion_pct_sp,0)  AS \"Completion %\"\nFROM v_prod_item_progress p\nWHERE p.prod_key IN (\n  SELECT DISTINCT prod_key FROM v_prod_epic_progress WHERE project_key IN ($project)\n)\nORDER BY p.completion_pct_sp DESC NULLS LAST",
           "format": "table",
           "refId": "A"
         }
