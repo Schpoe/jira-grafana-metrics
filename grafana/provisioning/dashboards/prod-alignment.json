@@ -809,7 +809,7 @@
           "type": "postgres",
           "uid": "jira-metrics-pg"
         },
-        "query": "SELECT 'All PROD Items' AS __text, 'ALL' AS __value\nUNION ALL\nSELECT to_key || ' \u2013 ' || COALESCE(MAX(to_summary), to_key) AS __text, to_key AS __value\nFROM issue_links il\nJOIN issues epic ON epic.key = il.from_key\nWHERE il.to_key LIKE 'PROD-%'\n  AND ($project = 'ALL' OR epic.project_key = ANY(string_to_array('$project', ',')))\nGROUP BY il.to_key\nORDER BY 1",
+        "query": "SELECT 'All PROD Items' AS __text, 'ALL' AS __value\nUNION ALL\nSELECT to_key || ' \u2013 ' || COALESCE(MAX(to_summary), to_key) AS __text, to_key AS __value\nFROM issue_links\nWHERE to_key LIKE 'PROD-%'\nGROUP BY to_key\nORDER BY 1",
         "multi": false,
         "includeAll": false,
         "current": {},
