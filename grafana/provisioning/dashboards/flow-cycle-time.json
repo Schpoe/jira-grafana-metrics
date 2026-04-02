@@ -148,7 +148,9 @@
         "legend": {
           "displayMode": "list",
           "placement": "bottom"
-        }
+        },
+        "xTickLabelRotation": -45,
+        "xTickLabelSpacing": 200
       },
       "fieldConfig": {
         "defaults": {
@@ -166,7 +168,7 @@
       "title": "Current WIP by Status",
       "description": "Issues currently In Progress, grouped by status.",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 12,
         "y": 9
@@ -192,7 +194,8 @@
         "legend": {
           "displayMode": "list",
           "placement": "bottom"
-        }
+        },
+        "orientation": "horizontal"
       },
       "fieldConfig": {
         "defaults": {
@@ -208,7 +211,7 @@
       "type": "barchart",
       "title": "Avg Cycle Time (RFT \u2192 Done) by Issue Type",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 0,
         "y": 17
@@ -234,7 +237,8 @@
         "legend": {
           "displayMode": "list",
           "placement": "bottom"
-        }
+        },
+        "orientation": "horizontal"
       },
       "fieldConfig": {
         "defaults": {
@@ -250,7 +254,7 @@
       "type": "barchart",
       "title": "Avg Cycle Time (RFT \u2192 Done) by Priority",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 12,
         "y": 17
@@ -276,7 +280,8 @@
         "legend": {
           "displayMode": "list",
           "placement": "bottom"
-        }
+        },
+        "orientation": "horizontal"
       },
       "fieldConfig": {
         "defaults": {
@@ -440,7 +445,7 @@
       "title": "Avg Cycle Time (In Progress \u2192 RFT) by Issue Type",
       "description": "Average development time per issue type. Helps identify which types take longest to develop.",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 0,
         "y": 42
@@ -466,7 +471,8 @@
         "legend": {
           "displayMode": "list",
           "placement": "bottom"
-        }
+        },
+        "orientation": "horizontal"
       },
       "fieldConfig": {
         "defaults": {
@@ -483,7 +489,7 @@
       "title": "Avg Cycle Time (In Progress \u2192 RFT) by Priority",
       "description": "Average development time per priority. High-priority issues should move faster.",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 12,
         "y": 42
@@ -509,7 +515,8 @@
         "legend": {
           "displayMode": "list",
           "placement": "bottom"
-        }
+        },
+        "orientation": "horizontal"
       },
       "fieldConfig": {
         "defaults": {
@@ -832,7 +839,7 @@
       "type": "barchart",
       "title": "Avg Lead Time by Issue Type (days)",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 0,
         "y": 68
@@ -854,7 +861,7 @@
       ],
       "options": {
         "xField": "Type",
-        "orientation": "auto",
+        "orientation": "horizontal",
         "legend": {
           "displayMode": "list",
           "placement": "bottom"
@@ -875,7 +882,7 @@
       "type": "barchart",
       "title": "Avg Lead Time by Priority (days)",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 12,
         "y": 68
@@ -897,7 +904,7 @@
       ],
       "options": {
         "xField": "Priority",
-        "orientation": "auto",
+        "orientation": "horizontal",
         "legend": {
           "displayMode": "list",
           "placement": "bottom"

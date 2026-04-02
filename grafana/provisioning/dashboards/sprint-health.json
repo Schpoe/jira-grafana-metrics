@@ -49,7 +49,9 @@
         "legend": {
           "displayMode": "list",
           "placement": "bottom"
-        }
+        },
+        "xTickLabelRotation": -45,
+        "xTickLabelSpacing": 200
       },
       "fieldConfig": {
         "defaults": {
@@ -124,7 +126,9 @@
         "legend": {
           "displayMode": "list",
           "placement": "bottom"
-        }
+        },
+        "xTickLabelRotation": -45,
+        "xTickLabelSpacing": 200
       },
       "fieldConfig": {
         "defaults": {
@@ -187,7 +191,9 @@
         "legend": {
           "displayMode": "list",
           "placement": "bottom"
-        }
+        },
+        "xTickLabelRotation": -45,
+        "xTickLabelSpacing": 200
       },
       "fieldConfig": {
         "defaults": {

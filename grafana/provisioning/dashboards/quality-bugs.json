@@ -357,7 +357,7 @@
       "title": "Bugs per Release / Fix Version",
       "description": "Total and resolved bugs per release. High unresolved count before a release date is a risk signal.",
       "gridPos": {
-        "h": 9,
+        "h": 10,
         "w": 12,
         "x": 0,
         "y": 13
@@ -384,7 +384,8 @@
         "legend": {
           "displayMode": "list",
           "placement": "bottom"
-        }
+        },
+        "orientation": "horizontal"
       },
       "fieldConfig": {
         "defaults": {
