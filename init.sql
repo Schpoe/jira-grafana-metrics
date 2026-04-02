@@ -305,11 +305,21 @@ WHERE resolved_at IS NOT NULL
   AND issue_type NOT IN ('Epic', 'Sub-task');
 
 -- PROD item progress: aggregated completion across all linked Epics + their child issues
+-- An Epic may have multiple rows in issue_links for the same PROD item (different link_type
+-- values, e.g. "Polaris work item link" and "Implement", both with link_label = 'implements').
+-- The CTE deduplicates to one row per (Epic, PROD) pair so JOINs to child issues don't
+-- multiply counts and sums.
 CREATE OR REPLACE VIEW v_prod_item_progress AS
+WITH deduped_links AS (
+    SELECT DISTINCT ON (from_key, to_key) from_key, to_key, to_summary
+    FROM issue_links
+    WHERE to_key LIKE 'PROD-%' AND link_label = 'implements'
+    ORDER BY from_key, to_key
+)
 SELECT
-    il.to_key                                                               AS prod_key,
-    MAX(il.to_summary)                                                      AS prod_summary,
-    COUNT(DISTINCT il.from_key)                                             AS epic_count,
+    dl.to_key                                                               AS prod_key,
+    MAX(dl.to_summary)                                                      AS prod_summary,
+    COUNT(DISTINCT dl.from_key)                                             AS epic_count,
     COUNT(DISTINCT ci.key)                                                  AS total_issues,
     COUNT(DISTINCT ci.key) FILTER (WHERE ci.status_category = 'Done')      AS done_issues,
     COALESCE(SUM(ci.story_points), 0)                                       AS total_sp,
@@ -322,37 +332,39 @@ SELECT
         100.0 * COALESCE(SUM(ci.story_points) FILTER (WHERE ci.status_category = 'Done'), 0)
         / NULLIF(SUM(ci.story_points), 0), 1
     )                                                                       AS completion_pct_sp
-FROM issue_links il
-JOIN issues i ON i.key = il.from_key
+FROM deduped_links dl
+JOIN issues i ON i.key = dl.from_key
 LEFT JOIN issues ci
-    ON  ci.epic_key    = il.from_key
+    ON  ci.epic_key    = dl.from_key
     AND ci.issue_type NOT IN ('Epic', 'Sub-task')
-WHERE il.to_key LIKE 'PROD-%'
-  AND il.link_label = 'implements'
-GROUP BY il.to_key;
+GROUP BY dl.to_key;
 
 -- Per-Epic progress for a given PROD item (drill-down)
 CREATE OR REPLACE VIEW v_prod_epic_progress AS
+WITH deduped_links AS (
+    SELECT DISTINCT ON (from_key, to_key) from_key, to_key, to_summary
+    FROM issue_links
+    WHERE to_key LIKE 'PROD-%' AND link_label = 'implements'
+    ORDER BY from_key, to_key
+)
 SELECT
-    il.to_key                                                               AS prod_key,
-    MAX(il.to_summary)                                                      AS prod_summary,
-    il.from_key                                                             AS epic_key,
+    dl.to_key                                                               AS prod_key,
+    MAX(dl.to_summary)                                                      AS prod_summary,
+    dl.from_key                                                             AS epic_key,
     MAX(i.summary)                                                          AS epic_summary,
     MAX(i.project_key)                                                      AS project_key,
     MAX(i.status)                                                           AS epic_status,
-    COUNT(ci.key)                                                           AS total_issues,
-    COUNT(ci.key) FILTER (WHERE ci.status_category = 'Done')               AS done_issues,
+    COUNT(DISTINCT ci.key)                                                  AS total_issues,
+    COUNT(DISTINCT ci.key) FILTER (WHERE ci.status_category = 'Done')      AS done_issues,
     COALESCE(SUM(ci.story_points), 0)                                       AS total_sp,
     COALESCE(SUM(ci.story_points) FILTER (WHERE ci.status_category = 'Done'), 0) AS done_sp,
     ROUND(
-        100.0 * COUNT(ci.key) FILTER (WHERE ci.status_category = 'Done')
-        / NULLIF(COUNT(ci.key), 0), 1
+        100.0 * COUNT(DISTINCT ci.key) FILTER (WHERE ci.status_category = 'Done')
+        / NULLIF(COUNT(DISTINCT ci.key), 0), 1
     )                                                                       AS completion_pct
-FROM issue_links il
-JOIN issues i ON i.key = il.from_key
+FROM deduped_links dl
+JOIN issues i ON i.key = dl.from_key
 LEFT JOIN issues ci
-    ON  ci.epic_key    = il.from_key
+    ON  ci.epic_key    = dl.from_key
     AND ci.issue_type NOT IN ('Epic', 'Sub-task')
-WHERE il.to_key LIKE 'PROD-%'
-  AND il.link_label = 'implements'
-GROUP BY il.to_key, il.from_key;
+GROUP BY dl.to_key, dl.from_key;
