@@ -262,10 +262,8 @@ def sync_issues(conn, sync_id, since=None, last_sync_duration=None, resume_token
     """
     project_filter = ", ".join(f'"{k}"' for k in JIRA_PROJECT_KEYS)
 
-    # Hard limit: never sync issues older than JIRA_MAX_HISTORY_YEARS (default 3)
-    max_years = int(os.environ.get("JIRA_MAX_HISTORY_YEARS", "3"))
-    history_cutoff = datetime.now(timezone.utc) - timedelta(days=max_years * 365)
-    history_cutoff_str = history_cutoff.strftime("%Y-%m-%d")
+    # Hard limit: never sync issues created before this date
+    history_cutoff_str = os.environ.get("JIRA_HISTORY_START", "2024-01-01")
 
     if since and os.environ.get("FULL_SYNC", "").lower() not in ("1", "true", "yes"):
         if last_sync_duration:
