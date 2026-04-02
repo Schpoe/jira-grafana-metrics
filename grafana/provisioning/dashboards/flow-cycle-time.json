@@ -183,7 +183,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT status AS \"Status\", COUNT(*) AS \"Issues\", COALESCE(SUM(story_points), 0) AS \"Story Points\" FROM issues WHERE project_key IN ($project) AND status_category = 'In Progress' GROUP BY status ORDER BY \"Issues\" DESC",
+          "rawSql": "SELECT status AS \"Status\", COALESCE(SUM(story_points), 0) AS \"Story Points\" FROM issues WHERE project_key IN ($project) AND status_category = 'In Progress' GROUP BY status ORDER BY \"Issues\" DESC",
           "format": "table",
           "refId": "A"
         }
@@ -226,7 +226,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT issue_type AS \"Issue Type\", ROUND(AVG(hours_rft_to_done)::numeric, 1) AS \"Avg Hours\", ROUND(PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY hours_rft_to_done)::numeric, 1) AS \"Median Hours\" FROM v_cycle_time_rft_to_done WHERE project_key IN ($project) AND date_trunc('quarter', resolved_at) = '$quarter'::date GROUP BY issue_type ORDER BY \"Avg Hours\" DESC",
+          "rawSql": "SELECT issue_type AS \"Issue Type\", ROUND(AVG(hours_rft_to_done)::numeric, 1) AS \"Avg Hours\" FROM v_cycle_time_rft_to_done WHERE project_key IN ($project) AND date_trunc('quarter', resolved_at) = '$quarter'::date GROUP BY issue_type ORDER BY \"Avg Hours\" DESC",
           "format": "table",
           "refId": "A"
         }
@@ -269,7 +269,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT priority AS \"Priority\", ROUND(AVG(hours_rft_to_done)::numeric, 1) AS \"Avg Hours\", ROUND(PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY hours_rft_to_done)::numeric, 1) AS \"Median Hours\" FROM v_cycle_time_rft_to_done WHERE project_key IN ($project) AND priority IS NOT NULL AND date_trunc('quarter', resolved_at) = '$quarter'::date GROUP BY priority ORDER BY CASE priority WHEN 'Blocker' THEN 1 WHEN 'Critical' THEN 2 WHEN 'High' THEN 3 WHEN 'Medium' THEN 4 WHEN 'Low' THEN 5 ELSE 6 END",
+          "rawSql": "SELECT priority AS \"Priority\", ROUND(AVG(hours_rft_to_done)::numeric, 1) AS \"Avg Hours\" FROM v_cycle_time_rft_to_done WHERE project_key IN ($project) AND priority IS NOT NULL AND date_trunc('quarter', resolved_at) = '$quarter'::date GROUP BY priority ORDER BY CASE priority WHEN 'Blocker' THEN 1 WHEN 'Critical' THEN 2 WHEN 'High' THEN 3 WHEN 'Medium' THEN 4 WHEN 'Low' THEN 5 ELSE 6 END",
           "format": "table",
           "refId": "A"
         }
