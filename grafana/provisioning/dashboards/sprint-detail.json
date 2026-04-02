@@ -91,10 +91,10 @@
       "id": 1,
       "type": "table",
       "title": "Sprint Info",
-      "description": "Sprint dates, state, and goal.",
+      "description": "",
       "gridPos": {
         "h": 3,
-        "w": 24,
+        "w": 16,
         "x": 0,
         "y": 0
       },
@@ -108,7 +108,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT s.name AS \"Sprint\", INITCAP(s.state) AS \"State\",\n  TO_CHAR(s.start_date, 'YYYY-MM-DD') AS \"Start\",\n  TO_CHAR(s.end_date,   'YYYY-MM-DD') AS \"End\",\n  TO_CHAR(s.complete_date, 'YYYY-MM-DD') AS \"Completed\",\n  COALESCE(s.goal, '—') AS \"Goal\"\nFROM sprints s WHERE s.id = $sprint::bigint",
+          "rawSql": "SELECT s.name AS \"Sprint\", INITCAP(s.state) AS \"State\",\n  TO_CHAR(s.start_date,    'YYYY-MM-DD') AS \"Start\",\n  TO_CHAR(s.end_date,      'YYYY-MM-DD') AS \"End\",\n  TO_CHAR(s.complete_date, 'YYYY-MM-DD') AS \"Completed\"\nFROM sprints s WHERE s.id = $sprint::bigint",
           "format": "table",
           "refId": "A"
         }
@@ -127,6 +127,44 @@
     },
     {
       "id": 2,
+      "type": "table",
+      "title": "Sprint Goal",
+      "description": "",
+      "gridPos": {
+        "h": 3,
+        "w": 8,
+        "x": 16,
+        "y": 0
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT COALESCE(s.goal, '— No sprint goal defined —') AS \"Sprint Goal\"\nFROM sprints s WHERE s.id = $sprint::bigint",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "sortBy": []
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "left"
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 3,
       "type": "text",
       "title": "",
       "gridPos": {
@@ -145,13 +183,13 @@
       }
     },
     {
-      "id": 3,
+      "id": 4,
       "type": "stat",
-      "title": "Committed Points",
-      "description": "Story points in sprint at start (initial scope). Target: stable sprint commitment.",
+      "title": "Committed",
+      "description": "SP in sprint at start (initial scope).",
       "gridPos": {
         "h": 4,
-        "w": 6,
+        "w": 4,
         "x": 0,
         "y": 4
       },
@@ -165,7 +203,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT COALESCE(total_story_points, 0) AS value\nFROM sprint_snapshots WHERE sprint_id = $sprint::bigint AND snapshot_type = 'start'",
+          "rawSql": "SELECT COALESCE(total_story_points,0) AS value FROM sprint_snapshots WHERE sprint_id=$sprint::bigint AND snapshot_type='start'",
           "format": "table",
           "refId": "A"
         }
@@ -195,14 +233,14 @@
       }
     },
     {
-      "id": 4,
+      "id": 5,
       "type": "stat",
-      "title": "Unplanned Points",
-      "description": "Story points added to sprint after it started (scope creep). Target: ≤ 10% of committed.",
+      "title": "Unplanned",
+      "description": "SP added after sprint start. Target ≤ 10% of committed.",
       "gridPos": {
         "h": 4,
-        "w": 6,
-        "x": 6,
+        "w": 4,
+        "x": 4,
         "y": 4
       },
       "datasource": {
@@ -215,7 +253,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT COALESCE(SUM(COALESCE(si.story_points_at_add, i.story_points, 0)), 0) AS value\nFROM sprint_issues si JOIN issues i ON i.key = si.issue_key\nWHERE si.sprint_id = $sprint::bigint AND si.was_in_initial_scope = FALSE AND si.removed_at IS NULL",
+          "rawSql": "SELECT COALESCE(SUM(COALESCE(si.story_points_at_add,i.story_points,0)),0) AS value FROM sprint_issues si JOIN issues i ON i.key=si.issue_key WHERE si.sprint_id=$sprint::bigint AND si.was_in_initial_scope=FALSE AND si.removed_at IS NULL",
           "format": "table",
           "refId": "A"
         }
@@ -261,14 +299,14 @@
       }
     },
     {
-      "id": 5,
+      "id": 6,
       "type": "stat",
-      "title": "Total Points in Sprint",
-      "description": "All currently active story points in sprint (committed + unplanned).",
+      "title": "Total in Sprint",
+      "description": "All active SP (committed + unplanned – removed).",
       "gridPos": {
         "h": 4,
-        "w": 6,
-        "x": 12,
+        "w": 4,
+        "x": 8,
         "y": 4
       },
       "datasource": {
@@ -281,7 +319,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT COALESCE(SUM(COALESCE(si.story_points_at_add, i.story_points, 0)), 0) AS value\nFROM sprint_issues si JOIN issues i ON i.key = si.issue_key\nWHERE si.sprint_id = $sprint::bigint AND si.removed_at IS NULL",
+          "rawSql": "SELECT COALESCE(SUM(COALESCE(si.story_points_at_add,i.story_points,0)),0) AS value FROM sprint_issues si JOIN issues i ON i.key=si.issue_key WHERE si.sprint_id=$sprint::bigint AND si.removed_at IS NULL",
           "format": "table",
           "refId": "A"
         }
@@ -311,14 +349,14 @@
       }
     },
     {
-      "id": 6,
+      "id": 7,
       "type": "stat",
-      "title": "Completed Points",
-      "description": "Story points with status Done. For closed sprints this is the final delivery.",
+      "title": "Completed",
+      "description": "SP with status Done.",
       "gridPos": {
         "h": 4,
-        "w": 6,
-        "x": 18,
+        "w": 4,
+        "x": 12,
         "y": 4
       },
       "datasource": {
@@ -331,7 +369,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT COALESCE(SUM(COALESCE(si.story_points_at_add, i.story_points, 0)), 0) AS value\nFROM sprint_issues si JOIN issues i ON i.key = si.issue_key\nWHERE si.sprint_id = $sprint::bigint AND si.removed_at IS NULL AND i.status_category = 'Done'",
+          "rawSql": "SELECT COALESCE(SUM(COALESCE(si.story_points_at_add,i.story_points,0)),0) AS value FROM sprint_issues si JOIN issues i ON i.key=si.issue_key WHERE si.sprint_id=$sprint::bigint AND si.removed_at IS NULL AND i.status_category='Done'",
           "format": "table",
           "refId": "A"
         }
@@ -354,38 +392,22 @@
         "defaults": {
           "unit": "short",
           "color": {
-            "mode": "thresholds"
-          },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "red",
-                "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 1
-              },
-              {
-                "color": "green",
-                "value": 1
-              }
-            ]
+            "mode": "fixed",
+            "fixedColor": "green"
           }
         }
       }
     },
     {
-      "id": 7,
+      "id": 8,
       "type": "stat",
       "title": "Delivery %",
-      "description": "Completed SP / Committed SP. Target ≥ 80%.",
+      "description": "Completed / Committed SP. Target ≥ 80%.",
       "gridPos": {
         "h": 4,
-        "w": 6,
-        "x": 0,
-        "y": 8
+        "w": 4,
+        "x": 16,
+        "y": 4
       },
       "datasource": {
         "type": "postgres",
@@ -397,7 +419,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT COALESCE(ROUND(delivery_pct::numeric, 1), 0) AS value\nFROM v_planning_deviation WHERE sprint_id = $sprint::bigint",
+          "rawSql": "SELECT COALESCE(ROUND(delivery_pct::numeric,1),0) AS value FROM v_planning_deviation WHERE sprint_id=$sprint::bigint",
           "format": "table",
           "refId": "A"
         }
@@ -443,18 +465,18 @@
       }
     },
     {
-      "id": 8,
+      "id": 9,
       "type": "text",
       "title": "",
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 12
+        "y": 8
       },
       "options": {
         "mode": "markdown",
-        "content": "## Issue Counts"
+        "content": "## Story Readiness  *(Stories & Tasks — excludes Epics and Sub-tasks. Acceptance Criteria requires a custom Jira field — contact your admin for the field ID.)*"
       },
       "fieldConfig": {
         "defaults": {},
@@ -462,12 +484,260 @@
       }
     },
     {
-      "id": 9,
-      "type": "table",
-      "title": "Issue Count Summary",
-      "description": "Overview of committed, unplanned, removed and completed issues.",
+      "id": 10,
+      "type": "stat",
+      "title": "Ready Issues",
+      "description": "Issues with SP estimated AND Epic linked.",
       "gridPos": {
-        "h": 3,
+        "h": 4,
+        "w": 4,
+        "x": 0,
+        "y": 9
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT COUNT(*) AS value\nFROM sprint_issues si JOIN issues i ON i.key=si.issue_key\nWHERE si.sprint_id=$sprint::bigint AND si.removed_at IS NULL AND i.issue_type NOT IN ('Epic','Sub-task')\n  AND (i.story_points IS NOT NULL AND i.story_points > 0)\n  AND i.epic_key IS NOT NULL",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "green"
+          }
+        }
+      }
+    },
+    {
+      "id": 11,
+      "type": "stat",
+      "title": "Missing SP",
+      "description": "Issues without a story point estimate.",
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 4,
+        "y": 9
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT COUNT(*) AS value\nFROM sprint_issues si JOIN issues i ON i.key=si.issue_key\nWHERE si.sprint_id=$sprint::bigint AND si.removed_at IS NULL AND i.issue_type NOT IN ('Epic','Sub-task') AND (i.story_points IS NULL OR i.story_points = 0)",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 5
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 12,
+      "type": "stat",
+      "title": "Missing Epic Link",
+      "description": "Issues not linked to a parent Epic.",
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 8,
+        "y": 9
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT COUNT(*) AS value\nFROM sprint_issues si JOIN issues i ON i.key=si.issue_key\nWHERE si.sprint_id=$sprint::bigint AND si.removed_at IS NULL AND i.issue_type NOT IN ('Epic','Sub-task') AND i.epic_key IS NULL",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 5
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 13,
+      "type": "stat",
+      "title": "Readiness %",
+      "description": "% of Stories/Tasks that have SP + Epic. Target ≥ 90%.",
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 12,
+        "y": 9
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT CASE WHEN total=0 THEN 0\n  ELSE ROUND(100.0 * ready / total, 1)\nEND AS value\nFROM (\n  SELECT\n    COUNT(*) FILTER (WHERE (i.story_points IS NOT NULL AND i.story_points>0) AND i.epic_key IS NOT NULL) AS ready,\n    COUNT(*) AS total\n  FROM sprint_issues si JOIN issues i ON i.key=si.issue_key\n  WHERE si.sprint_id=$sprint::bigint AND si.removed_at IS NULL AND i.issue_type NOT IN ('Epic','Sub-task')\n) t",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 70
+              },
+              {
+                "color": "green",
+                "value": 90
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 14,
+      "type": "table",
+      "title": "Issues Not Ready",
+      "description": "Stories/Tasks missing SP estimate or Epic link.",
+      "gridPos": {
+        "h": 8,
         "w": 24,
         "x": 0,
         "y": 13
@@ -482,7 +752,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT\n  COUNT(*) FILTER (WHERE si.removed_at IS NULL) AS \"Total Issues\",\n  COUNT(*) FILTER (WHERE si.was_in_initial_scope = TRUE  AND si.removed_at IS NULL) AS \"Committed\",\n  COUNT(*) FILTER (WHERE si.was_in_initial_scope = FALSE AND si.removed_at IS NULL) AS \"Unplanned\",\n  COUNT(*) FILTER (WHERE si.removed_at IS NOT NULL) AS \"Removed\",\n  COUNT(*) FILTER (WHERE si.removed_at IS NULL AND i.status_category = 'Done') AS \"Completed\"\nFROM sprint_issues si JOIN issues i ON i.key = si.issue_key\nWHERE si.sprint_id = $sprint::bigint",
+          "rawSql": "SELECT i.key AS \"Key\", i.summary AS \"Summary\", i.issue_type AS \"Type\",\n  i.assignee AS \"Assignee\",\n  CASE WHEN i.story_points IS NULL OR i.story_points=0 THEN '❌' ELSE '✅' END AS \"SP\",\n  CASE WHEN i.epic_key IS NOT NULL THEN '✅' ELSE '❌' END AS \"Epic\",\n  COALESCE(i.epic_key,'—') AS \"Epic Key\"\nFROM sprint_issues si JOIN issues i ON i.key=si.issue_key\nWHERE si.sprint_id=$sprint::bigint AND si.removed_at IS NULL AND i.issue_type NOT IN ('Epic','Sub-task')\n  AND ((i.story_points IS NULL OR i.story_points=0) OR i.epic_key IS NULL)\nORDER BY\n  CASE i.priority WHEN 'Blocker' THEN 1 WHEN 'Critical' THEN 2 WHEN 'High' THEN 3 WHEN 'Medium' THEN 4 ELSE 5 END",
           "format": "table",
           "refId": "A"
         }
@@ -500,18 +770,18 @@
       }
     },
     {
-      "id": 10,
+      "id": 15,
       "type": "text",
       "title": "",
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 16
+        "y": 21
       },
       "options": {
         "mode": "markdown",
-        "content": "## All Issues in Sprint"
+        "content": "## Issue Counts"
       },
       "fieldConfig": {
         "defaults": {},
@@ -519,15 +789,15 @@
       }
     },
     {
-      "id": 11,
+      "id": 16,
       "type": "table",
-      "title": "Issues",
-      "description": "All issues in the sprint. Sorted by status, then priority. Removed issues shown last.",
+      "title": "Summary",
+      "description": "Committed, unplanned, removed and completed issue counts.",
       "gridPos": {
-        "h": 12,
+        "h": 3,
         "w": 24,
         "x": 0,
-        "y": 17
+        "y": 22
       },
       "datasource": {
         "type": "postgres",
@@ -539,7 +809,64 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT i.key AS \"Key\", i.summary AS \"Summary\", i.issue_type AS \"Type\",\n  i.priority AS \"Priority\", COALESCE(i.assignee, 'Unassigned') AS \"Assignee\",\n  i.status AS \"Status\",\n  COALESCE(si.story_points_at_add::text, i.story_points::text, '—') AS \"SP\",\n  CASE WHEN si.was_in_initial_scope THEN 'Committed' ELSE 'Unplanned' END AS \"Scope\",\n  CASE WHEN si.removed_at IS NOT NULL THEN 'Removed' ELSE '' END AS \"Removed\"\nFROM sprint_issues si JOIN issues i ON i.key = si.issue_key\nWHERE si.sprint_id = $sprint::bigint\nORDER BY\n  CASE WHEN si.removed_at IS NOT NULL THEN 2 ELSE 1 END,\n  CASE i.status_category WHEN 'Done' THEN 3 WHEN 'In Progress' THEN 1 ELSE 2 END,\n  CASE i.priority WHEN 'Blocker' THEN 1 WHEN 'Critical' THEN 2 WHEN 'High' THEN 3 WHEN 'Medium' THEN 4 ELSE 5 END",
+          "rawSql": "SELECT\n  COUNT(*)                                                    AS \"Total\",\n  COUNT(*) FILTER (WHERE si.was_in_initial_scope=TRUE)        AS \"Committed\",\n  COUNT(*) FILTER (WHERE si.was_in_initial_scope=FALSE)       AS \"Unplanned\",\n  COUNT(*) FILTER (WHERE si.removed_at IS NOT NULL)           AS \"Removed\",\n  COUNT(*) FILTER (WHERE si.removed_at IS NULL AND i.status_category='Done') AS \"Completed\"\nFROM sprint_issues si JOIN issues i ON i.key=si.issue_key\nWHERE si.sprint_id=$sprint::bigint",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "sortBy": []
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "left"
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 17,
+      "type": "text",
+      "title": "",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 25
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "## All Issues in Sprint"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      }
+    },
+    {
+      "id": 18,
+      "type": "table",
+      "title": "Issues",
+      "description": "All sprint issues sorted by status then priority. Removed issues last.",
+      "gridPos": {
+        "h": 12,
+        "w": 24,
+        "x": 0,
+        "y": 26
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT i.key AS \"Key\", i.summary AS \"Summary\", i.issue_type AS \"Type\",\n  i.priority AS \"Priority\",\n  COALESCE(i.assignee,'Unassigned') AS \"Assignee\",\n  i.status AS \"Status\",\n  COALESCE(si.story_points_at_add::text, i.story_points::text,'—') AS \"SP\",\n  COALESCE(i.epic_key,'—') AS \"Epic\",\n  CASE WHEN si.was_in_initial_scope THEN 'Committed' ELSE 'Unplanned' END AS \"Scope\",\n  CASE WHEN si.removed_at IS NOT NULL THEN '✕' ELSE '' END AS \"Rmvd\"\nFROM sprint_issues si JOIN issues i ON i.key=si.issue_key\nWHERE si.sprint_id=$sprint::bigint\nORDER BY\n  CASE WHEN si.removed_at IS NOT NULL THEN 2 ELSE 1 END,\n  CASE i.status_category WHEN 'Done' THEN 3 WHEN 'In Progress' THEN 1 ELSE 2 END,\n  CASE i.priority WHEN 'Blocker' THEN 1 WHEN 'Critical' THEN 2 WHEN 'High' THEN 3 WHEN 'Medium' THEN 4 ELSE 5 END",
           "format": "table",
           "refId": "A"
         }
@@ -557,31 +884,19 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Removed"
+              "options": "Rmvd"
             },
             "properties": [
-              {
-                "id": "custom.displayMode",
-                "value": "color-text"
-              },
               {
                 "id": "color",
                 "value": {
                   "mode": "fixed",
                   "fixedColor": "red"
                 }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Scope"
-            },
-            "properties": [
+              },
               {
                 "id": "custom.displayMode",
-                "value": "color-background"
+                "value": "color-text"
               }
             ]
           }

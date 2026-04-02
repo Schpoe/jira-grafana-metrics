@@ -34,8 +34,11 @@ CREATE TABLE IF NOT EXISTS issues (
     resolved_at     TIMESTAMPTZ,
     fix_versions    TEXT[],
     labels          TEXT[],
+    epic_key        TEXT,        -- parent Epic key (null for Epics themselves and unlinked issues)
     synced_at       TIMESTAMPTZ DEFAULT NOW()
 );
+-- Migration: add column to existing databases
+ALTER TABLE issues ADD COLUMN IF NOT EXISTS epic_key TEXT;
 
 -- Sprint membership with scope-change tracking
 CREATE TABLE IF NOT EXISTS sprint_issues (

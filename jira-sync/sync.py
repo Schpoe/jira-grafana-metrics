@@ -299,7 +299,7 @@ def sync_issues(conn, sync_id, since=None, last_sync_duration=None, resume_token
     fields = [
         "summary", "issuetype", "status", "priority", STORY_POINTS_FIELD,
         "assignee", "reporter", "created", "updated", "resolutiondate",
-        "fixVersions", "labels", "project",
+        "fixVersions", "labels", "project", "parent",
     ]
 
     while True:
@@ -319,6 +319,14 @@ def sync_issues(conn, sync_id, since=None, last_sync_duration=None, resume_token
             story_points = f.get(STORY_POINTS_FIELD)
             fix_versions = [v["name"] for v in f.get("fixVersions", [])]
             labels = f.get("labels", [])
+            # Parent epic: for Stories/Tasks the parent is typically the Epic.
+            # We only store the key when the parent issue type is "Epic".
+            parent = f.get("parent") or {}
+            epic_key = (
+                parent.get("key")
+                if parent.get("fields", {}).get("issuetype", {}).get("name") == "Epic"
+                else None
+            )
 
             issue_rows.append((
                 key,
@@ -336,6 +344,7 @@ def sync_issues(conn, sync_id, since=None, last_sync_duration=None, resume_token
                 parse_dt(f.get("resolutiondate")),
                 fix_versions,
                 labels,
+                epic_key,
             ))
 
             transition_rows.extend(_fetch_changelog(key))
@@ -351,7 +360,7 @@ def sync_issues(conn, sync_id, since=None, last_sync_duration=None, resume_token
                     key, project_key, summary, issue_type, status, status_category,
                     priority, story_points, assignee, reporter,
                     created_at, updated_at, resolved_at,
-                    fix_versions, labels
+                    fix_versions, labels, epic_key
                 ) VALUES %s
                 ON CONFLICT (key) DO UPDATE SET
                     summary          = EXCLUDED.summary,
@@ -365,6 +374,7 @@ def sync_issues(conn, sync_id, since=None, last_sync_duration=None, resume_token
                     resolved_at      = EXCLUDED.resolved_at,
                     fix_versions     = EXCLUDED.fix_versions,
                     labels           = EXCLUDED.labels,
+                    epic_key         = EXCLUDED.epic_key,
                     synced_at        = NOW()
                 """,
                 issue_rows,
