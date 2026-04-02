@@ -137,7 +137,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT COUNT(DISTINCT to_key) FROM v_prod_epic_progress WHERE project_key IN ($project)",
+          "rawSql": "SELECT COALESCE(COUNT(DISTINCT to_key), 0) AS value FROM v_prod_epic_progress WHERE project_key IN ($project)",
           "format": "table",
           "refId": "A"
         }
@@ -290,7 +290,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT ROUND(AVG(completion_pct_sp),1) FROM v_prod_item_progress WHERE prod_key IN (SELECT DISTINCT to_key FROM v_prod_epic_progress WHERE project_key IN ($project))",
+          "rawSql": "SELECT COALESCE(ROUND(AVG(completion_pct_issues), 1), 0) AS value FROM v_prod_item_progress WHERE prod_key IN (SELECT DISTINCT to_key FROM v_prod_epic_progress WHERE project_key IN ($project))",
           "format": "table",
           "refId": "A"
         }
