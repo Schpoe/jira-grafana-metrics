@@ -74,6 +74,16 @@
       "includeVars": true,
       "keepTime": false,
       "asDropdown": false
+    },
+    {
+      "title": "Sprint Detail",
+      "url": "/d/jira-sprint-detail",
+      "type": "link",
+      "icon": "external link",
+      "targetBlank": false,
+      "includeVars": true,
+      "keepTime": false,
+      "asDropdown": false
     }
   ],
   "panels": [
