@@ -23,37 +23,35 @@ session.auth = HTTPBasicAuth(JIRA_EMAIL, JIRA_API_TOKEN)
 session.headers.update({"Accept": "application/json"})
 
 
-def jira_get(url, params=None):
+def jira_post(url, payload):
     for attempt in range(5):
-        r = session.get(url, params=params, timeout=30)
+        r = session.post(url, json=payload, timeout=30)
         if r.status_code in (429,) or r.status_code >= 500:
             time.sleep(2 ** attempt)
             continue
         r.raise_for_status()
         return r.json()
-    raise RuntimeError(f"Failed: GET {url}")
+    raise RuntimeError(f"Failed: POST {url}")
 
 
 def fetch_all_epics():
     project_filter = ", ".join(f'"{k}"' for k in JIRA_PROJECT_KEYS)
     jql = f'project in ({project_filter}) AND issuetype = Epic ORDER BY key ASC'
-    start = 0
-    page_size = 100
     epics = []
+    next_page_token = None
     while True:
-        data = jira_get(
-            f"{JIRA_URL}/rest/api/3/search",
-            params={
-                "jql": jql,
-                "startAt": start,
-                "maxResults": page_size,
-                "fields": "summary,issuelinks",
-            },
-        )
+        payload = {
+            "jql": jql,
+            "maxResults": 100,
+            "fields": ["summary", "issuelinks"],
+        }
+        if next_page_token:
+            payload["nextPageToken"] = next_page_token
+        data = jira_post(f"{JIRA_URL}/rest/api/3/search/jql", payload)
         issues = data.get("issues", [])
         epics.extend(issues)
-        start += len(issues)
-        if start >= data["total"]:
+        next_page_token = data.get("nextPageToken")
+        if not next_page_token or not issues:
             break
     return epics
 
