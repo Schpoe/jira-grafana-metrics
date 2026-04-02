@@ -777,8 +777,8 @@ def sync_sprint_reports(conn):
     for sprint_id, board_id, complete_date in pending:
         try:
             data = jira_get(
-                f"agile/1.0/board/{board_id}/report",
-                params={"sprintId": sprint_id},
+                f"greenhopper/1.0/rapid/charts/sprintreport",
+                params={"rapidViewId": board_id, "sprintId": sprint_id},
             )
         except Exception as exc:
             log.warning("Sprint %d report unavailable (board %d): %s", sprint_id, board_id, exc)
@@ -791,11 +791,13 @@ def sync_sprint_reports(conn):
             conn.commit()
             continue
 
+        contents = data.get("contents", {})
+
         # Issues added after sprint start: dict {issue_key: True}
-        added_keys = list(data.get("issueKeysAddedDuringSprint", {}).keys())
+        added_keys = list(contents.get("issueKeysAddedDuringSprint", {}).keys())
 
         # Issues removed/punted mid-sprint: list of issue objects
-        punted_keys = [i["key"] for i in data.get("puntedIssues", [])]
+        punted_keys = [i["key"] for i in contents.get("puntedIssues", [])]
 
         removed_ts = complete_date or datetime.now(timezone.utc)
 
