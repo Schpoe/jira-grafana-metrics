@@ -260,10 +260,11 @@ FROM sprint_issues si
 JOIN sprints s  ON s.id  = si.sprint_id
 JOIN issues  i  ON i.key = si.issue_key;
 
--- Planning deviation per sprint (committed vs delivered story points)
--- Committed is derived from was_in_initial_scope=TRUE in sprint_issues, which is
--- populated from the Jira sprint report API and reflects the true scope at sprint start.
--- This is more accurate than the start snapshot, which is taken mid-sprint during sync.
+-- Planning deviation per sprint (committed vs delivered story points/issues)
+-- Both committed and delivered are computed directly from sprint_issues + issues,
+-- removing dependency on sprint_snapshots which may be missing for many sprints.
+-- Committed = was_in_initial_scope=TRUE (from Jira sprint report API).
+-- Delivered = issues with status_category='Done' and not removed from sprint.
 CREATE OR REPLACE VIEW v_planning_deviation AS
 WITH committed AS (
     SELECT
@@ -274,6 +275,17 @@ WITH committed AS (
     JOIN issues i ON i.key = si.issue_key
     WHERE si.was_in_initial_scope = TRUE
     GROUP BY si.sprint_id
+),
+delivered AS (
+    SELECT
+        si.sprint_id,
+        COUNT(*) FILTER (WHERE i.status_category = 'Done')                     AS delivered_issues,
+        COALESCE(SUM(COALESCE(si.story_points_at_add, i.story_points, 0))
+            FILTER (WHERE i.status_category = 'Done'), 0)                      AS delivered_points
+    FROM sprint_issues si
+    JOIN issues i ON i.key = si.issue_key
+    WHERE si.removed_at IS NULL
+    GROUP BY si.sprint_id
 )
 SELECT
     s.id                                                            AS sprint_id,
@@ -283,21 +295,20 @@ SELECT
     s.complete_date,
     COALESCE(c.committed_points, 0)                                AS committed_points,
     COALESCE(c.committed_issues, 0)                                AS committed_issues,
-    close_snap.completed_story_points                              AS delivered_points,
-    close_snap.completed_issues                                    AS delivered_issues,
-    close_snap.completed_story_points - COALESCE(c.committed_points, 0) AS deviation_points,
+    COALESCE(d.delivered_points, 0)                                AS delivered_points,
+    COALESCE(d.delivered_issues, 0)                                AS delivered_issues,
+    COALESCE(d.delivered_points, 0) - COALESCE(c.committed_points, 0) AS deviation_points,
     CASE
         WHEN COALESCE(c.committed_points, 0) > 0
         THEN ROUND(
-            100.0 * close_snap.completed_story_points / c.committed_points,
+            100.0 * COALESCE(d.delivered_points, 0) / c.committed_points,
             1
         )
         ELSE NULL
     END                                                             AS delivery_pct
 FROM sprints s
 LEFT JOIN committed c ON c.sprint_id = s.id
-LEFT JOIN sprint_snapshots close_snap
-    ON close_snap.sprint_id = s.id AND close_snap.snapshot_type = 'close';
+LEFT JOIN delivered d ON d.sprint_id = s.id;
 
 -- Lead time: created → resolved (excludes Epics and Sub-tasks)
 CREATE OR REPLACE VIEW v_lead_time AS
