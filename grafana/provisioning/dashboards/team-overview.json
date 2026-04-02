@@ -36,7 +36,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT COALESCE(assignee, 'Unassigned') AS \"Assignee\", COALESCE(SUM(story_points), 0) AS \"Story Points\" FROM issues WHERE project_key IN ($project) AND status_category = 'In Progress' GROUP BY assignee ORDER BY \"Issues\" DESC LIMIT 20",
+          "rawSql": "SELECT COALESCE(assignee, 'Unassigned') AS \"Assignee\", COALESCE(SUM(story_points), 0) AS \"Story Points\" FROM issues WHERE project_key IN ($project) AND status_category = 'In Progress' GROUP BY assignee ORDER BY \"Story Points\" DESC LIMIT 20",
           "format": "table",
           "refId": "A"
         }

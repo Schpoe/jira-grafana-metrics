@@ -183,7 +183,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT status AS \"Status\", COALESCE(SUM(story_points), 0) AS \"Story Points\" FROM issues WHERE project_key IN ($project) AND status_category = 'In Progress' GROUP BY status ORDER BY \"Issues\" DESC",
+          "rawSql": "SELECT status AS \"Status\", COALESCE(SUM(story_points), 0) AS \"Story Points\" FROM issues WHERE project_key IN ($project) AND status_category = 'In Progress' GROUP BY status ORDER BY \"Story Points\" DESC",
           "format": "table",
           "refId": "A"
         }
