@@ -137,7 +137,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT COUNT(DISTINCT to_key) FROM v_prod_epic_progress WHERE ($project = 'ALL' OR project_key = ANY(string_to_array('$project', ',')))",
+          "rawSql": "SELECT COUNT(DISTINCT to_key) FROM v_prod_epic_progress WHERE project_key IN ($project)",
           "format": "table",
           "refId": "A"
         }
@@ -188,7 +188,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT COUNT(DISTINCT epic_key) FROM v_prod_epic_progress WHERE ($project = 'ALL' OR project_key = ANY(string_to_array('$project', ',')))",
+          "rawSql": "SELECT COUNT(DISTINCT epic_key) FROM v_prod_epic_progress WHERE project_key IN ($project)",
           "format": "table",
           "refId": "A"
         }
@@ -239,7 +239,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT COUNT(*) FROM issues WHERE issue_type='Epic' AND key NOT IN (SELECT DISTINCT from_key FROM issue_links WHERE to_key LIKE 'PROD-%') AND ($project = 'ALL' OR project_key = ANY(string_to_array('$project', ',')))",
+          "rawSql": "SELECT COUNT(*) FROM issues WHERE issue_type='Epic' AND key NOT IN (SELECT DISTINCT from_key FROM issue_links WHERE to_key LIKE 'PROD-%') AND project_key IN ($project)",
           "format": "table",
           "refId": "A"
         }
@@ -290,7 +290,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT ROUND(AVG(completion_pct_sp),1) FROM v_prod_item_progress WHERE prod_key IN (SELECT DISTINCT to_key FROM v_prod_epic_progress WHERE ($project = 'ALL' OR project_key = ANY(string_to_array('$project', ','))))",
+          "rawSql": "SELECT ROUND(AVG(completion_pct_sp),1) FROM v_prod_item_progress WHERE prod_key IN (SELECT DISTINCT to_key FROM v_prod_epic_progress WHERE project_key IN ($project))",
           "format": "table",
           "refId": "A"
         }
@@ -360,7 +360,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT\n  p.prod_key                       AS \"PROD Key\",\n  p.prod_summary                   AS \"PROD Item\",\n  p.epic_count                     AS \"Epics\",\n  p.total_issues                   AS \"Total Issues\",\n  p.done_issues                    AS \"Done\",\n  p.total_sp                       AS \"Total SP\",\n  p.done_sp                        AS \"Done SP\",\n  COALESCE(p.completion_pct_sp,0)  AS \"Completion %\"\nFROM v_prod_item_progress p\nWHERE p.prod_key IN (\n  SELECT DISTINCT to_key FROM v_prod_epic_progress WHERE ($project = 'ALL' OR project_key = ANY(string_to_array('$project', ',')))\n)\nORDER BY p.completion_pct_sp DESC NULLS LAST",
+          "rawSql": "SELECT\n  p.prod_key                       AS \"PROD Key\",\n  p.prod_summary                   AS \"PROD Item\",\n  p.epic_count                     AS \"Epics\",\n  p.total_issues                   AS \"Total Issues\",\n  p.done_issues                    AS \"Done\",\n  p.total_sp                       AS \"Total SP\",\n  p.done_sp                        AS \"Done SP\",\n  COALESCE(p.completion_pct_sp,0)  AS \"Completion %\"\nFROM v_prod_item_progress p\nWHERE p.prod_key IN (\n  SELECT DISTINCT to_key FROM v_prod_epic_progress WHERE project_key IN ($project)\n)\nORDER BY p.completion_pct_sp DESC NULLS LAST",
           "format": "table",
           "refId": "A"
         }
@@ -482,7 +482,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT\n  e.epic_key                       AS \"Epic\",\n  e.epic_summary                   AS \"Epic Summary\",\n  e.project_key                    AS \"Project\",\n  e.prod_key                       AS \"PROD Key\",\n  e.prod_summary                   AS \"PROD Item\",\n  e.epic_status                    AS \"Status\",\n  e.total_issues                   AS \"Total Issues\",\n  e.done_issues                    AS \"Done\",\n  e.total_sp                       AS \"Total SP\",\n  e.done_sp                        AS \"Done SP\",\n  COALESCE(e.completion_pct,0)     AS \"Completion %\"\nFROM v_prod_epic_progress e\nWHERE ('$prod_item' = 'ALL' OR e.prod_key = '$prod_item')\n  AND ($project = 'ALL' OR e.project_key = ANY(string_to_array('$project', ',')))\nORDER BY e.prod_key, e.completion_pct DESC NULLS LAST",
+          "rawSql": "SELECT\n  e.epic_key                       AS \"Epic\",\n  e.epic_summary                   AS \"Epic Summary\",\n  e.project_key                    AS \"Project\",\n  e.prod_key                       AS \"PROD Key\",\n  e.prod_summary                   AS \"PROD Item\",\n  e.epic_status                    AS \"Status\",\n  e.total_issues                   AS \"Total Issues\",\n  e.done_issues                    AS \"Done\",\n  e.total_sp                       AS \"Total SP\",\n  e.done_sp                        AS \"Done SP\",\n  COALESCE(e.completion_pct,0)     AS \"Completion %\"\nFROM v_prod_epic_progress e\nWHERE ('$prod_item' = 'ALL' OR e.prod_key = '$prod_item')\n  AND e.project_key IN ($project)\nORDER BY e.prod_key, e.completion_pct DESC NULLS LAST",
           "format": "table",
           "refId": "A"
         }
@@ -666,7 +666,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT\n  i.key                            AS \"Epic Key\",\n  i.summary                        AS \"Summary\",\n  i.project_key                    AS \"Project\",\n  i.status                         AS \"Status\",\n  i.story_points                   AS \"SP\",\n  TO_CHAR(i.created_at,'YYYY-MM-DD') AS \"Created\"\nFROM issues i\nWHERE i.issue_type = 'Epic'\n  AND i.key NOT IN (SELECT DISTINCT from_key FROM issue_links WHERE to_key LIKE 'PROD-%')\n  AND ($project = 'ALL' OR project_key = ANY(string_to_array('$project', ',')))\nORDER BY i.created_at DESC",
+          "rawSql": "SELECT\n  i.key                            AS \"Epic Key\",\n  i.summary                        AS \"Summary\",\n  i.project_key                    AS \"Project\",\n  i.status                         AS \"Status\",\n  i.story_points                   AS \"SP\",\n  TO_CHAR(i.created_at,'YYYY-MM-DD') AS \"Created\"\nFROM issues i\nWHERE i.issue_type = 'Epic'\n  AND i.key NOT IN (SELECT DISTINCT from_key FROM issue_links WHERE to_key LIKE 'PROD-%')\n  AND project_key IN ($project)\nORDER BY i.created_at DESC",
           "format": "table",
           "refId": "A"
         }
@@ -785,21 +785,19 @@
       },
       {
         "name": "project",
-        "label": "Project",
+        "label": "Team / Project",
         "type": "query",
         "datasource": {
           "type": "postgres",
           "uid": "jira-metrics-pg"
         },
-        "query": "SELECT 'ALL' AS __text, 'ALL' AS __value\nUNION ALL\nSELECT name AS __text, key AS __value FROM projects ORDER BY 1",
+        "query": "SELECT key FROM projects ORDER BY key",
         "multi": true,
         "includeAll": true,
-        "allValue": "ALL",
-        "current": {},
-        "refresh": 1,
-        "sort": 0,
-        "hide": 0,
-        "options": []
+        "allValue": null,
+        "refresh": 2,
+        "sort": 1,
+        "hide": 0
       },
       {
         "name": "prod_item",
