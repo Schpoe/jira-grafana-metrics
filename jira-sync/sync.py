@@ -863,19 +863,16 @@ QASE_WORKERS = 10  # concurrent Jira API calls
 def _check_qase_link(issue_key):
     """Return (issue_key, has_link) by checking the Jira issue property."""
     try:
-        url = f"{JIRA_URL}/rest/api/3/issue/{issue_key}/properties/{QASE_PROPERTY_KEY}"
-        resp = _jira_session().get(url)
-        return issue_key, resp.status_code == 200
+        jira_get(f"api/3/issue/{issue_key}/properties/{QASE_PROPERTY_KEY}")
+        return issue_key, True
+    except requests.HTTPError as exc:
+        if exc.response is not None and exc.response.status_code == 404:
+            return issue_key, False
+        log.debug("QASE check failed for %s: %s", issue_key, exc)
+        return issue_key, None  # unexpected error — retry next run
     except Exception as exc:
         log.debug("QASE check failed for %s: %s", issue_key, exc)
-        return issue_key, None  # None = skip / retry next run
-
-
-def _jira_session():
-    s = requests.Session()
-    s.auth = HTTPBasicAuth(JIRA_EMAIL, JIRA_API_TOKEN)
-    s.headers.update({"Accept": "application/json"})
-    return s
+        return issue_key, None
 
 
 def sync_qase_links(conn):
