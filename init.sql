@@ -41,6 +41,7 @@ CREATE TABLE IF NOT EXISTS issues (
 );
 -- Migration: add column to existing databases
 ALTER TABLE issues ADD COLUMN IF NOT EXISTS epic_key TEXT;
+ALTER TABLE issues ADD COLUMN IF NOT EXISTS has_qase_link BOOLEAN;  -- NULL = not yet checked
 
 -- Sprint membership with scope-change tracking
 CREATE TABLE IF NOT EXISTS sprint_issues (

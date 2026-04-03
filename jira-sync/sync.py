@@ -20,6 +20,7 @@ All writes go exclusively to the local Postgres database.
 import logging
 import os
 import sys
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone, timedelta
 
 import psycopg2
@@ -854,6 +855,76 @@ def sync_sprint_reports(conn):
     return synced
 
 
+# ─── QASE link sync ──────────────────────────────────────────────────────────
+
+QASE_PROPERTY_KEY = "com.atlassian.jira.issue:qase.jira.cloud:qase-cases:status"
+QASE_WORKERS = 10  # concurrent Jira API calls
+
+def _check_qase_link(issue_key):
+    """Return (issue_key, has_link) by checking the Jira issue property."""
+    try:
+        url = f"{JIRA_URL}/rest/api/3/issue/{issue_key}/properties/{QASE_PROPERTY_KEY}"
+        resp = _jira_session().get(url)
+        return issue_key, resp.status_code == 200
+    except Exception as exc:
+        log.debug("QASE check failed for %s: %s", issue_key, exc)
+        return issue_key, None  # None = skip / retry next run
+
+
+def _jira_session():
+    s = requests.Session()
+    s.auth = HTTPBasicAuth(JIRA_EMAIL, JIRA_API_TOKEN)
+    s.headers.update({"Accept": "application/json"})
+    return s
+
+
+def sync_qase_links(conn):
+    """Check each issue for a QASE test-case link via Jira issue properties.
+
+    Only processes issues where has_qase_link IS NULL (not yet checked) so
+    incremental runs only cover new issues. Uses a thread pool for speed.
+    """
+    log.info("Syncing QASE links")
+
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT key FROM issues WHERE has_qase_link IS NULL ORDER BY key"
+        )
+        keys = [r[0] for r in cur.fetchall()]
+
+    if not keys:
+        log.info("QASE links: nothing to check")
+        return
+
+    log.info("Checking %d issues for QASE links (workers=%d)", len(keys), QASE_WORKERS)
+
+    results = []
+    with ThreadPoolExecutor(max_workers=QASE_WORKERS) as pool:
+        futures = {pool.submit(_check_qase_link, k): k for k in keys}
+        done = 0
+        for future in as_completed(futures):
+            issue_key, has_link = future.result()
+            if has_link is not None:
+                results.append((has_link, issue_key))
+            done += 1
+            if done % 500 == 0:
+                log.info("QASE: checked %d / %d", done, len(keys))
+
+    if results:
+        with conn.cursor() as cur:
+            execute_values(
+                cur,
+                "UPDATE issues SET has_qase_link = data.has_link "
+                "FROM (VALUES %s) AS data(has_link, key) WHERE issues.key = data.key",
+                results,
+                template="(%s::boolean, %s)",
+            )
+        conn.commit()
+
+    linked = sum(1 for has_link, _ in results if has_link)
+    log.info("QASE links synced: %d linked, %d not linked", linked, len(results) - linked)
+
+
 # ─── Entry point ─────────────────────────────────────────────────────────────
 
 def main():
@@ -930,6 +1001,12 @@ def main():
     except Exception as exc:
         log.error("Releases sync failed: %s", exc, exc_info=True)
         errors.append(f"releases: {exc}")
+
+    try:
+        sync_qase_links(conn)
+    except Exception as exc:
+        log.error("QASE links sync failed: %s", exc, exc_info=True)
+        errors.append(f"qase: {exc}")
 
     # Record success as long as the issues sync completed — that is the
     # step that determines whether the next run can be incremental.
