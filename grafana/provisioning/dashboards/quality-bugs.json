@@ -389,8 +389,7 @@
           "displayMode": "list",
           "placement": "bottom"
         },
-        "orientation": "horizontal",
-        "colorByField": "Release"
+        "orientation": "horizontal"
       },
       "fieldConfig": {
         "defaults": {
@@ -431,7 +430,13 @@
             ]
           }
         ]
-      }
+      },
+      "transformations": [
+        {
+          "id": "rowsToFields",
+          "options": {}
+        }
+      ]
     },
     {
       "id": 7,

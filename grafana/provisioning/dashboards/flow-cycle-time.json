@@ -195,8 +195,7 @@
           "displayMode": "list",
           "placement": "bottom"
         },
-        "orientation": "horizontal",
-        "colorByField": "Status"
+        "orientation": "horizontal"
       },
       "fieldConfig": {
         "defaults": {
@@ -205,7 +204,13 @@
             "mode": "palette-classic"
           }
         }
-      }
+      },
+      "transformations": [
+        {
+          "id": "rowsToFields",
+          "options": {}
+        }
+      ]
     },
     {
       "id": 4,
@@ -239,8 +244,7 @@
           "displayMode": "list",
           "placement": "bottom"
         },
-        "orientation": "horizontal",
-        "colorByField": "Issue Type"
+        "orientation": "horizontal"
       },
       "fieldConfig": {
         "defaults": {
@@ -249,7 +253,13 @@
             "mode": "palette-classic"
           }
         }
-      }
+      },
+      "transformations": [
+        {
+          "id": "rowsToFields",
+          "options": {}
+        }
+      ]
     },
     {
       "id": 5,
@@ -283,8 +293,7 @@
           "displayMode": "list",
           "placement": "bottom"
         },
-        "orientation": "horizontal",
-        "colorByField": "Priority"
+        "orientation": "horizontal"
       },
       "fieldConfig": {
         "defaults": {
@@ -293,7 +302,13 @@
             "mode": "palette-classic"
           }
         }
-      }
+      },
+      "transformations": [
+        {
+          "id": "rowsToFields",
+          "options": {}
+        }
+      ]
     },
     {
       "id": 6,
@@ -475,8 +490,7 @@
           "displayMode": "list",
           "placement": "bottom"
         },
-        "orientation": "horizontal",
-        "colorByField": "Issue Type"
+        "orientation": "horizontal"
       },
       "fieldConfig": {
         "defaults": {
@@ -485,7 +499,13 @@
             "mode": "palette-classic"
           }
         }
-      }
+      },
+      "transformations": [
+        {
+          "id": "rowsToFields",
+          "options": {}
+        }
+      ]
     },
     {
       "id": 9,
@@ -520,8 +540,7 @@
           "displayMode": "list",
           "placement": "bottom"
         },
-        "orientation": "horizontal",
-        "colorByField": "Priority"
+        "orientation": "horizontal"
       },
       "fieldConfig": {
         "defaults": {
@@ -530,7 +549,13 @@
             "mode": "palette-classic"
           }
         }
-      }
+      },
+      "transformations": [
+        {
+          "id": "rowsToFields",
+          "options": {}
+        }
+      ]
     },
     {
       "id": 10,
@@ -870,8 +895,7 @@
         "legend": {
           "displayMode": "list",
           "placement": "bottom"
-        },
-        "colorByField": "Type"
+        }
       },
       "fieldConfig": {
         "defaults": {
@@ -884,7 +908,13 @@
           }
         },
         "overrides": []
-      }
+      },
+      "transformations": [
+        {
+          "id": "rowsToFields",
+          "options": {}
+        }
+      ]
     },
     {
       "id": 16,
@@ -917,8 +947,7 @@
         "legend": {
           "displayMode": "list",
           "placement": "bottom"
-        },
-        "colorByField": "Priority"
+        }
       },
       "fieldConfig": {
         "defaults": {
@@ -931,7 +960,13 @@
           }
         },
         "overrides": []
-      }
+      },
+      "transformations": [
+        {
+          "id": "rowsToFields",
+          "options": {}
+        }
+      ]
     },
     {
       "id": 17,
