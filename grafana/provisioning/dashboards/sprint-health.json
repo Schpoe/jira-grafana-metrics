@@ -18,7 +18,7 @@
     {
       "id": 1,
       "type": "barchart",
-      "title": "Sprint Velocity \u2014 Committed vs Delivered (Story Points)",
+      "title": "Sprint Velocity — Committed vs Delivered (Story Points)",
       "gridPos": {
         "h": 9,
         "w": 24,
@@ -35,7 +35,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT sprint_name, COALESCE(committed_points, 0) AS \"Committed\", COALESCE(delivered_points, 0) AS \"Delivered\" FROM v_planning_deviation WHERE sprint_id IN (SELECT DISTINCT si.sprint_id FROM sprint_issues si JOIN issues i ON i.key = si.issue_key WHERE i.project_key IN ($project)) AND state = 'closed' AND ('$quarter' = '1970-01-01' OR date_trunc('quarter', COALESCE(complete_date, start_date)) = '$quarter'::date) ORDER BY complete_date DESC LIMIT 20",
+          "rawSql": "SELECT sprint_name, COALESCE(committed_points, 0) AS \"Committed\", COALESCE(delivered_points, 0) AS \"Delivered\" FROM v_planning_deviation WHERE sprint_id IN (SELECT DISTINCT si.sprint_id FROM sprint_issues si JOIN issues i ON i.key = si.issue_key WHERE i.project_key IN ($project)) AND state = 'closed' AND ('$quarter' = '1970-01-01' OR date_trunc('quarter', start_date) = '$quarter'::date) ORDER BY complete_date DESC LIMIT 20",
           "format": "table",
           "refId": "A"
         }
@@ -98,7 +98,7 @@
       "id": 2,
       "type": "barchart",
       "title": "Delivery % per Sprint",
-      "description": "Percentage of committed story points actually delivered. Green \u2265 90%, yellow \u2265 70%, red < 70%.",
+      "description": "Percentage of committed story points actually delivered. Green ≥ 90%, yellow ≥ 70%, red < 70%.",
       "gridPos": {
         "h": 8,
         "w": 12,
@@ -115,7 +115,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT sprint_name, COALESCE(delivery_pct, 0) AS \"Delivery %\" FROM v_planning_deviation WHERE sprint_id IN (SELECT DISTINCT si.sprint_id FROM sprint_issues si JOIN issues i ON i.key = si.issue_key WHERE i.project_key IN ($project)) AND state = 'closed' AND ('$quarter' = '1970-01-01' OR date_trunc('quarter', COALESCE(complete_date, start_date)) = '$quarter'::date) ORDER BY complete_date DESC LIMIT 20",
+          "rawSql": "SELECT sprint_name, COALESCE(delivery_pct, 0) AS \"Delivery %\" FROM v_planning_deviation WHERE sprint_id IN (SELECT DISTINCT si.sprint_id FROM sprint_issues si JOIN issues i ON i.key = si.issue_key WHERE i.project_key IN ($project)) AND state = 'closed' AND ('$quarter' = '1970-01-01' OR date_trunc('quarter', start_date) = '$quarter'::date) ORDER BY complete_date DESC LIMIT 20",
           "format": "table",
           "refId": "A"
         }
@@ -161,7 +161,7 @@
     {
       "id": 3,
       "type": "barchart",
-      "title": "Sprint Issue Count \u2014 Committed vs Delivered",
+      "title": "Sprint Issue Count — Committed vs Delivered",
       "description": "Number of issues scoped (committed) vs completed (delivered) per sprint. Complements the story points velocity chart.",
       "gridPos": {
         "h": 8,
@@ -179,7 +179,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT pd.sprint_name, pd.committed_issues AS \"Committed\", pd.delivered_issues AS \"Delivered\" FROM v_planning_deviation pd WHERE pd.sprint_id IN (SELECT DISTINCT si.sprint_id FROM sprint_issues si JOIN issues i ON i.key = si.issue_key WHERE i.project_key IN ($project)) AND pd.state = 'closed' AND pd.committed_issues > 0 AND date_trunc('quarter', COALESCE(pd.complete_date, pd.start_date)) = '$quarter'::date ORDER BY pd.complete_date DESC LIMIT 20",
+          "rawSql": "SELECT pd.sprint_name, pd.committed_issues AS \"Committed\", pd.delivered_issues AS \"Delivered\" FROM v_planning_deviation pd WHERE pd.sprint_id IN (SELECT DISTINCT si.sprint_id FROM sprint_issues si JOIN issues i ON i.key = si.issue_key WHERE i.project_key IN ($project)) AND pd.state = 'closed' AND pd.committed_issues > 0 AND ('$quarter' = '1970-01-01' OR date_trunc('quarter', pd.start_date) = '$quarter'::date) ORDER BY pd.complete_date DESC LIMIT 20",
           "format": "table",
           "refId": "A"
         }
@@ -256,7 +256,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT sprint_name AS \"Sprint\", state AS \"State\", TO_CHAR(start_date, 'YYYY-MM-DD') AS \"Start\", TO_CHAR(complete_date, 'YYYY-MM-DD') AS \"Completed\", COALESCE(committed_points, 0) AS \"Committed\", COALESCE(delivered_points, 0) AS \"Delivered\", COALESCE(delivery_pct, 0) AS \"Delivery %\", COALESCE(deviation_points, 0) AS \"Deviation\" FROM v_planning_deviation WHERE sprint_id IN (SELECT DISTINCT si.sprint_id FROM sprint_issues si JOIN issues i ON i.key = si.issue_key WHERE i.project_key IN ($project)) AND ('$quarter' = '1970-01-01' OR date_trunc('quarter', COALESCE(complete_date, start_date)) = '$quarter'::date) ORDER BY CASE state WHEN 'active' THEN 0 WHEN 'closed' THEN 1 ELSE 2 END, complete_date DESC NULLS LAST LIMIT 30",
+          "rawSql": "SELECT sprint_name AS \"Sprint\", state AS \"State\", TO_CHAR(start_date, 'YYYY-MM-DD') AS \"Start\", TO_CHAR(complete_date, 'YYYY-MM-DD') AS \"Completed\", COALESCE(committed_points, 0) AS \"Committed\", COALESCE(delivered_points, 0) AS \"Delivered\", COALESCE(delivery_pct, 0) AS \"Delivery %\", COALESCE(deviation_points, 0) AS \"Deviation\" FROM v_planning_deviation WHERE sprint_id IN (SELECT DISTINCT si.sprint_id FROM sprint_issues si JOIN issues i ON i.key = si.issue_key WHERE i.project_key IN ($project)) AND ('$quarter' = '1970-01-01' OR date_trunc('quarter', start_date) = '$quarter'::date) ORDER BY CASE state WHEN 'active' THEN 0 WHEN 'closed' THEN 1 ELSE 2 END, complete_date DESC NULLS LAST LIMIT 30",
           "format": "table",
           "refId": "A"
         }
@@ -348,7 +348,7 @@
           }
         ]
       },
-      "description": "Per-sprint overview. Deviation = Delivered SP \u2212 Committed SP. Positive = over-delivered; negative = under-delivered."
+      "description": "Per-sprint overview. Deviation = Delivered SP − Committed SP. Positive = over-delivered; negative = under-delivered."
     }
   ],
   "templating": {

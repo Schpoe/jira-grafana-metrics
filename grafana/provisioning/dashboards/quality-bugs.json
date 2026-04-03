@@ -130,7 +130,7 @@
           }
         }
       },
-      "description": "High-priority open bugs. Target: \u22645. Rising count signals quality regression."
+      "description": "High-priority open bugs. Target: ≤5. Rising count signals quality regression."
     },
     {
       "id": 3,
@@ -246,7 +246,7 @@
           }
         }
       },
-      "description": "Low-priority open bugs. Informational \u2014 review during backlog grooming."
+      "description": "Low-priority open bugs. Informational — review during backlog grooming."
     },
     {
       "id": 5,
@@ -376,7 +376,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT UNNEST(fix_versions) AS \"Release\", COUNT(*) AS \"Total Bugs\", COUNT(*) FILTER (WHERE status_category = 'Done') AS \"Resolved\", COUNT(*) FILTER (WHERE status_category != 'Done') AS \"Open\" FROM issues WHERE project_key IN ($project) AND issue_type = 'Bug' AND fix_versions != '{}' AND ($release = 'ALL' OR $release = ANY(fix_versions)) AND date_trunc('quarter', created_at) = '$quarter'::date GROUP BY 1 ORDER BY \"Total Bugs\" DESC",
+          "rawSql": "SELECT UNNEST(fix_versions) AS \"Release\", COUNT(*) AS \"Total Bugs\", COUNT(*) FILTER (WHERE status_category = 'Done') AS \"Resolved\", COUNT(*) FILTER (WHERE status_category != 'Done') AS \"Open\" FROM issues WHERE project_key IN ($project) AND issue_type = 'Bug' AND fix_versions != '{}' AND ($release = 'ALL' OR $release = ANY(fix_versions)) AND ('$quarter' = '1970-01-01' OR date_trunc('quarter', created_at) = '$quarter'::date) GROUP BY 1 ORDER BY \"Total Bugs\" DESC",
           "format": "table",
           "refId": "A"
         }
@@ -435,7 +435,7 @@
     {
       "id": 7,
       "type": "table",
-      "title": "Open Bugs \u2014 Critical & High",
+      "title": "Open Bugs — Critical & High",
       "description": "All open critical and high priority bugs, sorted by age.",
       "gridPos": {
         "h": 9,
@@ -739,7 +739,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT COUNT(*) AS value FROM issues WHERE project_key IN ($project) AND issue_type != 'Epic' AND ($release = 'ALL' OR $release = ANY(fix_versions)) AND key IN (SELECT DISTINCT si.issue_key FROM sprint_issues si JOIN sprints s ON s.id = si.sprint_id WHERE date_trunc('quarter', COALESCE(s.complete_date, s.start_date)) = '$quarter'::date) AND has_qase_link = TRUE",
+          "rawSql": "SELECT COUNT(*) AS value FROM issues WHERE project_key IN ($project) AND issue_type != 'Epic' AND ($release = 'ALL' OR $release = ANY(fix_versions)) AND key IN (SELECT DISTINCT si.issue_key FROM sprint_issues si JOIN sprints s ON s.id = si.sprint_id WHERE ('$quarter' = '1970-01-01' OR date_trunc('quarter', s.start_date) = '$quarter'::date)) AND has_qase_link = TRUE",
           "format": "table",
           "refId": "A"
         }
@@ -792,7 +792,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT COUNT(*) AS value FROM issues WHERE project_key IN ($project) AND issue_type != 'Epic' AND ($release = 'ALL' OR $release = ANY(fix_versions)) AND key IN (SELECT DISTINCT si.issue_key FROM sprint_issues si JOIN sprints s ON s.id = si.sprint_id WHERE date_trunc('quarter', COALESCE(s.complete_date, s.start_date)) = '$quarter'::date) AND has_qase_link = FALSE",
+          "rawSql": "SELECT COUNT(*) AS value FROM issues WHERE project_key IN ($project) AND issue_type != 'Epic' AND ($release = 'ALL' OR $release = ANY(fix_versions)) AND key IN (SELECT DISTINCT si.issue_key FROM sprint_issues si JOIN sprints s ON s.id = si.sprint_id WHERE ('$quarter' = '1970-01-01' OR date_trunc('quarter', s.start_date) = '$quarter'::date)) AND has_qase_link = FALSE",
           "format": "table",
           "refId": "A"
         }
@@ -849,7 +849,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT ROUND(100.0 * COUNT(*) FILTER (WHERE has_qase_link = TRUE) / NULLIF(COUNT(*) FILTER (WHERE has_qase_link IS NOT NULL), 0), 1) AS value FROM issues WHERE project_key IN ($project) AND issue_type != 'Epic' AND ($release = 'ALL' OR $release = ANY(fix_versions)) AND key IN (SELECT DISTINCT si.issue_key FROM sprint_issues si JOIN sprints s ON s.id = si.sprint_id WHERE date_trunc('quarter', COALESCE(s.complete_date, s.start_date)) = '$quarter'::date)",
+          "rawSql": "SELECT ROUND(100.0 * COUNT(*) FILTER (WHERE has_qase_link = TRUE) / NULLIF(COUNT(*) FILTER (WHERE has_qase_link IS NOT NULL), 0), 1) AS value FROM issues WHERE project_key IN ($project) AND issue_type != 'Epic' AND ($release = 'ALL' OR $release = ANY(fix_versions)) AND key IN (SELECT DISTINCT si.issue_key FROM sprint_issues si JOIN sprints s ON s.id = si.sprint_id WHERE ('$quarter' = '1970-01-01' OR date_trunc('quarter', s.start_date) = '$quarter'::date))",
           "format": "table",
           "refId": "A"
         }
@@ -911,7 +911,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT COUNT(*) AS value FROM issues WHERE project_key IN ($project) AND issue_type != 'Epic' AND ($release = 'ALL' OR $release = ANY(fix_versions)) AND key IN (SELECT DISTINCT si.issue_key FROM sprint_issues si JOIN sprints s ON s.id = si.sprint_id WHERE date_trunc('quarter', COALESCE(s.complete_date, s.start_date)) = '$quarter'::date) AND has_qase_link IS NULL",
+          "rawSql": "SELECT COUNT(*) AS value FROM issues WHERE project_key IN ($project) AND issue_type != 'Epic' AND ($release = 'ALL' OR $release = ANY(fix_versions)) AND key IN (SELECT DISTINCT si.issue_key FROM sprint_issues si JOIN sprints s ON s.id = si.sprint_id WHERE ('$quarter' = '1970-01-01' OR date_trunc('quarter', s.start_date) = '$quarter'::date)) AND has_qase_link IS NULL",
           "format": "table",
           "refId": "A"
         }
@@ -964,7 +964,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT issue_type AS \"Issue Type\", COUNT(*) FILTER (WHERE has_qase_link = TRUE) AS \"With QASE\", COUNT(*) FILTER (WHERE has_qase_link = FALSE) AS \"Without QASE\" FROM issues WHERE project_key IN ($project) AND issue_type != 'Epic' AND ($release = 'ALL' OR $release = ANY(fix_versions)) AND key IN (SELECT DISTINCT si.issue_key FROM sprint_issues si JOIN sprints s ON s.id = si.sprint_id WHERE date_trunc('quarter', COALESCE(s.complete_date, s.start_date)) = '$quarter'::date) AND has_qase_link IS NOT NULL GROUP BY issue_type ORDER BY \"Without QASE\" DESC",
+          "rawSql": "SELECT issue_type AS \"Issue Type\", COUNT(*) FILTER (WHERE has_qase_link = TRUE) AS \"With QASE\", COUNT(*) FILTER (WHERE has_qase_link = FALSE) AS \"Without QASE\" FROM issues WHERE project_key IN ($project) AND issue_type != 'Epic' AND ($release = 'ALL' OR $release = ANY(fix_versions)) AND key IN (SELECT DISTINCT si.issue_key FROM sprint_issues si JOIN sprints s ON s.id = si.sprint_id WHERE ('$quarter' = '1970-01-01' OR date_trunc('quarter', s.start_date) = '$quarter'::date)) AND has_qase_link IS NOT NULL GROUP BY issue_type ORDER BY \"Without QASE\" DESC",
           "format": "table",
           "refId": "A"
         }
@@ -1176,7 +1176,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT key AS \"Key\", summary AS \"Summary\", issue_type AS \"Type\", priority AS \"Priority\", status AS \"Status\", COALESCE(assignee, 'Unassigned') AS \"Assignee\", DATE_PART('day', NOW() - created_at)::int AS \"Age (days)\" FROM issues WHERE project_key IN ($project) AND issue_type != 'Epic' AND ($release = 'ALL' OR $release = ANY(fix_versions)) AND key IN (SELECT DISTINCT si.issue_key FROM sprint_issues si JOIN sprints s ON s.id = si.sprint_id WHERE date_trunc('quarter', COALESCE(s.complete_date, s.start_date)) = '$quarter'::date) AND has_qase_link = FALSE ORDER BY CASE priority WHEN 'Blocker' THEN 1 WHEN 'Critical' THEN 2 WHEN 'High' THEN 3 WHEN 'Medium' THEN 4 ELSE 5 END, created_at ASC LIMIT 50",
+          "rawSql": "SELECT key AS \"Key\", summary AS \"Summary\", issue_type AS \"Type\", priority AS \"Priority\", status AS \"Status\", COALESCE(assignee, 'Unassigned') AS \"Assignee\", DATE_PART('day', NOW() - created_at)::int AS \"Age (days)\" FROM issues WHERE project_key IN ($project) AND issue_type != 'Epic' AND ($release = 'ALL' OR $release = ANY(fix_versions)) AND key IN (SELECT DISTINCT si.issue_key FROM sprint_issues si JOIN sprints s ON s.id = si.sprint_id WHERE ('$quarter' = '1970-01-01' OR date_trunc('quarter', s.start_date) = '$quarter'::date)) AND has_qase_link = FALSE ORDER BY CASE priority WHEN 'Blocker' THEN 1 WHEN 'Critical' THEN 2 WHEN 'High' THEN 3 WHEN 'Medium' THEN 4 ELSE 5 END, created_at ASC LIMIT 50",
           "format": "table",
           "refId": "A"
         }
@@ -1237,7 +1237,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT   issue_type AS \"Issue Type\",   COUNT(*) AS \"Total (checked)\",   COUNT(*) FILTER (WHERE has_qase_link = TRUE) AS \"With QASE\",   COUNT(*) FILTER (WHERE has_qase_link = FALSE) AS \"Without QASE\",   COUNT(*) FILTER (WHERE has_qase_link IS NULL) AS \"Not Checked\",   ROUND(100.0 * COUNT(*) FILTER (WHERE has_qase_link = TRUE)     / NULLIF(COUNT(*) FILTER (WHERE has_qase_link IS NOT NULL), 0), 1) AS \"Coverage %\" FROM issues WHERE project_key IN ($project) AND issue_type != 'Epic' AND ($release = 'ALL' OR $release = ANY(fix_versions)) AND key IN (SELECT DISTINCT si.issue_key FROM sprint_issues si JOIN sprints s ON s.id = si.sprint_id WHERE date_trunc('quarter', COALESCE(s.complete_date, s.start_date)) = '$quarter'::date) GROUP BY issue_type ORDER BY \"Without QASE\" DESC",
+          "rawSql": "SELECT   issue_type AS \"Issue Type\",   COUNT(*) AS \"Total (checked)\",   COUNT(*) FILTER (WHERE has_qase_link = TRUE) AS \"With QASE\",   COUNT(*) FILTER (WHERE has_qase_link = FALSE) AS \"Without QASE\",   COUNT(*) FILTER (WHERE has_qase_link IS NULL) AS \"Not Checked\",   ROUND(100.0 * COUNT(*) FILTER (WHERE has_qase_link = TRUE)     / NULLIF(COUNT(*) FILTER (WHERE has_qase_link IS NOT NULL), 0), 1) AS \"Coverage %\" FROM issues WHERE project_key IN ($project) AND issue_type != 'Epic' AND ($release = 'ALL' OR $release = ANY(fix_versions)) AND key IN (SELECT DISTINCT si.issue_key FROM sprint_issues si JOIN sprints s ON s.id = si.sprint_id WHERE ('$quarter' = '1970-01-01' OR date_trunc('quarter', s.start_date) = '$quarter'::date)) GROUP BY issue_type ORDER BY \"Without QASE\" DESC",
           "format": "table",
           "refId": "A"
         }
@@ -1409,7 +1409,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT status AS \"Status\", COUNT(*) AS \"Total (checked)\", COUNT(*) FILTER (WHERE has_qase_link = TRUE) AS \"With QASE\", COUNT(*) FILTER (WHERE has_qase_link = FALSE) AS \"Without QASE\", COUNT(*) FILTER (WHERE has_qase_link IS NULL) AS \"Not Checked\", ROUND(100.0 * COUNT(*) FILTER (WHERE has_qase_link = TRUE) / NULLIF(COUNT(*) FILTER (WHERE has_qase_link IS NOT NULL), 0), 1) AS \"Coverage %\" FROM issues WHERE project_key IN ($project) AND issue_type != 'Epic' AND ($release = 'ALL' OR $release = ANY(fix_versions)) AND key IN (SELECT DISTINCT si.issue_key FROM sprint_issues si JOIN sprints s ON s.id = si.sprint_id WHERE date_trunc('quarter', COALESCE(s.complete_date, s.start_date)) = '$quarter'::date) GROUP BY status ORDER BY \"Without QASE\" DESC",
+          "rawSql": "SELECT status AS \"Status\", COUNT(*) AS \"Total (checked)\", COUNT(*) FILTER (WHERE has_qase_link = TRUE) AS \"With QASE\", COUNT(*) FILTER (WHERE has_qase_link = FALSE) AS \"Without QASE\", COUNT(*) FILTER (WHERE has_qase_link IS NULL) AS \"Not Checked\", ROUND(100.0 * COUNT(*) FILTER (WHERE has_qase_link = TRUE) / NULLIF(COUNT(*) FILTER (WHERE has_qase_link IS NOT NULL), 0), 1) AS \"Coverage %\" FROM issues WHERE project_key IN ($project) AND issue_type != 'Epic' AND ($release = 'ALL' OR $release = ANY(fix_versions)) AND key IN (SELECT DISTINCT si.issue_key FROM sprint_issues si JOIN sprints s ON s.id = si.sprint_id WHERE ('$quarter' = '1970-01-01' OR date_trunc('quarter', s.start_date) = '$quarter'::date)) GROUP BY status ORDER BY \"Without QASE\" DESC",
           "format": "table",
           "refId": "A"
         }
@@ -1605,9 +1605,9 @@
         },
         "query": "SELECT CONCAT('Q', EXTRACT(QUARTER FROM created_at)::int, ' ', EXTRACT(YEAR FROM created_at)::int) AS __text, TO_CHAR(date_trunc('quarter', created_at), 'YYYY-MM-DD') AS __value FROM issues WHERE created_at IS NOT NULL GROUP BY 1, 2 ORDER BY 2 DESC",
         "refresh": 2,
-        "includeAll": false,
+        "includeAll": true,
         "multi": false,
-        "allValue": null,
+        "allValue": "1970-01-01",
         "sort": 0,
         "hide": 0
       },
