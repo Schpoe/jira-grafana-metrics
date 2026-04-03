@@ -430,13 +430,7 @@
             ]
           }
         ]
-      },
-      "transformations": [
-        {
-          "id": "rowsToFields",
-          "options": {}
-        }
-      ]
+      }
     },
     {
       "id": 7,

@@ -58,13 +58,7 @@
             "mode": "palette-classic"
           }
         }
-      },
-      "transformations": [
-        {
-          "id": "rowsToFields",
-          "options": {}
-        }
-      ]
+      }
     },
     {
       "id": 2,
@@ -108,13 +102,7 @@
             "mode": "palette-classic"
           }
         }
-      },
-      "transformations": [
-        {
-          "id": "rowsToFields",
-          "options": {}
-        }
-      ]
+      }
     },
     {
       "id": 3,
@@ -159,13 +147,7 @@
             "mode": "palette-classic"
           }
         }
-      },
-      "transformations": [
-        {
-          "id": "rowsToFields",
-          "options": {}
-        }
-      ]
+      }
     },
     {
       "id": 4,
@@ -209,13 +191,7 @@
             "mode": "palette-classic"
           }
         }
-      },
-      "transformations": [
-        {
-          "id": "rowsToFields",
-          "options": {}
-        }
-      ]
+      }
     },
     {
       "id": 5,

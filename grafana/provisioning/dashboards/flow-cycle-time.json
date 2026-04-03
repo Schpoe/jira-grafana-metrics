@@ -204,13 +204,7 @@
             "mode": "palette-classic"
           }
         }
-      },
-      "transformations": [
-        {
-          "id": "rowsToFields",
-          "options": {}
-        }
-      ]
+      }
     },
     {
       "id": 4,
@@ -253,13 +247,7 @@
             "mode": "palette-classic"
           }
         }
-      },
-      "transformations": [
-        {
-          "id": "rowsToFields",
-          "options": {}
-        }
-      ]
+      }
     },
     {
       "id": 5,
@@ -302,13 +290,7 @@
             "mode": "palette-classic"
           }
         }
-      },
-      "transformations": [
-        {
-          "id": "rowsToFields",
-          "options": {}
-        }
-      ]
+      }
     },
     {
       "id": 6,
@@ -499,13 +481,7 @@
             "mode": "palette-classic"
           }
         }
-      },
-      "transformations": [
-        {
-          "id": "rowsToFields",
-          "options": {}
-        }
-      ]
+      }
     },
     {
       "id": 9,
@@ -549,13 +525,7 @@
             "mode": "palette-classic"
           }
         }
-      },
-      "transformations": [
-        {
-          "id": "rowsToFields",
-          "options": {}
-        }
-      ]
+      }
     },
     {
       "id": 10,
@@ -908,13 +878,7 @@
           }
         },
         "overrides": []
-      },
-      "transformations": [
-        {
-          "id": "rowsToFields",
-          "options": {}
-        }
-      ]
+      }
     },
     {
       "id": 16,
@@ -960,13 +924,7 @@
           }
         },
         "overrides": []
-      },
-      "transformations": [
-        {
-          "id": "rowsToFields",
-          "options": {}
-        }
-      ]
+      }
     },
     {
       "id": 17,
