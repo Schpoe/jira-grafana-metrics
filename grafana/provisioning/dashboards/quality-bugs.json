@@ -701,6 +701,381 @@
           }
         ]
       }
+    },
+    {
+      "id": 20,
+      "type": "row",
+      "title": "QASE Test Coverage",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 30
+      }
+    },
+    {
+      "id": 21,
+      "type": "stat",
+      "title": "Issues with QASE Link",
+      "description": "Issues (excl. Epics) that have at least one QASE test case linked.",
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 31
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT COUNT(*) AS value FROM issues WHERE project_key IN ($project) AND issue_type != 'Epic' AND ($release = 'ALL' OR $release = ANY(fix_versions)) AND date_trunc('quarter', created_at) = '$quarter'::date AND has_qase_link = TRUE",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "background",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": []
+        }
+      }
+    },
+    {
+      "id": 22,
+      "type": "stat",
+      "title": "Issues without QASE Link",
+      "description": "Issues (excl. Epics) with no QASE test case linked.",
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 31
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT COUNT(*) AS value FROM issues WHERE project_key IN ($project) AND issue_type != 'Epic' AND ($release = 'ALL' OR $release = ANY(fix_versions)) AND date_trunc('quarter', created_at) = '$quarter'::date AND (has_qase_link = FALSE OR has_qase_link IS NULL)",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "background",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 1
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": []
+        }
+      }
+    },
+    {
+      "id": 23,
+      "type": "stat",
+      "title": "QASE Coverage %",
+      "description": "Percentage of issues (excl. Epics) with at least one QASE test case linked.",
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 31
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT ROUND(100.0 * COUNT(*) FILTER (WHERE has_qase_link = TRUE) / NULLIF(COUNT(*) FILTER (WHERE has_qase_link IS NOT NULL), 0), 1) AS value FROM issues WHERE project_key IN ($project) AND issue_type != 'Epic' AND ($release = 'ALL' OR $release = ANY(fix_versions)) AND date_trunc('quarter', created_at) = '$quarter'::date",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "background",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 50
+              },
+              {
+                "color": "green",
+                "value": 80
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": []
+        }
+      }
+    },
+    {
+      "id": 24,
+      "type": "stat",
+      "title": "Not Yet Checked",
+      "description": "Issues where QASE status has not been fetched yet (pending next sync).",
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 31
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT COUNT(*) AS value FROM issues WHERE project_key IN ($project) AND issue_type != 'Epic' AND ($release = 'ALL' OR $release = ANY(fix_versions)) AND date_trunc('quarter', created_at) = '$quarter'::date AND has_qase_link IS NULL",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": []
+        }
+      }
+    },
+    {
+      "id": 25,
+      "type": "barchart",
+      "title": "QASE Coverage by Issue Type",
+      "description": "Number of issues with and without a QASE link per issue type.",
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 35
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT issue_type AS \"Issue Type\", COUNT(*) FILTER (WHERE has_qase_link = TRUE) AS \"With QASE\", COUNT(*) FILTER (WHERE has_qase_link = FALSE OR has_qase_link IS NULL) AS \"Without QASE\" FROM issues WHERE project_key IN ($project) AND issue_type != 'Epic' AND ($release = 'ALL' OR $release = ANY(fix_versions)) AND date_trunc('quarter', created_at) = '$quarter'::date AND has_qase_link IS NOT NULL GROUP BY issue_type ORDER BY \"Without QASE\" DESC",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "xField": "Issue Type",
+        "stacking": "normal",
+        "fillOpacity": 80,
+        "orientation": "horizontal",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "With QASE"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "green",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Without QASE"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "orange",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 26,
+      "type": "table",
+      "title": "Issues Without QASE Link",
+      "description": "Issues (excl. Epics) that have no QASE test case linked, ordered by priority and age.",
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 35
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT key AS \"Key\", summary AS \"Summary\", issue_type AS \"Type\", priority AS \"Priority\", status AS \"Status\", COALESCE(assignee, 'Unassigned') AS \"Assignee\", DATE_PART('day', NOW() - created_at)::int AS \"Age (days)\" FROM issues WHERE project_key IN ($project) AND issue_type != 'Epic' AND ($release = 'ALL' OR $release = ANY(fix_versions)) AND date_trunc('quarter', created_at) = '$quarter'::date AND (has_qase_link = FALSE OR has_qase_link IS NULL) ORDER BY CASE priority WHEN 'Blocker' THEN 1 WHEN 'Critical' THEN 2 WHEN 'High' THEN 3 WHEN 'Medium' THEN 4 ELSE 5 END, created_at ASC LIMIT 50",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "sortBy": [
+          {
+            "displayName": "Age (days)",
+            "desc": true
+          }
+        ]
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "left"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Key"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Open in Jira",
+                    "url": "${jira_url}/browse/${__value.text}"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
     }
   ],
   "templating": {
