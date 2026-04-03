@@ -45,6 +45,7 @@ JIRA_PROJECT_KEYS = [k.strip() for k in os.environ["JIRA_PROJECT_KEYS"].split(",
 
 # Jira Cloud story points field — override via env if your instance differs
 STORY_POINTS_FIELD = os.environ.get("JIRA_STORY_POINTS_FIELD", "customfield_10016")
+ACCEPTANCE_CRITERIA_FIELD = os.environ.get("JIRA_ACCEPTANCE_CRITERIA_FIELD", "customfield_10028")
 
 PG_DSN = (
     f"host={os.environ['POSTGRES_HOST']} "
@@ -299,6 +300,7 @@ def sync_issues(conn, sync_id, since=None, last_sync_duration=None, resume_token
         "summary", "issuetype", "status", "priority", STORY_POINTS_FIELD,
         "assignee", "reporter", "created", "updated", "resolutiondate",
         "fixVersions", "labels", "project", "parent", "issuelinks",
+        ACCEPTANCE_CRITERIA_FIELD,
     ]
 
     while True:
@@ -328,6 +330,12 @@ def sync_issues(conn, sync_id, since=None, last_sync_duration=None, resume_token
                 else None
             )
 
+            # Acceptance criteria: store boolean — does the field have any content?
+            ac_raw = f.get(ACCEPTANCE_CRITERIA_FIELD)
+            has_acceptance_criteria = bool(
+                ac_raw and ac_raw.get("content") and len(ac_raw["content"]) > 0
+            ) if isinstance(ac_raw, dict) else bool(ac_raw)
+
             issue_rows.append((
                 key,
                 f["project"]["key"],
@@ -345,6 +353,7 @@ def sync_issues(conn, sync_id, since=None, last_sync_duration=None, resume_token
                 fix_versions,
                 labels,
                 epic_key,
+                has_acceptance_criteria,
             ))
 
             # Extract all issue links (both directions)
@@ -377,22 +386,23 @@ def sync_issues(conn, sync_id, since=None, last_sync_duration=None, resume_token
                     key, project_key, summary, issue_type, status, status_category,
                     priority, story_points, assignee, reporter,
                     created_at, updated_at, resolved_at,
-                    fix_versions, labels, epic_key
+                    fix_versions, labels, epic_key, has_acceptance_criteria
                 ) VALUES %s
                 ON CONFLICT (key) DO UPDATE SET
-                    summary          = EXCLUDED.summary,
-                    issue_type       = EXCLUDED.issue_type,
-                    status           = EXCLUDED.status,
-                    status_category  = EXCLUDED.status_category,
-                    priority         = EXCLUDED.priority,
-                    story_points     = EXCLUDED.story_points,
-                    assignee         = EXCLUDED.assignee,
-                    updated_at       = EXCLUDED.updated_at,
-                    resolved_at      = EXCLUDED.resolved_at,
-                    fix_versions     = EXCLUDED.fix_versions,
-                    labels           = EXCLUDED.labels,
-                    epic_key         = EXCLUDED.epic_key,
-                    synced_at        = NOW()
+                    summary                  = EXCLUDED.summary,
+                    issue_type               = EXCLUDED.issue_type,
+                    status                   = EXCLUDED.status,
+                    status_category          = EXCLUDED.status_category,
+                    priority                 = EXCLUDED.priority,
+                    story_points             = EXCLUDED.story_points,
+                    assignee                 = EXCLUDED.assignee,
+                    updated_at               = EXCLUDED.updated_at,
+                    resolved_at              = EXCLUDED.resolved_at,
+                    fix_versions             = EXCLUDED.fix_versions,
+                    labels                   = EXCLUDED.labels,
+                    epic_key                 = EXCLUDED.epic_key,
+                    has_acceptance_criteria  = EXCLUDED.has_acceptance_criteria,
+                    synced_at                = NOW()
                 """,
                 issue_rows,
             )
