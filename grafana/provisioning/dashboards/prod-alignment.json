@@ -137,7 +137,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT COALESCE(COUNT(DISTINCT ep.prod_key), 0) AS value FROM v_prod_epic_progress ep JOIN issues i ON i.key = ep.epic_key WHERE ep.project_key IN ($project) AND date_trunc('quarter', i.created_at) = '$quarter'::date",
+          "rawSql": "SELECT COALESCE(COUNT(DISTINCT ep.prod_key), 0) AS value FROM v_prod_epic_progress ep JOIN issues i ON i.key = ep.epic_key WHERE ep.project_key IN ($project) AND ('$quarter' = '1970-01-01' OR date_trunc('quarter', i.created_at) = '$quarter'::date)",
           "format": "table",
           "refId": "A"
         }
@@ -188,7 +188,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT COUNT(DISTINCT ep.epic_key) FROM v_prod_epic_progress ep JOIN issues i ON i.key = ep.epic_key WHERE ep.project_key IN ($project) AND date_trunc('quarter', i.created_at) = '$quarter'::date",
+          "rawSql": "SELECT COUNT(DISTINCT ep.epic_key) FROM v_prod_epic_progress ep JOIN issues i ON i.key = ep.epic_key WHERE ep.project_key IN ($project) AND ('$quarter' = '1970-01-01' OR date_trunc('quarter', i.created_at) = '$quarter'::date)",
           "format": "table",
           "refId": "A"
         }
@@ -239,7 +239,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT COUNT(*) FROM issues WHERE issue_type='Epic' AND key NOT IN (SELECT DISTINCT from_key FROM issue_links WHERE to_key LIKE 'PROD-%') AND project_key IN ($project) AND date_trunc('quarter', created_at) = '$quarter'::date",
+          "rawSql": "SELECT COUNT(*) FROM issues WHERE issue_type='Epic' AND key NOT IN (SELECT DISTINCT from_key FROM issue_links WHERE to_key LIKE 'PROD-%') AND project_key IN ($project) AND ('$quarter' = '1970-01-01' OR date_trunc('quarter', created_at) = '$quarter'::date)",
           "format": "table",
           "refId": "A"
         }
@@ -290,7 +290,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT COALESCE(ROUND(AVG(completion_pct_issues), 1), 0) AS value FROM v_prod_item_progress WHERE prod_key IN (SELECT DISTINCT ep.prod_key FROM v_prod_epic_progress ep JOIN issues i ON i.key = ep.epic_key WHERE ep.project_key IN ($project) AND date_trunc('quarter', i.created_at) = '$quarter'::date)",
+          "rawSql": "SELECT COALESCE(ROUND(AVG(completion_pct_issues), 1), 0) AS value FROM v_prod_item_progress WHERE prod_key IN (SELECT DISTINCT ep.prod_key FROM v_prod_epic_progress ep JOIN issues i ON i.key = ep.epic_key WHERE ep.project_key IN ($project) AND ('$quarter' = '1970-01-01' OR date_trunc('quarter', i.created_at) = '$quarter'::date))",
           "format": "table",
           "refId": "A"
         }
@@ -360,7 +360,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT\n  p.prod_key                       AS \"PROD Key\",\n  p.prod_summary                   AS \"PROD Item\",\n  p.epic_count                     AS \"Epics\",\n  p.total_issues                   AS \"Total Issues\",\n  p.done_issues                    AS \"Done\",\n  p.total_sp                       AS \"Total SP\",\n  p.done_sp                        AS \"Done SP\",\n  COALESCE(p.completion_pct_sp,0)  AS \"Completion % (SP)\"\nFROM v_prod_item_progress p\nWHERE p.prod_key IN (\n  SELECT DISTINCT ep.prod_key FROM v_prod_epic_progress ep\n  JOIN issues i ON i.key = ep.epic_key\n  WHERE ep.project_key IN ($project)\n  AND date_trunc('quarter', i.created_at) = '$quarter'::date\n)\nORDER BY p.completion_pct_sp DESC NULLS LAST",
+          "rawSql": "SELECT\n  p.prod_key                       AS \"PROD Key\",\n  p.prod_summary                   AS \"PROD Item\",\n  p.epic_count                     AS \"Epics\",\n  p.total_issues                   AS \"Total Issues\",\n  p.done_issues                    AS \"Done\",\n  p.total_sp                       AS \"Total SP\",\n  p.done_sp                        AS \"Done SP\",\n  COALESCE(p.completion_pct_sp,0)  AS \"Completion % (SP)\"\nFROM v_prod_item_progress p\nWHERE p.prod_key IN (\n  SELECT DISTINCT ep.prod_key FROM v_prod_epic_progress ep\n  JOIN issues i ON i.key = ep.epic_key\n  WHERE ep.project_key IN ($project)\n  AND ('$quarter' = '1970-01-01' OR date_trunc('quarter', i.created_at) = '$quarter'::date)\n)\nORDER BY p.completion_pct_sp DESC NULLS LAST",
           "format": "table",
           "refId": "A"
         }
@@ -493,7 +493,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT\n  e.epic_key                       AS \"Epic\",\n  e.epic_summary                   AS \"Epic Summary\",\n  e.project_key                    AS \"Project\",\n  e.prod_key                       AS \"PROD Key\",\n  e.prod_summary                   AS \"PROD Item\",\n  e.epic_status                    AS \"Status\",\n  e.total_issues                   AS \"Total Issues\",\n  e.done_issues                    AS \"Done\",\n  e.total_sp                       AS \"Total SP\",\n  e.done_sp                        AS \"Done SP\",\n  COALESCE(e.completion_pct,0)     AS \"Completion %\"\nFROM v_prod_epic_progress e\nJOIN issues i ON i.key = e.epic_key\nWHERE ('$prod_item' = 'ALL' OR e.prod_key = '$prod_item')\n  AND e.project_key IN ($project)\n  AND date_trunc('quarter', i.created_at) = '$quarter'::date\nORDER BY e.prod_key, e.completion_pct DESC NULLS LAST",
+          "rawSql": "SELECT\n  e.epic_key                       AS \"Epic\",\n  e.epic_summary                   AS \"Epic Summary\",\n  e.project_key                    AS \"Project\",\n  e.prod_key                       AS \"PROD Key\",\n  e.prod_summary                   AS \"PROD Item\",\n  e.epic_status                    AS \"Status\",\n  e.total_issues                   AS \"Total Issues\",\n  e.done_issues                    AS \"Done\",\n  e.total_sp                       AS \"Total SP\",\n  e.done_sp                        AS \"Done SP\",\n  COALESCE(e.completion_pct,0)     AS \"Completion %\"\nFROM v_prod_epic_progress e\nJOIN issues i ON i.key = e.epic_key\nWHERE ('$prod_item' = 'ALL' OR e.prod_key = '$prod_item')\n  AND e.project_key IN ($project)\n  AND ('$quarter' = '1970-01-01' OR date_trunc('quarter', i.created_at) = '$quarter'::date)\nORDER BY e.prod_key, e.completion_pct DESC NULLS LAST",
           "format": "table",
           "refId": "A"
         }
@@ -831,9 +831,9 @@
         },
         "query": "SELECT CONCAT('Q', EXTRACT(QUARTER FROM created_at)::int, ' ', EXTRACT(YEAR FROM created_at)::int) AS __text, TO_CHAR(date_trunc('quarter', created_at), 'YYYY-MM-DD') AS __value FROM issues WHERE created_at IS NOT NULL AND issue_type = 'Epic' GROUP BY 1, 2 ORDER BY 2 DESC",
         "refresh": 2,
-        "includeAll": false,
+        "includeAll": true,
         "multi": false,
-        "allValue": null,
+        "allValue": "1970-01-01",
         "sort": 0,
         "hide": 0,
         "current": {},
