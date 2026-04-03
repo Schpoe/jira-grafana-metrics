@@ -386,6 +386,14 @@
                 "value": "percent"
               },
               {
+                "id": "min",
+                "value": 0
+              },
+              {
+                "id": "max",
+                "value": 100
+              },
+              {
                 "id": "custom.cellOptions",
                 "value": {
                   "type": "gauge",
@@ -503,12 +511,20 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Completion % (SP)"
+              "options": "Completion %"
             },
             "properties": [
               {
                 "id": "unit",
                 "value": "percent"
+              },
+              {
+                "id": "min",
+                "value": 0
+              },
+              {
+                "id": "max",
+                "value": 100
               },
               {
                 "id": "custom.cellOptions",
