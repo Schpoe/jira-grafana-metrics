@@ -347,7 +347,8 @@
             ]
           }
         ]
-      }
+      },
+      "description": "Per-sprint overview. Deviation = Delivered SP \u2212 Committed SP. Positive = over-delivered; negative = under-delivered."
     }
   ],
   "templating": {

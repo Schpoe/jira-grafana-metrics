@@ -69,7 +69,8 @@
           },
           "mappings": []
         }
-      }
+      },
+      "description": "Critical-priority bugs not yet resolved. Target: 0. Escalate immediately if any are open."
     },
     {
       "id": 2,
@@ -128,7 +129,8 @@
             "mode": "thresholds"
           }
         }
-      }
+      },
+      "description": "High-priority open bugs. Target: \u22645. Rising count signals quality regression."
     },
     {
       "id": 3,
@@ -187,7 +189,8 @@
             "mode": "thresholds"
           }
         }
-      }
+      },
+      "description": "Medium-priority open bugs. Monitor for trends; no hard target."
     },
     {
       "id": 4,
@@ -242,7 +245,8 @@
             "mode": "thresholds"
           }
         }
-      }
+      },
+      "description": "Low-priority open bugs. Informational \u2014 review during backlog grooming."
     },
     {
       "id": 5,

@@ -98,6 +98,21 @@
   ],
   "panels": [
     {
+      "id": 99,
+      "type": "text",
+      "title": "",
+      "gridPos": {
+        "h": 2,
+        "w": 24,
+        "x": 0,
+        "y": -2
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "**Sprint Detail** \u2014 Per-sprint drill-down for Scrum Masters and Release Managers. Select a team and sprint to see scope, readiness, delivery and QASE test coverage."
+      }
+    },
+    {
       "id": 1,
       "type": "table",
       "title": "Sprint Info",
@@ -259,7 +274,7 @@
       "id": 4,
       "type": "stat",
       "title": "Committed",
-      "description": "SP in sprint at start (initial scope).",
+      "description": "Story points committed at sprint start (initial scope, from Jira sprint report).",
       "gridPos": {
         "h": 4,
         "w": 4,
@@ -276,7 +291,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT COALESCE(total_story_points,0) AS value FROM sprint_snapshots WHERE sprint_id=$sprint::bigint AND snapshot_type='start'",
+          "rawSql": "SELECT COALESCE(SUM(COALESCE(si.story_points_at_add, i.story_points, 0)), 0) AS value FROM sprint_issues si JOIN issues i ON i.key = si.issue_key WHERE si.sprint_id = $sprint::bigint AND si.was_in_initial_scope = TRUE",
           "format": "table",
           "refId": "A"
         }
