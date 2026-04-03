@@ -861,15 +861,25 @@ QASE_PROPERTY_KEY = "com.atlassian.jira.issue:qase.jira.cloud:qase-cases:status"
 QASE_WORKERS = 10  # concurrent Jira API calls
 
 def _check_qase_link(issue_key):
-    """Return (issue_key, has_link) by checking the Jira issue property."""
+    """Return (issue_key, has_link) by checking the Jira issue property.
+
+    Uses a direct GET (not jira_get) to avoid ERROR-level logging for the
+    expected 404 response when no QASE link exists.
+    """
+    url = f"{JIRA_URL}/rest/api/3/issue/{issue_key}/properties/{QASE_PROPERTY_KEY}"
     try:
-        jira_get(f"api/3/issue/{issue_key}/properties/{QASE_PROPERTY_KEY}")
-        return issue_key, True
-    except requests.HTTPError as exc:
-        if exc.response is not None and exc.response.status_code == 404:
+        resp = requests.get(
+            url,
+            auth=HTTPBasicAuth(JIRA_EMAIL, JIRA_API_TOKEN),
+            headers={"Accept": "application/json"},
+            timeout=15,
+        )
+        if resp.status_code == 200:
+            return issue_key, True
+        if resp.status_code == 404:
             return issue_key, False
-        log.debug("QASE check failed for %s: %s", issue_key, exc)
-        return issue_key, None  # unexpected error — retry next run
+        log.debug("QASE unexpected status %s for %s", resp.status_code, issue_key)
+        return issue_key, None  # retry next run
     except Exception as exc:
         log.debug("QASE check failed for %s: %s", issue_key, exc)
         return issue_key, None
