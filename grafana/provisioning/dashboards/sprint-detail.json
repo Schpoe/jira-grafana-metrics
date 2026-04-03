@@ -1453,6 +1453,161 @@
           }
         ]
       }
+    },
+    {
+      "id": 36,
+      "type": "table",
+      "title": "QASE Coverage by Issue Status",
+      "description": "Sprint issues grouped by status showing QASE link coverage. Excludes Epics and removed issues.",
+      "gridPos": {
+        "h": 9,
+        "w": 24,
+        "x": 0,
+        "y": 53
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT i.status AS \"Status\", COUNT(*) AS \"Total (checked)\", COUNT(*) FILTER (WHERE i.has_qase_link = TRUE) AS \"With QASE\", COUNT(*) FILTER (WHERE i.has_qase_link = FALSE) AS \"Without QASE\", COUNT(*) FILTER (WHERE i.has_qase_link IS NULL) AS \"Not Checked\", ROUND(100.0 * COUNT(*) FILTER (WHERE i.has_qase_link = TRUE) / NULLIF(COUNT(*) FILTER (WHERE i.has_qase_link IS NOT NULL), 0), 1) AS \"Coverage %\" FROM sprint_issues si JOIN issues i ON i.key = si.issue_key WHERE si.sprint_id = $sprint::bigint AND si.removed_at IS NULL AND i.issue_type != 'Epic' GROUP BY i.status ORDER BY \"Without QASE\" DESC",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "sortBy": [
+          {
+            "displayName": "Without QASE",
+            "desc": true
+          }
+        ],
+        "footer": {
+          "show": true,
+          "reducer": [
+            "sum"
+          ],
+          "fields": [
+            "Total (checked)",
+            "With QASE",
+            "Without QASE",
+            "Not Checked"
+          ]
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "left"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Coverage %"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "custom.displayMode",
+                "value": "color-background"
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "red",
+                      "value": null
+                    },
+                    {
+                      "color": "orange",
+                      "value": 50
+                    },
+                    {
+                      "color": "green",
+                      "value": 80
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "thresholds"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "With QASE"
+            },
+            "properties": [
+              {
+                "id": "custom.displayMode",
+                "value": "color-background"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "green",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Without QASE"
+            },
+            "properties": [
+              {
+                "id": "custom.displayMode",
+                "value": "color-background"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "orange",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Not Checked"
+            },
+            "properties": [
+              {
+                "id": "custom.displayMode",
+                "value": "color-background"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "blue",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          }
+        ]
+      }
     }
   ],
   "templating": {
