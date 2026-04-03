@@ -2041,6 +2041,50 @@
           }
         ]
       }
+    },
+    {
+      "id": 50,
+      "type": "stat",
+      "title": "Avg Velocity (Last 6 Sprints)",
+      "description": "Average delivered story points over the last 6 closed sprints for the same team. Provides context for current sprint commitment.",
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 20,
+        "y": 4
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT ROUND(AVG(delivered_points)::numeric, 1) AS value FROM (  SELECT pd.delivered_points   FROM v_planning_deviation pd   WHERE pd.state = 'closed'   AND pd.sprint_id != $sprint::bigint   AND pd.sprint_id IN (    SELECT DISTINCT si.sprint_id FROM sprint_issues si     JOIN issues i ON i.key = si.issue_key     JOIN sprint_issues si2 ON si2.issue_key = si.issue_key     WHERE si2.sprint_id = $sprint::bigint  )   ORDER BY pd.complete_date DESC NULLS LAST   LIMIT 6) last6",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "background",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "blue",
+            "mode": "fixed"
+          }
+        }
+      }
     }
   ],
   "templating": {
