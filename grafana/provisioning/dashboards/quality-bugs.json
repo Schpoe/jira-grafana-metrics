@@ -735,7 +735,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT COUNT(*) AS value FROM issues WHERE project_key IN ($project) AND issue_type != 'Epic' AND ($release = 'ALL' OR $release = ANY(fix_versions)) AND date_trunc('quarter', created_at) = '$quarter'::date AND has_qase_link = TRUE",
+          "rawSql": "SELECT COUNT(*) AS value FROM issues WHERE project_key IN ($project) AND issue_type != 'Epic' AND ($release = 'ALL' OR $release = ANY(fix_versions)) AND key IN (SELECT DISTINCT issue_key FROM sprint_issues) AND has_qase_link = TRUE",
           "format": "table",
           "refId": "A"
         }
@@ -770,8 +770,8 @@
     {
       "id": 22,
       "type": "stat",
-      "title": "Issues without QASE Link",
-      "description": "Issues (excl. Epics) with no QASE test case linked.",
+      "title": "Issues Confirmed Without QASE Link",
+      "description": "Issues in a sprint (excl. Epics) confirmed to have no QASE test case linked.",
       "gridPos": {
         "h": 4,
         "w": 6,
@@ -788,7 +788,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT COUNT(*) AS value FROM issues WHERE project_key IN ($project) AND issue_type != 'Epic' AND ($release = 'ALL' OR $release = ANY(fix_versions)) AND date_trunc('quarter', created_at) = '$quarter'::date AND (has_qase_link = FALSE OR has_qase_link IS NULL)",
+          "rawSql": "SELECT COUNT(*) AS value FROM issues WHERE project_key IN ($project) AND issue_type != 'Epic' AND ($release = 'ALL' OR $release = ANY(fix_versions)) AND key IN (SELECT DISTINCT issue_key FROM sprint_issues) AND has_qase_link = FALSE",
           "format": "table",
           "refId": "A"
         }
@@ -845,7 +845,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT ROUND(100.0 * COUNT(*) FILTER (WHERE has_qase_link = TRUE) / NULLIF(COUNT(*) FILTER (WHERE has_qase_link IS NOT NULL), 0), 1) AS value FROM issues WHERE project_key IN ($project) AND issue_type != 'Epic' AND ($release = 'ALL' OR $release = ANY(fix_versions)) AND date_trunc('quarter', created_at) = '$quarter'::date",
+          "rawSql": "SELECT ROUND(100.0 * COUNT(*) FILTER (WHERE has_qase_link = TRUE) / NULLIF(COUNT(*) FILTER (WHERE has_qase_link IS NOT NULL), 0), 1) AS value FROM issues WHERE project_key IN ($project) AND issue_type != 'Epic' AND ($release = 'ALL' OR $release = ANY(fix_versions)) AND key IN (SELECT DISTINCT issue_key FROM sprint_issues)",
           "format": "table",
           "refId": "A"
         }
@@ -907,7 +907,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT COUNT(*) AS value FROM issues WHERE project_key IN ($project) AND issue_type != 'Epic' AND ($release = 'ALL' OR $release = ANY(fix_versions)) AND date_trunc('quarter', created_at) = '$quarter'::date AND has_qase_link IS NULL",
+          "rawSql": "SELECT COUNT(*) AS value FROM issues WHERE project_key IN ($project) AND issue_type != 'Epic' AND ($release = 'ALL' OR $release = ANY(fix_versions)) AND key IN (SELECT DISTINCT issue_key FROM sprint_issues) AND has_qase_link IS NULL",
           "format": "table",
           "refId": "A"
         }
@@ -960,7 +960,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT issue_type AS \"Issue Type\", COUNT(*) FILTER (WHERE has_qase_link = TRUE) AS \"With QASE\", COUNT(*) FILTER (WHERE has_qase_link = FALSE OR has_qase_link IS NULL) AS \"Without QASE\" FROM issues WHERE project_key IN ($project) AND issue_type != 'Epic' AND ($release = 'ALL' OR $release = ANY(fix_versions)) AND date_trunc('quarter', created_at) = '$quarter'::date AND has_qase_link IS NOT NULL GROUP BY issue_type ORDER BY \"Without QASE\" DESC",
+          "rawSql": "SELECT issue_type AS \"Issue Type\", COUNT(*) FILTER (WHERE has_qase_link = TRUE) AS \"With QASE\", COUNT(*) FILTER (WHERE has_qase_link = FALSE) AS \"Without QASE\" FROM issues WHERE project_key IN ($project) AND issue_type != 'Epic' AND ($release = 'ALL' OR $release = ANY(fix_versions)) AND key IN (SELECT DISTINCT issue_key FROM sprint_issues) AND has_qase_link IS NOT NULL GROUP BY issue_type ORDER BY \"Without QASE\" DESC",
           "format": "table",
           "refId": "A"
         }
@@ -1019,8 +1019,8 @@
     {
       "id": 26,
       "type": "table",
-      "title": "Issues Without QASE Link",
-      "description": "Issues (excl. Epics) that have no QASE test case linked, ordered by priority and age.",
+      "title": "Issues Confirmed Without QASE Link",
+      "description": "Sprint issues (excl. Epics) confirmed to have no QASE test case, ordered by priority and age.",
       "gridPos": {
         "h": 9,
         "w": 12,
@@ -1037,7 +1037,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT key AS \"Key\", summary AS \"Summary\", issue_type AS \"Type\", priority AS \"Priority\", status AS \"Status\", COALESCE(assignee, 'Unassigned') AS \"Assignee\", DATE_PART('day', NOW() - created_at)::int AS \"Age (days)\" FROM issues WHERE project_key IN ($project) AND issue_type != 'Epic' AND ($release = 'ALL' OR $release = ANY(fix_versions)) AND date_trunc('quarter', created_at) = '$quarter'::date AND (has_qase_link = FALSE OR has_qase_link IS NULL) ORDER BY CASE priority WHEN 'Blocker' THEN 1 WHEN 'Critical' THEN 2 WHEN 'High' THEN 3 WHEN 'Medium' THEN 4 ELSE 5 END, created_at ASC LIMIT 50",
+          "rawSql": "SELECT key AS \"Key\", summary AS \"Summary\", issue_type AS \"Type\", priority AS \"Priority\", status AS \"Status\", COALESCE(assignee, 'Unassigned') AS \"Assignee\", DATE_PART('day', NOW() - created_at)::int AS \"Age (days)\" FROM issues WHERE project_key IN ($project) AND issue_type != 'Epic' AND ($release = 'ALL' OR $release = ANY(fix_versions)) AND key IN (SELECT DISTINCT issue_key FROM sprint_issues) AND has_qase_link = FALSE ORDER BY CASE priority WHEN 'Blocker' THEN 1 WHEN 'Critical' THEN 2 WHEN 'High' THEN 3 WHEN 'Medium' THEN 4 ELSE 5 END, created_at ASC LIMIT 50",
           "format": "table",
           "refId": "A"
         }
