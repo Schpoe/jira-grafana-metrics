@@ -195,7 +195,8 @@
           "displayMode": "list",
           "placement": "bottom"
         },
-        "orientation": "horizontal"
+        "orientation": "horizontal",
+        "colorByField": "Status"
       },
       "fieldConfig": {
         "defaults": {
@@ -238,7 +239,8 @@
           "displayMode": "list",
           "placement": "bottom"
         },
-        "orientation": "horizontal"
+        "orientation": "horizontal",
+        "colorByField": "Issue Type"
       },
       "fieldConfig": {
         "defaults": {
@@ -281,7 +283,8 @@
           "displayMode": "list",
           "placement": "bottom"
         },
-        "orientation": "horizontal"
+        "orientation": "horizontal",
+        "colorByField": "Priority"
       },
       "fieldConfig": {
         "defaults": {
@@ -472,7 +475,8 @@
           "displayMode": "list",
           "placement": "bottom"
         },
-        "orientation": "horizontal"
+        "orientation": "horizontal",
+        "colorByField": "Issue Type"
       },
       "fieldConfig": {
         "defaults": {
@@ -516,7 +520,8 @@
           "displayMode": "list",
           "placement": "bottom"
         },
-        "orientation": "horizontal"
+        "orientation": "horizontal",
+        "colorByField": "Priority"
       },
       "fieldConfig": {
         "defaults": {
@@ -865,13 +870,17 @@
         "legend": {
           "displayMode": "list",
           "placement": "bottom"
-        }
+        },
+        "colorByField": "Type"
       },
       "fieldConfig": {
         "defaults": {
           "unit": "d",
           "custom": {
             "fillOpacity": 80
+          },
+          "color": {
+            "mode": "palette-classic"
           }
         },
         "overrides": []
@@ -908,13 +917,17 @@
         "legend": {
           "displayMode": "list",
           "placement": "bottom"
-        }
+        },
+        "colorByField": "Priority"
       },
       "fieldConfig": {
         "defaults": {
           "unit": "d",
           "custom": {
             "fillOpacity": 80
+          },
+          "color": {
+            "mode": "palette-classic"
           }
         },
         "overrides": []

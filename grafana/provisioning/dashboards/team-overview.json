@@ -49,7 +49,8 @@
           "displayMode": "list",
           "placement": "bottom"
         },
-        "orientation": "horizontal"
+        "orientation": "horizontal",
+        "colorByField": "Assignee"
       },
       "fieldConfig": {
         "defaults": {
@@ -93,7 +94,8 @@
           "displayMode": "list",
           "placement": "bottom"
         },
-        "orientation": "horizontal"
+        "orientation": "horizontal",
+        "colorByField": "Assignee"
       },
       "fieldConfig": {
         "defaults": {
@@ -138,7 +140,8 @@
           "displayMode": "list",
           "placement": "bottom"
         },
-        "orientation": "horizontal"
+        "orientation": "horizontal",
+        "colorByField": "Assignee"
       },
       "fieldConfig": {
         "defaults": {
@@ -182,7 +185,8 @@
           "displayMode": "list",
           "placement": "bottom"
         },
-        "orientation": "horizontal"
+        "orientation": "horizontal",
+        "colorByField": "Status"
       },
       "fieldConfig": {
         "defaults": {

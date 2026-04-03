@@ -389,7 +389,8 @@
           "displayMode": "list",
           "placement": "bottom"
         },
-        "orientation": "horizontal"
+        "orientation": "horizontal",
+        "colorByField": "Release"
       },
       "fieldConfig": {
         "defaults": {
