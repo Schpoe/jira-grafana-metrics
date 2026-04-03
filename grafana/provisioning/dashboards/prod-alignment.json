@@ -386,8 +386,11 @@
                 "value": "percent"
               },
               {
-                "id": "custom.displayMode",
-                "value": "basic"
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "gauge",
+                  "mode": "basic"
+                }
               },
               {
                 "id": "thresholds",
@@ -508,8 +511,11 @@
                 "value": "percent"
               },
               {
-                "id": "custom.displayMode",
-                "value": "basic"
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "gauge",
+                  "mode": "basic"
+                }
               },
               {
                 "id": "thresholds",
