@@ -102,7 +102,7 @@
       "id": 1,
       "type": "stat",
       "title": "Avg Scope Change %",
-      "description": "Average % of story points added or removed after sprint start (lower = more stable plans). Target: \u2264 10%",
+      "description": "Average % of story points added or removed after sprint start (lower = more stable plans). Target: ≤ 10%",
       "gridPos": {
         "h": 5,
         "w": 6,
@@ -168,7 +168,7 @@
       "id": 2,
       "type": "stat",
       "title": "Avg Planning Accuracy %",
-      "description": "Average % of committed story points delivered (delivery % per sprint). Target: \u2265 80%",
+      "description": "Average % of committed story points delivered (delivery % per sprint). Target: ≥ 80%",
       "gridPos": {
         "h": 5,
         "w": 6,
@@ -300,7 +300,7 @@
       "id": 4,
       "type": "stat",
       "title": "Avg Blocker Resolution Time",
-      "description": "Average hours from creation to resolution for Blocker-priority issues. Target: \u2264 1 sprint.",
+      "description": "Average hours from creation to resolution for Blocker-priority issues. Target: ≤ 1 sprint.",
       "gridPos": {
         "h": 5,
         "w": 6,
@@ -366,12 +366,12 @@
       "id": 5,
       "type": "barchart",
       "title": "Scope Change % per Sprint",
-      "description": "Story points added + removed after sprint start as % of committed SP. Target \u2264 10%.",
+      "description": "Story points added + removed after sprint start as % of committed SP. Target ≤ 10%.",
       "gridPos": {
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 5
+        "y": 6
       },
       "datasource": {
         "type": "postgres",
@@ -425,12 +425,12 @@
       "id": 6,
       "type": "barchart",
       "title": "Planning Accuracy % per Sprint",
-      "description": "Delivered story points as % of committed SP per sprint. Target \u2265 80%.",
+      "description": "Delivered story points as % of committed SP per sprint. Target ≥ 80%.",
       "gridPos": {
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 5
+        "y": 6
       },
       "datasource": {
         "type": "postgres",
@@ -513,7 +513,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 13
+        "y": 15
       },
       "datasource": {
         "type": "postgres",
@@ -558,7 +558,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 13
+        "y": 15
       },
       "datasource": {
         "type": "postgres",
@@ -615,12 +615,12 @@
       "id": 9,
       "type": "barchart",
       "title": "Blocker Resolution Time per Sprint",
-      "description": "Average hours to resolve Blocker-priority issues per sprint. Target: \u2264 168h (1 sprint).",
+      "description": "Average hours to resolve Blocker-priority issues per sprint. Target: ≤ 168h (1 sprint).",
       "gridPos": {
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 21
+        "y": 24
       },
       "datasource": {
         "type": "postgres",
@@ -703,7 +703,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 21
+        "y": 24
       },
       "datasource": {
         "type": "postgres",
@@ -821,13 +821,13 @@
     {
       "id": 11,
       "type": "barchart",
-      "title": "Sprint Velocity \u2014 Committed vs Delivered",
+      "title": "Sprint Velocity — Committed vs Delivered",
       "description": "Story points committed at sprint start vs actually delivered.",
       "gridPos": {
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 29
+        "y": 33
       },
       "datasource": {
         "type": "postgres",
@@ -893,6 +893,54 @@
             ]
           }
         ]
+      }
+    },
+    {
+      "id": 103,
+      "type": "row",
+      "title": "Sprint Velocity",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 32
+      }
+    },
+    {
+      "id": 104,
+      "type": "row",
+      "title": "Blockers",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 23
+      }
+    },
+    {
+      "id": 105,
+      "type": "row",
+      "title": "Ticket Reopens",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 14
+      }
+    },
+    {
+      "id": 106,
+      "type": "row",
+      "title": "Scope Change",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 5
       }
     }
   ],

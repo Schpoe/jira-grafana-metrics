@@ -24,7 +24,7 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 0
+        "y": 1
       },
       "datasource": {
         "type": "postgres",
@@ -63,13 +63,13 @@
     {
       "id": 2,
       "type": "barchart",
-      "title": "Avg Cycle Time (RFT \u2192 Done) per Assignee",
+      "title": "Avg Cycle Time (RFT → Done) per Assignee",
       "description": "Average hours from Ready For Testing to Done per assignee, over the selected time range.",
       "gridPos": {
         "h": 10,
         "w": 12,
         "x": 12,
-        "y": 0
+        "y": 1
       },
       "datasource": {
         "type": "postgres",
@@ -113,7 +113,7 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 8
+        "y": 10
       },
       "datasource": {
         "type": "postgres",
@@ -158,7 +158,7 @@
         "h": 10,
         "w": 12,
         "x": 12,
-        "y": 8
+        "y": 10
       },
       "datasource": {
         "type": "postgres",
@@ -354,7 +354,7 @@
         "h": 9,
         "w": 24,
         "x": 0,
-        "y": 16
+        "y": 18
       },
       "datasource": {
         "type": "postgres",
@@ -393,13 +393,13 @@
     {
       "id": 6,
       "type": "table",
-      "title": "Assignee Detail \u2014 Selected Period",
+      "title": "Assignee Detail — Selected Period",
       "description": "Per-person summary: issues completed, story points delivered, and avg cycle time. Filtered by selected quarter, or last 90 days when All is selected.",
       "gridPos": {
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 25
+        "y": 28
       },
       "datasource": {
         "type": "postgres",
@@ -472,6 +472,42 @@
             ]
           }
         ]
+      }
+    },
+    {
+      "id": 109,
+      "type": "row",
+      "title": "Assignee Detail",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 27
+      }
+    },
+    {
+      "id": 110,
+      "type": "row",
+      "title": "Output",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 9
+      }
+    },
+    {
+      "id": 111,
+      "type": "row",
+      "title": "Workload & Cycle Time",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
       }
     }
   ],

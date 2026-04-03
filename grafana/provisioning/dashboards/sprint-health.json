@@ -18,12 +18,12 @@
     {
       "id": 1,
       "type": "barchart",
-      "title": "Sprint Velocity \u2014 Committed vs Delivered (Story Points)",
+      "title": "Sprint Velocity — Committed vs Delivered (Story Points)",
       "gridPos": {
         "h": 9,
         "w": 24,
         "x": 0,
-        "y": 0
+        "y": 1
       },
       "datasource": {
         "type": "postgres",
@@ -98,12 +98,12 @@
       "id": 2,
       "type": "barchart",
       "title": "Delivery % per Sprint",
-      "description": "Percentage of committed story points actually delivered. Green \u2265 90%, yellow \u2265 70%, red < 70%.",
+      "description": "Percentage of committed story points actually delivered. Green ≥ 90%, yellow ≥ 70%, red < 70%.",
       "gridPos": {
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 9
+        "y": 10
       },
       "datasource": {
         "type": "postgres",
@@ -161,13 +161,13 @@
     {
       "id": 3,
       "type": "barchart",
-      "title": "Sprint Issue Count \u2014 Committed vs Delivered",
+      "title": "Sprint Issue Count — Committed vs Delivered",
       "description": "Number of issues scoped (committed) vs completed (delivered) per sprint. Complements the story points velocity chart.",
       "gridPos": {
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 9
+        "y": 10
       },
       "datasource": {
         "type": "postgres",
@@ -244,7 +244,7 @@
         "h": 9,
         "w": 24,
         "x": 0,
-        "y": 17
+        "y": 19
       },
       "datasource": {
         "type": "postgres",
@@ -348,7 +348,31 @@
           }
         ]
       },
-      "description": "Per-sprint overview. Deviation = Delivered SP \u2212 Committed SP. Positive = over-delivered; negative = under-delivered."
+      "description": "Per-sprint overview. Deviation = Delivered SP − Committed SP. Positive = over-delivered; negative = under-delivered."
+    },
+    {
+      "id": 107,
+      "type": "row",
+      "title": "Sprint Summary",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 18
+      }
+    },
+    {
+      "id": 108,
+      "type": "row",
+      "title": "Sprint Velocity",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      }
     }
   ],
   "templating": {
