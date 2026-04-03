@@ -1519,15 +1519,7 @@
               },
               {
                 "id": "custom.displayMode",
-                "value": "gradient-gauge"
-              },
-              {
-                "id": "min",
-                "value": 0
-              },
-              {
-                "id": "max",
-                "value": 100
+                "value": "basic"
               },
               {
                 "id": "thresholds",
@@ -1565,7 +1557,7 @@
             "properties": [
               {
                 "id": "custom.displayMode",
-                "value": "basic"
+                "value": "color-background"
               },
               {
                 "id": "color",
@@ -1584,7 +1576,7 @@
             "properties": [
               {
                 "id": "custom.displayMode",
-                "value": "basic"
+                "value": "color-background"
               },
               {
                 "id": "color",
@@ -1603,7 +1595,7 @@
             "properties": [
               {
                 "id": "custom.displayMode",
-                "value": "basic"
+                "value": "color-background"
               },
               {
                 "id": "color",
