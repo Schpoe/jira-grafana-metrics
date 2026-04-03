@@ -1640,6 +1640,407 @@
           }
         ]
       }
+    },
+    {
+      "id": 40,
+      "type": "row",
+      "title": "Scope Change",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 62
+      }
+    },
+    {
+      "id": 41,
+      "type": "stat",
+      "title": "Issues Added",
+      "description": "Issues added to the sprint after it started (unplanned scope).",
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 0,
+        "y": 63
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT COUNT(*) AS value FROM sprint_issues si JOIN issues i ON i.key = si.issue_key WHERE si.sprint_id = $sprint::bigint AND si.was_in_initial_scope = FALSE AND si.removed_at IS NULL",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "background",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 1
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        }
+      }
+    },
+    {
+      "id": 42,
+      "type": "stat",
+      "title": "SP Added",
+      "description": "Story points added to sprint after start.",
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 4,
+        "y": 63
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT COALESCE(SUM(COALESCE(si.story_points_at_add, i.story_points, 0)), 0) AS value FROM sprint_issues si JOIN issues i ON i.key = si.issue_key WHERE si.sprint_id = $sprint::bigint AND si.was_in_initial_scope = FALSE AND si.removed_at IS NULL",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "background",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 1
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        }
+      }
+    },
+    {
+      "id": 43,
+      "type": "stat",
+      "title": "Issues Removed",
+      "description": "Issues removed from the sprint after it started (punted scope).",
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 8,
+        "y": 63
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT COUNT(*) AS value FROM sprint_issues si WHERE si.sprint_id = $sprint::bigint AND si.removed_at IS NOT NULL",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "background",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 1
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        }
+      }
+    },
+    {
+      "id": 44,
+      "type": "stat",
+      "title": "SP Removed",
+      "description": "Story points removed from sprint after start.",
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 12,
+        "y": 63
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT COALESCE(SUM(COALESCE(si.story_points_at_add, i.story_points, 0)), 0) AS value FROM sprint_issues si JOIN issues i ON i.key = si.issue_key WHERE si.sprint_id = $sprint::bigint AND si.removed_at IS NOT NULL",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "background",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 1
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        }
+      }
+    },
+    {
+      "id": 45,
+      "type": "stat",
+      "title": "Scope Change %",
+      "description": "(SP added + SP removed) \u00f7 Committed SP \u00d7 100. Target: \u226410%. High % indicates reactive planning.",
+      "gridPos": {
+        "h": 4,
+        "w": 8,
+        "x": 16,
+        "y": 63
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT ROUND(100.0 * (  COALESCE((SELECT SUM(COALESCE(si2.story_points_at_add, i2.story_points, 0))     FROM sprint_issues si2 JOIN issues i2 ON i2.key = si2.issue_key     WHERE si2.sprint_id = $sprint::bigint AND si2.was_in_initial_scope = FALSE AND si2.removed_at IS NULL), 0) + COALESCE((SELECT SUM(COALESCE(si3.story_points_at_add, i3.story_points, 0))     FROM sprint_issues si3 JOIN issues i3 ON i3.key = si3.issue_key     WHERE si3.sprint_id = $sprint::bigint AND si3.removed_at IS NOT NULL), 0)) / NULLIF(  (SELECT SUM(COALESCE(si4.story_points_at_add, i4.story_points, 0))    FROM sprint_issues si4 JOIN issues i4 ON i4.key = si4.issue_key    WHERE si4.sprint_id = $sprint::bigint AND si4.was_in_initial_scope = TRUE), 0), 1) AS value",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "background",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 10
+              },
+              {
+                "color": "red",
+                "value": 25
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        }
+      }
+    },
+    {
+      "id": 46,
+      "type": "table",
+      "title": "Scope Change Detail",
+      "description": "All issues added or removed after sprint start, with story points at time of change.",
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 67
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT   i.key AS \"Key\",   i.summary AS \"Summary\",   i.issue_type AS \"Type\",   i.priority AS \"Priority\",   COALESCE(i.assignee, 'Unassigned') AS \"Assignee\",   COALESCE(si.story_points_at_add::text, i.story_points::text, '\u2014') AS \"SP\",   CASE     WHEN si.was_in_initial_scope = FALSE AND si.removed_at IS NULL THEN 'Added'     WHEN si.removed_at IS NOT NULL THEN 'Removed'   END AS \"Change\",   i.status AS \"Status\" FROM sprint_issues si JOIN issues i ON i.key = si.issue_key WHERE si.sprint_id = $sprint::bigint AND (si.was_in_initial_scope = FALSE OR si.removed_at IS NOT NULL) ORDER BY CASE WHEN si.removed_at IS NOT NULL THEN 1 ELSE 0 END,   CASE i.priority WHEN 'Blocker' THEN 1 WHEN 'Critical' THEN 2 WHEN 'High' THEN 3 WHEN 'Medium' THEN 4 ELSE 5 END",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {},
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "left"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Key"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Open in Jira",
+                    "url": "${jira_url}/browse/${__value.text}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Change"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "Added": {
+                        "color": "orange",
+                        "index": 0
+                      },
+                      "Removed": {
+                        "color": "red",
+                        "index": 1
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "thresholds"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "text",
+                      "value": null
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      }
     }
   ],
   "templating": {
