@@ -2100,9 +2100,9 @@
     },
     {
       "id": 56,
-      "type": "barchart",
+      "type": "timeseries",
       "title": "Sprint Burndown",
-      "description": "Remaining story points per day. Blue = actual remaining SP (issues transitioning to Done). Green = ideal linear burndown from committed SP to zero.",
+      "description": "Remaining story points per day. Blue = actual remaining SP (issues transitioning to Done). Dashed green = ideal linear burndown.\n\nTip: use the time picker to zoom into the sprint's date range.",
       "gridPos": {
         "h": 12,
         "w": 24,
@@ -2119,33 +2119,27 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "\nWITH sprint_info AS (\n    SELECT\n        start_date,\n        COALESCE(complete_date, end_date) AS end_date\n    FROM sprints WHERE id = $sprint::bigint\n),\ncommitted AS (\n    SELECT si.issue_key,\n           COALESCE(si.story_points_at_add, i.story_points, 0) AS sp\n    FROM sprint_issues si\n    JOIN issues i ON i.key = si.issue_key\n    WHERE si.sprint_id = $sprint::bigint\n      AND si.was_in_initial_scope = TRUE\n),\ntotal_sp AS (\n    SELECT COALESCE(SUM(sp), 0) AS total FROM committed\n),\ndone_per_issue AS (\n    SELECT c.issue_key, c.sp,\n           MIN(t.transitioned_at) AS done_at\n    FROM committed c\n    JOIN issue_transitions t ON t.issue_key = c.issue_key\n    WHERE UPPER(t.to_status) = 'DONE'\n      AND t.transitioned_at >= (SELECT start_date FROM sprint_info)\n    GROUP BY c.issue_key, c.sp\n),\ndays AS (\n    SELECT generate_series(\n        DATE_TRUNC('day', (SELECT start_date FROM sprint_info)),\n        DATE_TRUNC('day', (SELECT end_date FROM sprint_info) + INTERVAL '2 days'),\n        '1 day'::interval\n    ) AS day\n)\nSELECT\n    TO_CHAR(d.day, 'MM-DD') AS \"Day\",\n    CASE WHEN d.day <= NOW()\n        THEN (SELECT total FROM total_sp) - COALESCE((\n            SELECT SUM(sp) FROM done_per_issue\n            WHERE done_at < d.day + INTERVAL '1 day'\n        ), 0)\n        ELSE NULL\n    END AS \"Remaining SP\",\n    GREATEST(0, ROUND(\n        (SELECT total FROM total_sp) * (\n            1 - EXTRACT(EPOCH FROM (d.day - (SELECT start_date FROM sprint_info)))\n            / NULLIF(EXTRACT(EPOCH FROM (\n                (SELECT end_date FROM sprint_info) - (SELECT start_date FROM sprint_info)\n            )), 0)\n        )::numeric, 1\n    )) AS \"Ideal\"\nFROM days d\nORDER BY d.day",
-          "format": "table",
+          "rawSql": "\nWITH sprint_info AS (\n    SELECT\n        start_date,\n        COALESCE(complete_date, end_date) AS end_date\n    FROM sprints WHERE id = $sprint::bigint\n),\ncommitted AS (\n    SELECT si.issue_key,\n           COALESCE(si.story_points_at_add, i.story_points, 0) AS sp\n    FROM sprint_issues si\n    JOIN issues i ON i.key = si.issue_key\n    WHERE si.sprint_id = $sprint::bigint\n      AND si.was_in_initial_scope = TRUE\n),\ntotal_sp AS (\n    SELECT COALESCE(SUM(sp), 0) AS total FROM committed\n),\ndone_per_issue AS (\n    SELECT c.issue_key, c.sp,\n           MIN(t.transitioned_at) AS done_at\n    FROM committed c\n    JOIN issue_transitions t ON t.issue_key = c.issue_key\n    WHERE UPPER(t.to_status) = 'DONE'\n      AND t.transitioned_at >= (SELECT start_date FROM sprint_info)\n    GROUP BY c.issue_key, c.sp\n),\ndays AS (\n    SELECT generate_series(\n        DATE_TRUNC('day', (SELECT start_date FROM sprint_info)),\n        DATE_TRUNC('day', (SELECT end_date FROM sprint_info) + INTERVAL '2 days'),\n        '1 day'::interval\n    ) AS day\n)\nSELECT\n    d.day AS time,\n    CASE WHEN d.day <= NOW()\n        THEN (SELECT total FROM total_sp) - COALESCE((\n            SELECT SUM(sp) FROM done_per_issue\n            WHERE done_at < d.day + INTERVAL '1 day'\n        ), 0)\n        ELSE NULL\n    END AS \"Remaining SP\",\n    GREATEST(0, ROUND(\n        (SELECT total FROM total_sp) * (\n            1 - EXTRACT(EPOCH FROM (d.day - (SELECT start_date FROM sprint_info)))\n            / NULLIF(EXTRACT(EPOCH FROM (\n                (SELECT end_date FROM sprint_info) - (SELECT start_date FROM sprint_info)\n            )), 0)\n        )::numeric, 1\n    )) AS \"Ideal\"\nFROM days d\nORDER BY d.day",
+          "format": "time_series",
           "refId": "A"
         }
       ],
       "options": {
-        "xField": "Day",
-        "stacking": "none",
-        "fillOpacity": 70,
-        "gradientMode": "none",
-        "barWidth": 0.6,
-        "groupWidth": 0.7,
+        "tooltip": {
+          "mode": "multi"
+        },
         "legend": {
           "displayMode": "list",
           "placement": "bottom"
-        },
-        "xTickLabelRotation": -45,
-        "xTickLabelSpacing": 100,
-        "tooltip": {
-          "mode": "multi"
         }
       },
       "fieldConfig": {
         "defaults": {
           "unit": "short",
-          "color": {
-            "mode": "palette-classic"
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "spanNulls": true
           }
         },
         "overrides": [
@@ -2161,6 +2155,14 @@
                   "fixedColor": "blue",
                   "mode": "fixed"
                 }
+              },
+              {
+                "id": "custom.lineWidth",
+                "value": 2
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 15
               }
             ]
           },
@@ -2176,6 +2178,21 @@
                   "fixedColor": "green",
                   "mode": "fixed"
                 }
+              },
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "dash": [10, 10],
+                  "fill": "dash"
+                }
+              },
+              {
+                "id": "custom.lineWidth",
+                "value": 1
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 0
               }
             ]
           }
