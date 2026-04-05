@@ -109,7 +109,7 @@
       },
       "options": {
         "mode": "markdown",
-        "content": "**Sprint Detail** — Per-sprint drill-down for Scrum Masters and Release Managers. Select a team and sprint to see scope, readiness, delivery and QASE test coverage."
+        "content": "**Sprint Detail** \u2014 Per-sprint drill-down for Scrum Masters and Release Managers. Select a team and sprint to see scope, readiness, delivery and QASE test coverage."
       }
     },
     {
@@ -234,7 +234,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT COALESCE(s.goal, '— No sprint goal defined —') AS \"Sprint Goal\"\nFROM sprints s WHERE s.id = $sprint::bigint",
+          "rawSql": "SELECT COALESCE(s.goal, '\u2014 No sprint goal defined \u2014') AS \"Sprint Goal\"\nFROM sprints s WHERE s.id = $sprint::bigint",
           "format": "table",
           "refId": "A"
         }
@@ -270,7 +270,7 @@
       "description": "Story points committed at sprint start (initial scope, from Jira sprint report).",
       "gridPos": {
         "h": 4,
-        "w": 4,
+        "w": 3,
         "x": 0,
         "y": 4
       },
@@ -317,11 +317,11 @@
       "id": 5,
       "type": "stat",
       "title": "Unplanned",
-      "description": "SP added after sprint start. Target ≤ 10% of committed.",
+      "description": "SP added after sprint start. Target \u2264 10% of committed.",
       "gridPos": {
         "h": 4,
-        "w": 4,
-        "x": 4,
+        "w": 3,
+        "x": 3,
         "y": 4
       },
       "datasource": {
@@ -383,11 +383,11 @@
       "id": 6,
       "type": "stat",
       "title": "Total in Sprint",
-      "description": "All active SP (committed + unplanned – removed).",
+      "description": "All active SP (committed + unplanned \u2013 removed).",
       "gridPos": {
         "h": 4,
-        "w": 4,
-        "x": 8,
+        "w": 3,
+        "x": 6,
         "y": 4
       },
       "datasource": {
@@ -436,8 +436,8 @@
       "description": "SP with status Done.",
       "gridPos": {
         "h": 4,
-        "w": 4,
-        "x": 12,
+        "w": 3,
+        "x": 9,
         "y": 4
       },
       "datasource": {
@@ -483,11 +483,11 @@
       "id": 8,
       "type": "stat",
       "title": "Delivery %",
-      "description": "Completed / Committed SP. Target ≥ 80%.",
+      "description": "Completed / Committed SP. Target \u2265 80%.",
       "gridPos": {
         "h": 4,
-        "w": 4,
-        "x": 16,
+        "w": 3,
+        "x": 12,
         "y": 4
       },
       "datasource": {
@@ -743,7 +743,7 @@
       "id": 13,
       "type": "stat",
       "title": "Readiness %",
-      "description": "% of Stories/Tasks that have SP + Epic. Target ≥ 90%.",
+      "description": "% of Stories/Tasks that have SP + Epic. Target \u2265 90%.",
       "gridPos": {
         "h": 4,
         "w": 4,
@@ -826,7 +826,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT i.key AS \"Key\", i.summary AS \"Summary\", i.issue_type AS \"Type\",\n  i.assignee AS \"Assignee\",\n  CASE WHEN i.story_points IS NULL OR i.story_points=0 THEN '❌' ELSE '✅' END AS \"SP\",\n  CASE WHEN i.epic_key IS NOT NULL THEN '✅' ELSE '❌' END AS \"Epic\",\n  COALESCE(i.epic_key,'—') AS \"Epic Key\"\nFROM sprint_issues si JOIN issues i ON i.key=si.issue_key\nWHERE si.sprint_id=$sprint::bigint AND si.removed_at IS NULL AND i.issue_type NOT IN ('Epic','Sub-task')\n  AND ((i.story_points IS NULL OR i.story_points=0) OR i.epic_key IS NULL)\nORDER BY\n  CASE i.priority WHEN 'Blocker' THEN 1 WHEN 'Critical' THEN 2 WHEN 'High' THEN 3 WHEN 'Medium' THEN 4 ELSE 5 END",
+          "rawSql": "SELECT i.key AS \"Key\", i.summary AS \"Summary\", i.issue_type AS \"Type\",\n  i.assignee AS \"Assignee\",\n  CASE WHEN i.story_points IS NULL OR i.story_points=0 THEN '\u274c' ELSE '\u2705' END AS \"SP\",\n  CASE WHEN i.epic_key IS NOT NULL THEN '\u2705' ELSE '\u274c' END AS \"Epic\",\n  COALESCE(i.epic_key,'\u2014') AS \"Epic Key\"\nFROM sprint_issues si JOIN issues i ON i.key=si.issue_key\nWHERE si.sprint_id=$sprint::bigint AND si.removed_at IS NULL AND i.issue_type NOT IN ('Epic','Sub-task')\n  AND ((i.story_points IS NULL OR i.story_points=0) OR i.epic_key IS NULL)\nORDER BY\n  CASE i.priority WHEN 'Blocker' THEN 1 WHEN 'Critical' THEN 2 WHEN 'High' THEN 3 WHEN 'Medium' THEN 4 ELSE 5 END",
           "format": "table",
           "refId": "A"
         }
@@ -981,7 +981,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT i.key AS \"Key\", i.summary AS \"Summary\", i.issue_type AS \"Type\",\n  i.priority AS \"Priority\",\n  COALESCE(i.assignee,'Unassigned') AS \"Assignee\",\n  i.status AS \"Status\",\n  COALESCE(si.story_points_at_add::text, i.story_points::text,'—') AS \"SP\",\n  COALESCE(i.epic_key,'—') AS \"Epic\",\n  CASE WHEN si.was_in_initial_scope THEN 'Committed' ELSE 'Unplanned' END AS \"Scope\",\n  CASE WHEN si.removed_at IS NOT NULL THEN '✕' ELSE '' END AS \"Rmvd\",\n  (SELECT COUNT(DISTINCT si2.sprint_id)\n   FROM sprint_issues si2\n   WHERE si2.issue_key = si.issue_key\n     AND si2.sprint_id < $sprint::bigint\n     AND si2.removed_at IS NULL) AS \"Times Carried\"\nFROM sprint_issues si JOIN issues i ON i.key=si.issue_key\nWHERE si.sprint_id=$sprint::bigint\nORDER BY\n  CASE WHEN si.removed_at IS NOT NULL THEN 2 ELSE 1 END,\n  CASE i.status_category WHEN 'Done' THEN 3 WHEN 'In Progress' THEN 1 ELSE 2 END,\n  CASE i.priority WHEN 'Blocker' THEN 1 WHEN 'Critical' THEN 2 WHEN 'High' THEN 3 WHEN 'Medium' THEN 4 ELSE 5 END",
+          "rawSql": "SELECT i.key AS \"Key\", i.summary AS \"Summary\", i.issue_type AS \"Type\",\n  i.priority AS \"Priority\",\n  COALESCE(i.assignee,'Unassigned') AS \"Assignee\",\n  i.status AS \"Status\",\n  COALESCE(si.story_points_at_add::text, i.story_points::text,'\u2014') AS \"SP\",\n  COALESCE(i.epic_key,'\u2014') AS \"Epic\",\n  CASE WHEN si.was_in_initial_scope THEN 'Committed' ELSE 'Unplanned' END AS \"Scope\",\n  CASE WHEN si.removed_at IS NOT NULL THEN '\u2715' ELSE '' END AS \"Rmvd\",\n  (SELECT COUNT(DISTINCT si2.sprint_id)\n   FROM sprint_issues si2\n   WHERE si2.issue_key = si.issue_key\n     AND si2.sprint_id < $sprint::bigint\n     AND si2.removed_at IS NULL) AS \"Times Carried\"\nFROM sprint_issues si JOIN issues i ON i.key=si.issue_key\nWHERE si.sprint_id=$sprint::bigint\nORDER BY\n  CASE WHEN si.removed_at IS NOT NULL THEN 2 ELSE 1 END,\n  CASE i.status_category WHEN 'Done' THEN 3 WHEN 'In Progress' THEN 1 ELSE 2 END,\n  CASE i.priority WHEN 'Blocker' THEN 1 WHEN 'Critical' THEN 2 WHEN 'High' THEN 3 WHEN 'Medium' THEN 4 ELSE 5 END",
           "format": "table",
           "refId": "A"
         }
@@ -1853,7 +1853,7 @@
       "id": 45,
       "type": "stat",
       "title": "Scope Change %",
-      "description": "(SP added + SP removed) ÷ Committed SP × 100. Target: ≤10%. High % indicates reactive planning.",
+      "description": "(SP added + SP removed) \u00f7 Committed SP \u00d7 100. Target: \u226410%. High % indicates reactive planning.",
       "gridPos": {
         "h": 4,
         "w": 8,
@@ -1931,7 +1931,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT   i.key AS \"Key\",   i.summary AS \"Summary\",   i.issue_type AS \"Type\",   i.priority AS \"Priority\",   COALESCE(i.assignee, 'Unassigned') AS \"Assignee\",   COALESCE(si.story_points_at_add::text, i.story_points::text, '—') AS \"SP\",   CASE     WHEN si.was_in_initial_scope = FALSE AND si.removed_at IS NULL THEN 'Added'     WHEN si.removed_at IS NOT NULL THEN 'Removed'   END AS \"Change\",   i.status AS \"Status\" FROM sprint_issues si JOIN issues i ON i.key = si.issue_key WHERE si.sprint_id = $sprint::bigint AND (si.was_in_initial_scope = FALSE OR si.removed_at IS NOT NULL) ORDER BY CASE WHEN si.removed_at IS NOT NULL THEN 1 ELSE 0 END,   CASE i.priority WHEN 'Blocker' THEN 1 WHEN 'Critical' THEN 2 WHEN 'High' THEN 3 WHEN 'Medium' THEN 4 ELSE 5 END",
+          "rawSql": "SELECT   i.key AS \"Key\",   i.summary AS \"Summary\",   i.issue_type AS \"Type\",   i.priority AS \"Priority\",   COALESCE(i.assignee, 'Unassigned') AS \"Assignee\",   COALESCE(si.story_points_at_add::text, i.story_points::text, '\u2014') AS \"SP\",   CASE     WHEN si.was_in_initial_scope = FALSE AND si.removed_at IS NULL THEN 'Added'     WHEN si.removed_at IS NOT NULL THEN 'Removed'   END AS \"Change\",   i.status AS \"Status\" FROM sprint_issues si JOIN issues i ON i.key = si.issue_key WHERE si.sprint_id = $sprint::bigint AND (si.was_in_initial_scope = FALSE OR si.removed_at IS NOT NULL) ORDER BY CASE WHEN si.removed_at IS NOT NULL THEN 1 ELSE 0 END,   CASE i.priority WHEN 'Blocker' THEN 1 WHEN 'Critical' THEN 2 WHEN 'High' THEN 3 WHEN 'Medium' THEN 4 ELSE 5 END",
           "format": "table",
           "refId": "A"
         }
@@ -2021,8 +2021,8 @@
       "description": "Average delivered story points over the last 6 closed sprints for the same team. Provides context for current sprint commitment.",
       "gridPos": {
         "h": 4,
-        "w": 4,
-        "x": 20,
+        "w": 3,
+        "x": 15,
         "y": 4
       },
       "datasource": {
@@ -2173,6 +2173,71 @@
           }
         ]
       }
+    },
+    {
+      "id": 51,
+      "type": "gauge",
+      "title": "Velocity Booked %",
+      "description": "Committed SP as % of average velocity (last 6 closed sprints). Green <80%, yellow 80\u2013100%, red >100%.",
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 4
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT\n  ROUND(100.0 * COALESCE(committed.sp, 0)\n    / NULLIF(avg_vel.avg_sp, 0), 1) AS value\nFROM (\n  SELECT SUM(COALESCE(si.story_points_at_add, i.story_points, 0)) AS sp\n  FROM sprint_issues si JOIN issues i ON i.key = si.issue_key\n  WHERE si.sprint_id = $sprint::bigint AND si.was_in_initial_scope = TRUE\n) committed,\n(\n  SELECT ROUND(AVG(delivered_points)::numeric, 1) AS avg_sp\n  FROM (\n    SELECT pd.delivered_points\n    FROM v_planning_deviation pd\n    WHERE pd.state = 'closed'\n      AND pd.sprint_id != $sprint::bigint\n      AND pd.sprint_id IN (\n        SELECT DISTINCT si.sprint_id FROM sprint_issues si\n        JOIN sprint_issues si2 ON si2.issue_key = si.issue_key\n        WHERE si2.sprint_id = $sprint::bigint\n      )\n    ORDER BY pd.complete_date DESC NULLS LAST\n    LIMIT 6\n  ) last6\n) avg_vel",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "orientation": "auto",
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "text": {}
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 150,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 80
+              },
+              {
+                "color": "red",
+                "value": 100
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        }
+      }
     }
   ],
   "templating": {
@@ -2233,7 +2298,7 @@
           "type": "postgres",
           "uid": "jira-metrics-pg"
         },
-        "query": "SELECT CONCAT(s.name, CASE WHEN s.state = 'active' THEN ' ★' ELSE '' END) AS __text, s.id::text AS __value FROM sprints s WHERE s.id IN (SELECT DISTINCT si.sprint_id FROM sprint_issues si JOIN issues i ON i.key = si.issue_key WHERE i.project_key IN ($project)) AND date_trunc('quarter', COALESCE(s.complete_date, s.start_date)) = '$quarter'::date ORDER BY CASE WHEN s.state = 'active' THEN 0 ELSE 1 END, s.start_date DESC NULLS LAST",
+        "query": "SELECT CONCAT(s.name, CASE WHEN s.state = 'active' THEN ' \u2605' ELSE '' END) AS __text, s.id::text AS __value FROM sprints s WHERE s.id IN (SELECT DISTINCT si.sprint_id FROM sprint_issues si JOIN issues i ON i.key = si.issue_key WHERE i.project_key IN ($project)) AND date_trunc('quarter', COALESCE(s.complete_date, s.start_date)) = '$quarter'::date ORDER BY CASE WHEN s.state = 'active' THEN 0 ELSE 1 END, s.start_date DESC NULLS LAST",
         "refresh": 2,
         "includeAll": false,
         "multi": false,
