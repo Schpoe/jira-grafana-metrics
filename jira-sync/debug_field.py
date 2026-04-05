@@ -13,7 +13,8 @@ PROJECTS   = [k.strip() for k in os.environ["JIRA_PROJECT_KEYS"].split(",")]
 field = sys.argv[1] if len(sys.argv) > 1 else "customfield_10662"
 auth  = HTTPBasicAuth(JIRA_EMAIL, JIRA_TOKEN)
 
-jql = f"project in ({','.join(PROJECTS)}) AND issuetype = Epic ORDER BY updated DESC"
+quoted = ",".join(f'"{p}"' for p in PROJECTS)
+jql = f"project in ({quoted}) AND issuetype = Epic ORDER BY updated DESC"
 r = requests.post(
     f"{JIRA_URL}/rest/api/3/search/jql",
     json={"jql": jql, "maxResults": 10, "fields": ["summary", field]},
