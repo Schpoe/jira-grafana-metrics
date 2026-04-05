@@ -46,6 +46,7 @@ JIRA_PROJECT_KEYS = [k.strip() for k in os.environ["JIRA_PROJECT_KEYS"].split(",
 # Jira Cloud story points field — override via env if your instance differs
 STORY_POINTS_FIELD = os.environ.get("JIRA_STORY_POINTS_FIELD", "customfield_10016")
 ACCEPTANCE_CRITERIA_FIELD = os.environ.get("JIRA_ACCEPTANCE_CRITERIA_FIELD", "customfield_10028")
+CUSTOMER_PROJECT_FIELD = os.environ.get("JIRA_CUSTOMER_PROJECT_FIELD", "customfield_10662")
 
 PG_DSN = (
     f"host={os.environ['POSTGRES_HOST']} "
@@ -300,7 +301,7 @@ def sync_issues(conn, sync_id, since=None, last_sync_duration=None, resume_token
         "summary", "issuetype", "status", "priority", STORY_POINTS_FIELD,
         "assignee", "reporter", "created", "updated", "resolutiondate",
         "fixVersions", "labels", "project", "parent", "issuelinks",
-        ACCEPTANCE_CRITERIA_FIELD,
+        ACCEPTANCE_CRITERIA_FIELD, CUSTOMER_PROJECT_FIELD,
     ]
 
     while True:
@@ -336,6 +337,12 @@ def sync_issues(conn, sync_id, since=None, last_sync_duration=None, resume_token
                 ac_raw and ac_raw.get("content") and len(ac_raw["content"]) > 0
             ) if isinstance(ac_raw, dict) else bool(ac_raw)
 
+            # Customer-Project: single-select or text custom field
+            cp_raw = f.get(CUSTOMER_PROJECT_FIELD)
+            customer_project = (
+                cp_raw.get("value") if isinstance(cp_raw, dict) else cp_raw
+            )
+
             issue_rows.append((
                 key,
                 f["project"]["key"],
@@ -354,6 +361,7 @@ def sync_issues(conn, sync_id, since=None, last_sync_duration=None, resume_token
                 labels,
                 epic_key,
                 has_acceptance_criteria,
+                customer_project,
             ))
 
             # Extract all issue links (both directions)
@@ -386,7 +394,8 @@ def sync_issues(conn, sync_id, since=None, last_sync_duration=None, resume_token
                     key, project_key, summary, issue_type, status, status_category,
                     priority, story_points, assignee, reporter,
                     created_at, updated_at, resolved_at,
-                    fix_versions, labels, epic_key, has_acceptance_criteria
+                    fix_versions, labels, epic_key, has_acceptance_criteria,
+                    customer_project
                 ) VALUES %s
                 ON CONFLICT (key) DO UPDATE SET
                     summary                  = EXCLUDED.summary,
@@ -402,6 +411,7 @@ def sync_issues(conn, sync_id, since=None, last_sync_duration=None, resume_token
                     labels                   = EXCLUDED.labels,
                     epic_key                 = EXCLUDED.epic_key,
                     has_acceptance_criteria  = EXCLUDED.has_acceptance_criteria,
+                    customer_project         = EXCLUDED.customer_project,
                     synced_at                = NOW()
                 """,
                 issue_rows,
