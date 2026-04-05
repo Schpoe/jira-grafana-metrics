@@ -5,7 +5,7 @@ Usage: docker compose exec jira-sync python debug_field.py customfield_10662
 import os, sys, json, requests
 from requests.auth import HTTPBasicAuth
 
-JIRA_URL   = os.environ["JIRA_URL"].rstrip("/")
+JIRA_URL   = os.environ["JIRA_URL"].strip()
 JIRA_EMAIL = os.environ["JIRA_EMAIL"]
 JIRA_TOKEN = os.environ["JIRA_API_TOKEN"]
 PROJECTS   = [k.strip() for k in os.environ["JIRA_PROJECT_KEYS"].split(",")]
@@ -19,7 +19,9 @@ r = requests.post(
     json={"jql": jql, "maxResults": 10, "fields": ["summary", field]},
     auth=auth,
 )
-r.raise_for_status()
+if not r.ok:
+    print(f"Error {r.status_code}: {r.text[:500]}")
+    sys.exit(1)
 
 for issue in r.json().get("issues", []):
     raw = issue["fields"].get(field)
