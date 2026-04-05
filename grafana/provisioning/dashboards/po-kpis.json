@@ -9,7 +9,7 @@
   ],
   "timezone": "browser",
   "schemaVersion": 38,
-  "version": 2,
+  "version": 3,
   "refresh": "1h",
   "time": {
     "from": "now-1y",
@@ -941,75 +941,6 @@
         "w": 24,
         "x": 0,
         "y": 5
-      }
-    },
-    {
-      "id": 107,
-      "type": "row",
-      "title": "Data Quality",
-      "collapsed": false,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 41
-      }
-    },
-    {
-      "id": 108,
-      "type": "table",
-      "title": "Epics Missing Customer-Project",
-      "description": "Active epics with no Customer-Project value set.",
-      "gridPos": {
-        "h": 10,
-        "w": 24,
-        "x": 0,
-        "y": 42
-      },
-      "datasource": {
-        "type": "postgres",
-        "uid": "jira-metrics-pg"
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "postgres",
-            "uid": "jira-metrics-pg"
-          },
-          "rawSql": "SELECT key AS \"Key\", summary AS \"Summary\",\n  status AS \"Status\", assignee AS \"Assignee\",\n  project_key AS \"Project\"\nFROM issues\nWHERE issue_type = 'Epic'\n  AND status_category != 'Done'\n  AND (customer_project IS NULL OR customer_project = '')\nORDER BY project_key, key",
-          "format": "table",
-          "refId": "A"
-        }
-      ],
-      "options": {
-        "sortBy": [
-          {
-            "displayName": "Project",
-            "desc": false
-          }
-        ]
-      },
-      "fieldConfig": {
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Key"
-            },
-            "properties": [
-              {
-                "id": "links",
-                "value": [
-                  {
-                    "title": "Open in Jira",
-                    "url": "${__data.fields.Key:raw}",
-                    "targetBlank": true
-                  }
-                ]
-              }
-            ]
-          }
-        ]
       }
     }
   ],
