@@ -8,7 +8,7 @@
   ],
   "timezone": "browser",
   "schemaVersion": 38,
-  "version": 2,
+  "version": 3,
   "refresh": "5m",
   "time": {
     "from": "now-1y",
@@ -2291,7 +2291,7 @@
                 "value": [
                   {
                     "title": "Open in Jira",
-                    "url": "${__data.fields.Key:raw}",
+                    "url": "${jira_url}/browse/${__value.text}",
                     "targetBlank": true
                   }
                 ]
