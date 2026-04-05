@@ -337,11 +337,14 @@ def sync_issues(conn, sync_id, since=None, last_sync_duration=None, resume_token
                 ac_raw and ac_raw.get("content") and len(ac_raw["content"]) > 0
             ) if isinstance(ac_raw, dict) else bool(ac_raw)
 
-            # Customer-Project: single-select or text custom field
+            # Customer-Project: cascading select — parent=customer, child=project
             cp_raw = f.get(CUSTOMER_PROJECT_FIELD)
-            customer_project = (
-                cp_raw.get("value") if isinstance(cp_raw, dict) else cp_raw
-            )
+            if isinstance(cp_raw, dict):
+                customer     = cp_raw.get("value") or None
+                project_name = (cp_raw.get("child") or {}).get("value") or None
+                customer_project = f"{customer} / {project_name}" if (customer and project_name) else (customer or None)
+            else:
+                customer = project_name = customer_project = None
 
             issue_rows.append((
                 key,
@@ -362,6 +365,8 @@ def sync_issues(conn, sync_id, since=None, last_sync_duration=None, resume_token
                 epic_key,
                 has_acceptance_criteria,
                 customer_project,
+                customer,
+                project_name,
             ))
 
             # Extract all issue links (both directions)
@@ -395,7 +400,7 @@ def sync_issues(conn, sync_id, since=None, last_sync_duration=None, resume_token
                     priority, story_points, assignee, reporter,
                     created_at, updated_at, resolved_at,
                     fix_versions, labels, epic_key, has_acceptance_criteria,
-                    customer_project
+                    customer_project, customer, project_name
                 ) VALUES %s
                 ON CONFLICT (key) DO UPDATE SET
                     summary                  = EXCLUDED.summary,
@@ -412,6 +417,8 @@ def sync_issues(conn, sync_id, since=None, last_sync_duration=None, resume_token
                     epic_key                 = EXCLUDED.epic_key,
                     has_acceptance_criteria  = EXCLUDED.has_acceptance_criteria,
                     customer_project         = EXCLUDED.customer_project,
+                    customer                 = EXCLUDED.customer,
+                    project_name             = EXCLUDED.project_name,
                     synced_at                = NOW()
                 """,
                 issue_rows,

@@ -8,7 +8,7 @@
   ],
   "timezone": "browser",
   "schemaVersion": 38,
-  "version": 3,
+  "version": 4,
   "refresh": "5m",
   "time": {
     "from": "now-1y",
@@ -2272,7 +2272,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT DISTINCT e.key AS \"Key\", e.summary AS \"Summary\",\n  e.status AS \"Status\",\n  COALESCE(e.assignee, 'Unassigned') AS \"Assignee\"\nFROM issues e\nWHERE e.issue_type = 'Epic'\n  AND (e.customer_project IS NULL OR e.customer_project = '')\n  AND e.key IN (\n    SELECT DISTINCT i.epic_key\n    FROM sprint_issues si\n    JOIN issues i ON i.key = si.issue_key\n    WHERE si.sprint_id = $sprint::bigint\n      AND i.epic_key IS NOT NULL\n      AND si.removed_at IS NULL\n  )\nORDER BY e.key",
+          "rawSql": "SELECT DISTINCT e.key AS \"Key\", e.summary AS \"Summary\",\n  e.status AS \"Status\",\n  COALESCE(e.assignee, 'Unassigned') AS \"Assignee\",\n  COALESCE(e.customer, '\u2014') AS \"Customer\",\n  COALESCE(e.project_name, '\u2014') AS \"Project\"\nFROM issues e\nWHERE e.issue_type = 'Epic'\n  AND (e.customer_project IS NULL OR e.customer_project = '')\n  AND e.key IN (\n    SELECT DISTINCT i.epic_key\n    FROM sprint_issues si\n    JOIN issues i ON i.key = si.issue_key\n    WHERE si.sprint_id = $sprint::bigint\n      AND i.epic_key IS NOT NULL\n      AND si.removed_at IS NULL\n  )\nORDER BY e.key",
           "format": "table",
           "refId": "A"
         }
