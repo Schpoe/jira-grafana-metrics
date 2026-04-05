@@ -12,6 +12,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY sync.py .
 COPY check_epic_implements.py .
 COPY list_custom_fields.py .
+COPY debug_field.py .
 COPY entrypoint.sh .
 RUN chmod +x entrypoint.sh
 
