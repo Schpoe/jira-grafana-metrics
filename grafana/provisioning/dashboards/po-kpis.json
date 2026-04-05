@@ -9,7 +9,7 @@
   ],
   "timezone": "browser",
   "schemaVersion": 38,
-  "version": 1,
+  "version": 2,
   "refresh": "1h",
   "time": {
     "from": "now-1y",
@@ -945,6 +945,18 @@
     },
     {
       "id": 107,
+      "type": "row",
+      "title": "Data Quality",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 41
+      }
+    },
+    {
+      "id": 108,
       "type": "table",
       "title": "Epics Missing Customer-Project",
       "description": "Active epics with no Customer-Project value set.",
@@ -952,7 +964,7 @@
         "h": 10,
         "w": 24,
         "x": 0,
-        "y": 41
+        "y": 42
       },
       "datasource": {
         "type": "postgres",
