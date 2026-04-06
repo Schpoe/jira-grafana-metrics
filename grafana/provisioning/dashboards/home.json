@@ -8,7 +8,7 @@
   ],
   "timezone": "browser",
   "schemaVersion": 38,
-  "version": 3,
+  "version": 4,
   "refresh": "1h",
   "time": {
     "from": "now-3M",
@@ -711,6 +711,22 @@
         "options": []
       },
       {
+        "name": "quarter",
+        "label": "Quarter",
+        "type": "query",
+        "datasource": {
+          "type": "postgres",
+          "uid": "jira-metrics-pg"
+        },
+        "query": "SELECT CONCAT('Q', EXTRACT(QUARTER FROM created_at)::int, ' ', EXTRACT(YEAR FROM created_at)::int) AS __text, TO_CHAR(date_trunc('quarter', created_at), 'YYYY-MM-DD') AS __value FROM issues WHERE created_at IS NOT NULL GROUP BY 1, 2 ORDER BY 2 DESC",
+        "refresh": 2,
+        "includeAll": false,
+        "multi": false,
+        "allValue": null,
+        "sort": 0,
+        "hide": 0
+      },
+      {
         "name": "project",
         "label": "Team / Project",
         "type": "query",
@@ -746,22 +762,6 @@
           "text": "All",
           "value": "$__all"
         }
-      },
-      {
-        "name": "quarter",
-        "label": "Quarter",
-        "type": "query",
-        "datasource": {
-          "type": "postgres",
-          "uid": "jira-metrics-pg"
-        },
-        "query": "SELECT CONCAT('Q', EXTRACT(QUARTER FROM created_at)::int, ' ', EXTRACT(YEAR FROM created_at)::int) AS __text, TO_CHAR(date_trunc('quarter', created_at), 'YYYY-MM-DD') AS __value FROM issues WHERE created_at IS NOT NULL GROUP BY 1, 2 ORDER BY 2 DESC",
-        "refresh": 2,
-        "includeAll": false,
-        "multi": false,
-        "allValue": null,
-        "sort": 0,
-        "hide": 0
       }
     ]
   }
