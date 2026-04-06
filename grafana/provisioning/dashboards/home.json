@@ -8,7 +8,7 @@
   ],
   "timezone": "browser",
   "schemaVersion": 38,
-  "version": 1,
+  "version": 3,
   "refresh": "1h",
   "time": {
     "from": "now-3M",
@@ -198,7 +198,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT COALESCE(ROUND(delivery_pct::numeric, 1), 0) AS value FROM v_planning_deviation WHERE sprint_id = $sprint::bigint",
+          "rawSql": "SELECT COALESCE(ROUND(delivery_pct::numeric, 1), 0) AS value FROM v_planning_deviation WHERE sprint_id = CASE WHEN '$sprint' ~ '^[0-9]+$' THEN '$sprint'::bigint ELSE (SELECT id FROM sprints ORDER BY start_date DESC NULLS LAST LIMIT 1) END",
           "format": "table",
           "refId": "A"
         }
@@ -396,7 +396,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT COUNT(*) AS value FROM issues i JOIN sprint_issues si ON si.issue_key = i.key WHERE i.project_key IN ($project) AND si.sprint_id = $sprint::bigint AND i.status_category = 'Done'",
+          "rawSql": "SELECT COUNT(*) AS value FROM issues i JOIN sprint_issues si ON si.issue_key = i.key WHERE i.project_key IN ($project) AND si.sprint_id = CASE WHEN '$sprint' ~ '^[0-9]+$' THEN '$sprint'::bigint ELSE (SELECT id FROM sprints ORDER BY start_date DESC NULLS LAST LIMIT 1) END AND i.status_category = 'Done'",
           "format": "table",
           "refId": "A"
         }
@@ -734,13 +734,18 @@
           "type": "postgres",
           "uid": "jira-metrics-pg"
         },
-        "query": "SELECT CONCAT(s.name, CASE WHEN s.state = 'active' THEN ' \u2605' ELSE '' END) AS __text, s.id::text AS __value FROM sprints s WHERE s.id IN (SELECT DISTINCT si.sprint_id FROM sprint_issues si JOIN issues i ON i.key = si.issue_key WHERE i.project_key IN ($project)) ORDER BY s.start_date DESC NULLS LAST LIMIT 40",
+        "query": "SELECT CONCAT(s.name, CASE WHEN s.state = 'active' THEN ' \u2605' ELSE '' END) AS __text, s.id::text AS __value FROM sprints s WHERE s.id IN (  SELECT DISTINCT si.sprint_id FROM sprint_issues si   JOIN issues i ON i.key = si.issue_key   WHERE i.project_key IN ($project)) AND date_trunc('quarter', COALESCE(s.complete_date, s.start_date)) = '$quarter'::date ORDER BY CASE WHEN s.state = 'active' THEN 0 ELSE 1 END, s.start_date DESC NULLS LAST",
         "refresh": 2,
-        "includeAll": false,
+        "includeAll": true,
         "multi": false,
         "allValue": null,
         "sort": 0,
-        "hide": 0
+        "hide": 0,
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "$__all"
+        }
       },
       {
         "name": "quarter",
