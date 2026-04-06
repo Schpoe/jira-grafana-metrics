@@ -8,7 +8,7 @@
   ],
   "timezone": "browser",
   "schemaVersion": 38,
-  "version": 1,
+  "version": 2,
   "refresh": "1h",
   "time": {
     "from": "now-3M",
@@ -46,7 +46,7 @@
             "lastNotNull"
           ]
         },
-        "colorMode": "background",
+        "colorMode": "value",
         "graphMode": "none"
       },
       "fieldConfig": {
@@ -103,7 +103,7 @@
             "lastNotNull"
           ]
         },
-        "colorMode": "background",
+        "colorMode": "value",
         "graphMode": "none"
       },
       "fieldConfig": {
@@ -130,7 +130,7 @@
           }
         }
       },
-      "description": "High-priority open bugs. Target: ≤5. Rising count signals quality regression."
+      "description": "High-priority open bugs. Target: \u22645. Rising count signals quality regression."
     },
     {
       "id": 3,
@@ -163,7 +163,7 @@
             "lastNotNull"
           ]
         },
-        "colorMode": "background",
+        "colorMode": "value",
         "graphMode": "none"
       },
       "fieldConfig": {
@@ -223,7 +223,7 @@
             "lastNotNull"
           ]
         },
-        "colorMode": "background",
+        "colorMode": "value",
         "graphMode": "none"
       },
       "fieldConfig": {
@@ -246,7 +246,7 @@
           }
         }
       },
-      "description": "Low-priority open bugs. Informational — review during backlog grooming."
+      "description": "Low-priority open bugs. Informational \u2014 review during backlog grooming."
     },
     {
       "id": 5,
@@ -435,7 +435,7 @@
     {
       "id": 7,
       "type": "table",
-      "title": "Open Bugs — Critical & High",
+      "title": "Open Bugs \u2014 Critical & High",
       "description": "All open critical and high priority bugs, sorted by age.",
       "gridPos": {
         "h": 9,
@@ -750,7 +750,7 @@
             "lastNotNull"
           ]
         },
-        "colorMode": "background",
+        "colorMode": "value",
         "graphMode": "none"
       },
       "fieldConfig": {
@@ -803,7 +803,7 @@
             "lastNotNull"
           ]
         },
-        "colorMode": "background",
+        "colorMode": "value",
         "graphMode": "none"
       },
       "fieldConfig": {
@@ -860,7 +860,7 @@
             "lastNotNull"
           ]
         },
-        "colorMode": "background",
+        "colorMode": "value",
         "graphMode": "none"
       },
       "fieldConfig": {

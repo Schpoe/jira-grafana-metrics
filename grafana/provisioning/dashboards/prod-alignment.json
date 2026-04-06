@@ -8,7 +8,7 @@
   ],
   "timezone": "browser",
   "schemaVersion": 38,
-  "version": 1,
+  "version": 2,
   "refresh": "5m",
   "time": {
     "from": "now-1y",
@@ -145,7 +145,7 @@
         },
         "orientation": "auto",
         "textMode": "auto",
-        "colorMode": "background",
+        "colorMode": "value",
         "graphMode": "none"
       },
       "fieldConfig": {
@@ -196,7 +196,7 @@
         },
         "orientation": "auto",
         "textMode": "auto",
-        "colorMode": "background",
+        "colorMode": "value",
         "graphMode": "none"
       },
       "fieldConfig": {
@@ -247,7 +247,7 @@
         },
         "orientation": "auto",
         "textMode": "auto",
-        "colorMode": "background",
+        "colorMode": "value",
         "graphMode": "none"
       },
       "fieldConfig": {
@@ -298,7 +298,7 @@
         },
         "orientation": "auto",
         "textMode": "auto",
-        "colorMode": "background",
+        "colorMode": "value",
         "graphMode": "none"
       },
       "fieldConfig": {
@@ -442,7 +442,7 @@
     {
       "id": 8,
       "type": "row",
-      "title": "Epic Breakdown – $prod_item",
+      "title": "Epic Breakdown \u2013 $prod_item",
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -630,7 +630,7 @@
     {
       "id": 10,
       "type": "row",
-      "title": "Coverage Gaps – Epics Without PROD Link",
+      "title": "Coverage Gaps \u2013 Epics Without PROD Link",
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -819,7 +819,7 @@
           "type": "postgres",
           "uid": "jira-metrics-pg"
         },
-        "query": "SELECT 'All PROD Items' AS __text, 'ALL' AS __value\nUNION ALL\nSELECT to_key || ' – ' || COALESCE(MAX(to_summary), to_key) AS __text, to_key AS __value\nFROM issue_links\nWHERE to_key LIKE 'PROD-%'\nGROUP BY to_key\nORDER BY 1",
+        "query": "SELECT 'All PROD Items' AS __text, 'ALL' AS __value\nUNION ALL\nSELECT to_key || ' \u2013 ' || COALESCE(MAX(to_summary), to_key) AS __text, to_key AS __value\nFROM issue_links\nWHERE to_key LIKE 'PROD-%'\nGROUP BY to_key\nORDER BY 1",
         "multi": false,
         "includeAll": false,
         "current": {},
