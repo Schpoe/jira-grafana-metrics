@@ -8,7 +8,7 @@
   ],
   "timezone": "browser",
   "schemaVersion": 38,
-  "version": 4,
+  "version": 5,
   "refresh": "1h",
   "time": {
     "from": "now-3M",
@@ -198,7 +198,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT COALESCE(ROUND(delivery_pct::numeric, 1), 0) AS value FROM v_planning_deviation WHERE sprint_id = CASE WHEN '$sprint' ~ '^[0-9]+$' THEN '$sprint'::bigint ELSE (SELECT id FROM sprints ORDER BY start_date DESC NULLS LAST LIMIT 1) END",
+          "rawSql": "SELECT COALESCE(ROUND(delivery_pct::numeric, 1), 0) AS value FROM v_planning_deviation WHERE sprint_id = $sprint::bigint",
           "format": "table",
           "refId": "A"
         }
@@ -396,7 +396,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT COUNT(*) AS value FROM issues i JOIN sprint_issues si ON si.issue_key = i.key WHERE i.project_key IN ($project) AND si.sprint_id = CASE WHEN '$sprint' ~ '^[0-9]+$' THEN '$sprint'::bigint ELSE (SELECT id FROM sprints ORDER BY start_date DESC NULLS LAST LIMIT 1) END AND i.status_category = 'Done'",
+          "rawSql": "SELECT COUNT(*) AS value FROM issues i JOIN sprint_issues si ON si.issue_key = i.key WHERE i.project_key IN ($project) AND si.sprint_id = $sprint::bigint AND i.status_category = 'Done'",
           "format": "table",
           "refId": "A"
         }
@@ -757,11 +757,7 @@
         "allValue": null,
         "sort": 0,
         "hide": 0,
-        "current": {
-          "selected": true,
-          "text": "All",
-          "value": "$__all"
-        }
+        "current": {}
       }
     ]
   }
