@@ -9,7 +9,7 @@
   ],
   "timezone": "browser",
   "schemaVersion": 38,
-  "version": 4,
+  "version": 5,
   "refresh": "1h",
   "time": {
     "from": "now-1y",
@@ -17,84 +17,64 @@
   },
   "links": [
     {
-      "title": "Home",
-      "url": "/d/jira-home",
-      "type": "link",
-      "icon": "home",
-      "targetBlank": false,
-      "includeVars": true,
-      "keepTime": false,
-      "asDropdown": false
-    },
-    {
-      "title": "Sprint Health",
-      "url": "/d/jira-sprint-health",
       "type": "link",
       "icon": "external link",
       "targetBlank": false,
       "includeVars": true,
       "keepTime": false,
-      "asDropdown": false
-    },
-    {
-      "title": "Flow & Cycle Time",
-      "url": "/d/jira-flow-cycle-time",
-      "type": "link",
-      "icon": "external link",
-      "targetBlank": false,
-      "includeVars": true,
-      "keepTime": false,
-      "asDropdown": false
-    },
-    {
-      "title": "Quality & Bugs",
-      "url": "/d/jira-quality-bugs",
-      "type": "link",
-      "icon": "external link",
-      "targetBlank": false,
-      "includeVars": true,
-      "keepTime": false,
-      "asDropdown": false
-    },
-    {
-      "title": "Team Overview",
-      "url": "/d/jira-team-overview",
-      "type": "link",
-      "icon": "external link",
-      "targetBlank": false,
-      "includeVars": true,
-      "keepTime": false,
-      "asDropdown": false
-    },
-    {
-      "title": "PO KPIs",
-      "url": "/d/jira-po-kpis",
-      "type": "link",
-      "icon": "external link",
-      "targetBlank": false,
-      "includeVars": true,
-      "keepTime": false,
-      "asDropdown": false
-    },
-    {
+      "asDropdown": false,
       "title": "Sprint Detail",
-      "url": "/d/jira-sprint-detail",
-      "type": "link",
-      "icon": "external link",
-      "targetBlank": false,
-      "includeVars": true,
-      "keepTime": false,
-      "asDropdown": false
+      "url": "/d/jira-sprint-detail"
     },
     {
-      "title": "PROD Alignment",
-      "url": "/d/jira-prod-alignment",
       "type": "link",
       "icon": "external link",
       "targetBlank": false,
       "includeVars": true,
       "keepTime": false,
-      "asDropdown": false
+      "asDropdown": false,
+      "title": "Sprint Overview Quarter",
+      "url": "/d/jira-sprint-health"
+    },
+    {
+      "type": "link",
+      "icon": "external link",
+      "targetBlank": false,
+      "includeVars": true,
+      "keepTime": false,
+      "asDropdown": false,
+      "title": "PO KPIs",
+      "url": "/d/jira-po-kpis"
+    },
+    {
+      "type": "link",
+      "icon": "external link",
+      "targetBlank": false,
+      "includeVars": true,
+      "keepTime": false,
+      "asDropdown": false,
+      "title": "PROD Alignment",
+      "url": "/d/jira-prod-alignment"
+    },
+    {
+      "type": "link",
+      "icon": "external link",
+      "targetBlank": false,
+      "includeVars": true,
+      "keepTime": false,
+      "asDropdown": false,
+      "title": "Team Overview",
+      "url": "/d/jira-team-overview"
+    },
+    {
+      "type": "link",
+      "icon": "external link",
+      "targetBlank": false,
+      "includeVars": true,
+      "keepTime": false,
+      "asDropdown": false,
+      "title": "Quality & Bugs",
+      "url": "/d/jira-quality-bugs"
     }
   ],
   "panels": [
