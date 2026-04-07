@@ -279,6 +279,7 @@ WITH committed AS (
     FROM sprint_issues si
     JOIN issues i ON i.key = si.issue_key
     WHERE si.was_in_initial_scope = TRUE
+      AND i.issue_type NOT IN ('Epic', 'Sub-task')
     GROUP BY si.sprint_id
 ),
 delivered AS (
@@ -290,6 +291,7 @@ delivered AS (
     FROM sprint_issues si
     JOIN issues i ON i.key = si.issue_key
     WHERE si.removed_at IS NULL
+      AND i.issue_type NOT IN ('Epic', 'Sub-task')
     GROUP BY si.sprint_id
 )
 SELECT
