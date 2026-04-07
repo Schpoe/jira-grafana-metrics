@@ -8,7 +8,7 @@
   ],
   "timezone": "browser",
   "schemaVersion": 38,
-  "version": 5,
+  "version": 6,
   "refresh": "1h",
   "time": {
     "from": "now-1y",
@@ -170,7 +170,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT status AS \"Status\", ROUND(AVG(hours_in_status)::numeric, 1) AS \"Avg Hours\" FROM v_time_in_status WHERE issue_key IN (SELECT key FROM issues WHERE project_key IN ($project)) AND hours_in_status IS NOT NULL AND hours_in_status > 0 AND hours_in_status < 8760 GROUP BY status HAVING COUNT(*) >= 5 ORDER BY \"Avg Hours\" DESC LIMIT 15",
+          "rawSql": "SELECT status AS \"Status\", ROUND(AVG(hours_in_status)::numeric, 1) AS \"Avg Hours\"\nFROM v_time_in_status\nWHERE issue_key IN (\n  SELECT key FROM issues\n  WHERE project_key IN ($project)\n    AND (\n      ($sprint::bigint = 0\n        AND resolved_at IS NOT NULL\n        AND date_trunc('quarter', resolved_at) = '$quarter'::date)\n      OR ($sprint::bigint != 0\n        AND key IN (\n          SELECT issue_key FROM sprint_issues\n          WHERE sprint_id = $sprint::bigint AND removed_at IS NULL\n        ))\n    )\n)\nAND hours_in_status IS NOT NULL\nAND hours_in_status > 0\nAND hours_in_status < 8760\nGROUP BY status\nHAVING COUNT(*) >= 5\nORDER BY \"Avg Hours\" DESC\nLIMIT 15",
           "format": "table",
           "refId": "A"
         }
