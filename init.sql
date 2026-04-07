@@ -287,18 +287,25 @@ delivered AS (
         si.sprint_id,
         COUNT(*) FILTER (WHERE
             i.status_category = 'Done'
-            AND i.resolved_at IS NOT NULL
-            AND i.resolved_at <= COALESCE(s.complete_date, NOW())
+            AND NOT EXISTS (
+                SELECT 1 FROM sprint_issues si2
+                WHERE si2.issue_key = si.issue_key
+                  AND si2.sprint_id > si.sprint_id
+                  AND si2.removed_at IS NULL
+            )
         )                                                                       AS delivered_issues,
         COALESCE(SUM(COALESCE(si.story_points_at_add, i.story_points, 0))
             FILTER (WHERE
                 i.status_category = 'Done'
-                AND i.resolved_at IS NOT NULL
-                AND i.resolved_at <= COALESCE(s.complete_date, NOW())
+                AND NOT EXISTS (
+                    SELECT 1 FROM sprint_issues si2
+                    WHERE si2.issue_key = si.issue_key
+                      AND si2.sprint_id > si.sprint_id
+                      AND si2.removed_at IS NULL
+                )
             ), 0)                                                               AS delivered_points
     FROM sprint_issues si
     JOIN issues i ON i.key = si.issue_key
-    JOIN sprints s ON s.id = si.sprint_id
     WHERE si.removed_at IS NULL
       AND i.issue_type NOT IN ('Epic', 'Sub-task')
     GROUP BY si.sprint_id
