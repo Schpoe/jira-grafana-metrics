@@ -8,7 +8,7 @@
   ],
   "timezone": "browser",
   "schemaVersion": 38,
-  "version": 6,
+  "version": 7,
   "refresh": "5m",
   "time": {
     "from": "now-1y",
@@ -578,7 +578,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT COUNT(*) AS value\nFROM sprint_issues si JOIN issues i ON i.key=si.issue_key\nWHERE si.sprint_id=$sprint::bigint AND si.removed_at IS NULL AND i.issue_type NOT IN ('Epic','Sub-task')\n  AND (i.story_points IS NOT NULL AND i.story_points > 0)\n  AND i.epic_key IS NOT NULL",
+          "rawSql": "SELECT COUNT(*) AS value\nFROM sprint_issues si JOIN issues i ON i.key=si.issue_key\nWHERE si.sprint_id=$sprint::bigint AND si.removed_at IS NULL AND i.issue_type NOT IN ('Epic','Sub-task','Bug')\n  AND (i.story_points IS NOT NULL AND i.story_points > 0)\n  AND i.epic_key IS NOT NULL",
           "format": "table",
           "refId": "A"
         }
@@ -628,7 +628,73 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT COUNT(*) AS value\nFROM sprint_issues si JOIN issues i ON i.key=si.issue_key\nWHERE si.sprint_id=$sprint::bigint AND si.removed_at IS NULL AND i.issue_type NOT IN ('Epic','Sub-task') AND (i.story_points IS NULL OR i.story_points = 0)",
+          "rawSql": "SELECT COUNT(*) AS value\nFROM sprint_issues si JOIN issues i ON i.key=si.issue_key\nWHERE si.sprint_id=$sprint::bigint AND si.removed_at IS NULL AND i.issue_type NOT IN ('Epic','Sub-task','Bug') AND (i.story_points IS NULL OR i.story_points = 0)",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 5
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 52,
+      "type": "stat",
+      "title": "Missing AC",
+      "description": "Stories/Tasks (excl. Bugs) without acceptance criteria.",
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 8,
+        "y": 9
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT COUNT(*) AS value\nFROM sprint_issues si JOIN issues i ON i.key=si.issue_key\nWHERE si.sprint_id=$sprint::bigint AND si.removed_at IS NULL\n  AND i.issue_type NOT IN ('Epic','Sub-task','Bug')\n  AND (i.has_acceptance_criteria IS NULL OR i.has_acceptance_criteria = FALSE)",
           "format": "table",
           "refId": "A"
         }
@@ -681,7 +747,7 @@
       "gridPos": {
         "h": 4,
         "w": 4,
-        "x": 8,
+        "x": 12,
         "y": 9
       },
       "datasource": {
@@ -694,7 +760,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT COUNT(*) AS value\nFROM sprint_issues si JOIN issues i ON i.key=si.issue_key\nWHERE si.sprint_id=$sprint::bigint AND si.removed_at IS NULL AND i.issue_type NOT IN ('Epic','Sub-task') AND i.epic_key IS NULL",
+          "rawSql": "SELECT COUNT(*) AS value\nFROM sprint_issues si JOIN issues i ON i.key=si.issue_key\nWHERE si.sprint_id=$sprint::bigint AND si.removed_at IS NULL AND i.issue_type NOT IN ('Epic','Sub-task','Bug') AND i.epic_key IS NULL",
           "format": "table",
           "refId": "A"
         }
@@ -743,11 +809,11 @@
       "id": 13,
       "type": "stat",
       "title": "Readiness %",
-      "description": "% of Stories/Tasks that have SP + Epic. Target \u2265 90%.",
+      "description": "% of Stories/Tasks (excl. Bugs) that have SP + Epic + AC. Target \u2265 90%.",
       "gridPos": {
         "h": 4,
         "w": 4,
-        "x": 12,
+        "x": 16,
         "y": 9
       },
       "datasource": {
@@ -760,7 +826,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT CASE WHEN total=0 THEN 0\n  ELSE ROUND(100.0 * ready / total, 1)\nEND AS value\nFROM (\n  SELECT\n    COUNT(*) FILTER (WHERE (i.story_points IS NOT NULL AND i.story_points>0) AND i.epic_key IS NOT NULL) AS ready,\n    COUNT(*) AS total\n  FROM sprint_issues si JOIN issues i ON i.key=si.issue_key\n  WHERE si.sprint_id=$sprint::bigint AND si.removed_at IS NULL AND i.issue_type NOT IN ('Epic','Sub-task')\n) t",
+          "rawSql": "SELECT CASE WHEN total=0 THEN 0\n  ELSE ROUND(100.0 * ready / total, 1)\nEND AS value\nFROM (\n  SELECT\n    COUNT(*) FILTER (WHERE\n      (i.story_points IS NOT NULL AND i.story_points>0)\n      AND i.epic_key IS NOT NULL\n      AND i.has_acceptance_criteria = TRUE\n    ) AS ready,\n    COUNT(*) AS total\n  FROM sprint_issues si JOIN issues i ON i.key=si.issue_key\n  WHERE si.sprint_id=$sprint::bigint AND si.removed_at IS NULL\n    AND i.issue_type NOT IN ('Epic','Sub-task','Bug')\n) t",
           "format": "table",
           "refId": "A"
         }
@@ -809,7 +875,7 @@
       "id": 14,
       "type": "table",
       "title": "Issues Not Ready",
-      "description": "Stories/Tasks missing SP estimate or Epic link.",
+      "description": "Stories/Tasks (excl. Bugs) missing SP estimate, Epic link, or Acceptance Criteria.",
       "gridPos": {
         "h": 8,
         "w": 24,
@@ -826,7 +892,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT i.key AS \"Key\", i.summary AS \"Summary\", i.issue_type AS \"Type\",\n  i.assignee AS \"Assignee\",\n  CASE WHEN i.story_points IS NULL OR i.story_points=0 THEN '\u274c' ELSE '\u2705' END AS \"SP\",\n  CASE WHEN i.epic_key IS NOT NULL THEN '\u2705' ELSE '\u274c' END AS \"Epic\",\n  COALESCE(i.epic_key,'\u2014') AS \"Epic Key\"\nFROM sprint_issues si JOIN issues i ON i.key=si.issue_key\nWHERE si.sprint_id=$sprint::bigint AND si.removed_at IS NULL AND i.issue_type NOT IN ('Epic','Sub-task')\n  AND ((i.story_points IS NULL OR i.story_points=0) OR i.epic_key IS NULL)\nORDER BY\n  CASE i.priority WHEN 'Blocker' THEN 1 WHEN 'Critical' THEN 2 WHEN 'High' THEN 3 WHEN 'Medium' THEN 4 ELSE 5 END",
+          "rawSql": "SELECT i.key AS \"Key\", i.summary AS \"Summary\", i.issue_type AS \"Type\",\n  i.assignee AS \"Assignee\",\n  CASE WHEN i.story_points IS NULL OR i.story_points=0 THEN '\u274c' ELSE '\u2705' END AS \"SP\",\n  CASE WHEN i.epic_key IS NOT NULL THEN '\u2705' ELSE '\u274c' END AS \"Epic\",\n  CASE WHEN i.has_acceptance_criteria = TRUE THEN '\u2705' ELSE '\u274c' END AS \"AC\",\n  COALESCE(i.epic_key,'\u2014') AS \"Epic Key\"\nFROM sprint_issues si JOIN issues i ON i.key=si.issue_key\nWHERE si.sprint_id=$sprint::bigint AND si.removed_at IS NULL\n  AND i.issue_type NOT IN ('Epic','Sub-task','Bug')\n  AND (\n    (i.story_points IS NULL OR i.story_points=0)\n    OR i.epic_key IS NULL\n    OR (i.has_acceptance_criteria IS NULL OR i.has_acceptance_criteria = FALSE)\n  )\nORDER BY\n  CASE i.priority WHEN 'Blocker' THEN 1 WHEN 'Critical' THEN 2 WHEN 'High' THEN 3 WHEN 'Medium' THEN 4 ELSE 5 END",
           "format": "table",
           "refId": "A"
         }
