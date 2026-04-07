@@ -285,11 +285,20 @@ WITH committed AS (
 delivered AS (
     SELECT
         si.sprint_id,
-        COUNT(*) FILTER (WHERE i.status_category = 'Done')                     AS delivered_issues,
+        COUNT(*) FILTER (WHERE
+            i.status_category = 'Done'
+            AND i.resolved_at IS NOT NULL
+            AND i.resolved_at <= COALESCE(s.complete_date, NOW())
+        )                                                                       AS delivered_issues,
         COALESCE(SUM(COALESCE(si.story_points_at_add, i.story_points, 0))
-            FILTER (WHERE i.status_category = 'Done'), 0)                      AS delivered_points
+            FILTER (WHERE
+                i.status_category = 'Done'
+                AND i.resolved_at IS NOT NULL
+                AND i.resolved_at <= COALESCE(s.complete_date, NOW())
+            ), 0)                                                               AS delivered_points
     FROM sprint_issues si
     JOIN issues i ON i.key = si.issue_key
+    JOIN sprints s ON s.id = si.sprint_id
     WHERE si.removed_at IS NULL
       AND i.issue_type NOT IN ('Epic', 'Sub-task')
     GROUP BY si.sprint_id
