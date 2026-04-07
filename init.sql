@@ -81,19 +81,6 @@ CREATE TABLE IF NOT EXISTS releases (
     synced_at    TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Sprint snapshots for planning-deviation tracking
--- Taken at sprint start and sprint close
-CREATE TABLE IF NOT EXISTS sprint_snapshots (
-    sprint_id                INTEGER REFERENCES sprints(id),
-    snapshot_type            TEXT,  -- 'start', 'close'
-    snapshot_at              TIMESTAMPTZ DEFAULT NOW(),
-    total_issues             INTEGER,
-    total_story_points       NUMERIC,
-    completed_issues         INTEGER,
-    completed_story_points   NUMERIC,
-    PRIMARY KEY (sprint_id, snapshot_type)
-);
-
 -- Sync audit log
 CREATE TABLE IF NOT EXISTS sync_log (
     id                  SERIAL PRIMARY KEY,

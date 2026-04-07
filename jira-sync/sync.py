@@ -626,41 +626,7 @@ def _sync_sprint_members(conn, sprint_id, sprint_state):
     conn.commit()
 
 
-def _take_sprint_snapshot(conn, sprint):
-    """Record a start/close snapshot for planning-deviation tracking."""
-    sprint_id = sprint["id"]
-    state = sprint.get("state", "")
 
-    if state == "active":
-        snapshot_type = "start"
-    elif state == "closed":
-        snapshot_type = "close"
-    else:
-        return
-
-    with conn.cursor() as cur:
-        cur.execute(
-            """
-            INSERT INTO sprint_snapshots (
-                sprint_id, snapshot_type,
-                total_issues, total_story_points,
-                completed_issues, completed_story_points
-            )
-            SELECT
-                %s, %s,
-                COUNT(*),
-                COALESCE(SUM(i.story_points), 0),
-                COUNT(*) FILTER (WHERE i.status_category = 'Done'),
-                COALESCE(SUM(i.story_points) FILTER (WHERE i.status_category = 'Done'), 0)
-            FROM sprint_issues si
-            JOIN issues i ON i.key = si.issue_key
-            WHERE si.sprint_id = %s
-              AND si.removed_at IS NULL
-            ON CONFLICT (sprint_id, snapshot_type) DO NOTHING
-            """,
-            (sprint_id, snapshot_type, sprint_id),
-        )
-    conn.commit()
 
 
 def sync_sprints(conn):
@@ -724,7 +690,6 @@ def sync_sprints(conn):
 
             for sprint in sprints:
                 _sync_sprint_members(conn, sprint["id"], sprint.get("state", ""))
-                _take_sprint_snapshot(conn, sprint)
 
             total_sprints += len(sprints)
 
