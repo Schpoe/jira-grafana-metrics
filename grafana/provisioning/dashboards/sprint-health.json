@@ -8,7 +8,7 @@
   ],
   "timezone": "browser",
   "schemaVersion": 38,
-  "version": 2,
+  "version": 3,
   "refresh": "1h",
   "time": {
     "from": "now-1y",
@@ -437,6 +437,16 @@
       "asDropdown": false,
       "title": "Sprint Detail",
       "url": "/d/jira-sprint-detail"
+    },
+    {
+      "type": "link",
+      "icon": "external link",
+      "targetBlank": false,
+      "includeVars": true,
+      "keepTime": false,
+      "asDropdown": false,
+      "title": "Flow & Cycle Time",
+      "url": "/d/jira-flow-cycle-time"
     },
     {
       "type": "link",
