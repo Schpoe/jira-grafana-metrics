@@ -8,7 +8,7 @@
   ],
   "timezone": "browser",
   "schemaVersion": 38,
-  "version": 9,
+  "version": 10,
   "refresh": "5m",
   "time": {
     "from": "now-1y",
@@ -481,7 +481,7 @@
     },
     {
       "id": 8,
-      "type": "stat",
+      "type": "gauge",
       "title": "Delivery %",
       "description": "Completed / Committed SP. Target \u2265 80%.",
       "gridPos": {
@@ -507,17 +507,14 @@
       ],
       "options": {
         "reduceOptions": {
-          "values": false,
           "calcs": [
             "lastNotNull"
-          ],
-          "fields": ""
+          ]
         },
         "orientation": "auto",
-        "textMode": "auto",
-        "colorMode": "value",
-        "graphMode": "none",
-        "justifyMode": "auto"
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "text": {}
       },
       "fieldConfig": {
         "defaults": {
@@ -541,7 +538,9 @@
                 "value": 80
               }
             ]
-          }
+          },
+          "min": 0,
+          "max": 120
         }
       }
     },
@@ -907,7 +906,7 @@
     },
     {
       "id": 13,
-      "type": "stat",
+      "type": "gauge",
       "title": "Readiness %",
       "description": "% of Stories/Tasks (excl. Bugs) that have SP + Epic + AC. Target \u2265 90%.",
       "gridPos": {
@@ -933,17 +932,14 @@
       ],
       "options": {
         "reduceOptions": {
-          "values": false,
           "calcs": [
             "lastNotNull"
-          ],
-          "fields": ""
+          ]
         },
         "orientation": "auto",
-        "textMode": "auto",
-        "colorMode": "value",
-        "graphMode": "none",
-        "justifyMode": "auto"
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "text": {}
       },
       "fieldConfig": {
         "defaults": {
@@ -967,7 +963,9 @@
                 "value": 90
               }
             ]
-          }
+          },
+          "min": 0,
+          "max": 100
         }
       }
     },
@@ -1442,7 +1440,7 @@
     },
     {
       "id": 33,
-      "type": "stat",
+      "type": "gauge",
       "title": "QASE Coverage %",
       "description": "Percentage of checked sprint issues (excl. Epics) with a QASE test case.",
       "gridPos": {
@@ -1472,8 +1470,10 @@
             "lastNotNull"
           ]
         },
-        "colorMode": "value",
-        "graphMode": "none"
+        "orientation": "auto",
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "text": {}
       },
       "fieldConfig": {
         "defaults": {
@@ -1497,7 +1497,9 @@
           },
           "color": {
             "mode": "thresholds"
-          }
+          },
+          "min": 0,
+          "max": 100
         }
       }
     },
@@ -2017,7 +2019,7 @@
     },
     {
       "id": 45,
-      "type": "stat",
+      "type": "gauge",
       "title": "Scope Change %",
       "description": "(SP added + SP removed) \u00f7 Committed SP \u00d7 100. Target: \u226410%. High % indicates reactive planning.",
       "gridPos": {
@@ -2047,8 +2049,10 @@
             "lastNotNull"
           ]
         },
-        "colorMode": "value",
-        "graphMode": "none"
+        "orientation": "auto",
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "text": {}
       },
       "fieldConfig": {
         "defaults": {
@@ -2072,7 +2076,9 @@
           },
           "color": {
             "mode": "thresholds"
-          }
+          },
+          "min": 0,
+          "max": 50
         }
       }
     },
