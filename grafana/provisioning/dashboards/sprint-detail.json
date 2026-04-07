@@ -8,7 +8,7 @@
   ],
   "timezone": "browser",
   "schemaVersion": 38,
-  "version": 12,
+  "version": 13,
   "refresh": "5m",
   "time": {
     "from": "now-1y",
@@ -2197,7 +2197,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT ROUND(AVG(delivered_points)::numeric, 1) AS value FROM (  SELECT pd.delivered_points   FROM v_planning_deviation pd   WHERE pd.state = 'closed'   AND pd.sprint_id != $sprint::bigint   AND pd.sprint_id IN (    SELECT DISTINCT si.sprint_id FROM sprint_issues si     JOIN issues i ON i.key = si.issue_key     JOIN sprint_issues si2 ON si2.issue_key = si.issue_key     WHERE si2.sprint_id = $sprint::bigint  )   ORDER BY pd.complete_date DESC NULLS LAST   LIMIT 6) last6",
+          "rawSql": "SELECT ROUND(AVG(delivered_points)::numeric, 1) AS value\nFROM (\n  SELECT pd.delivered_points\n  FROM v_planning_deviation pd\n  JOIN sprints s ON s.id = pd.sprint_id\n  WHERE pd.state = 'closed'\n    AND pd.sprint_id != $sprint::bigint\n    AND s.board_id = (SELECT board_id FROM sprints WHERE id = $sprint::bigint)\n  ORDER BY pd.complete_date DESC NULLS LAST\n  LIMIT 6\n) last6",
           "format": "table",
           "refId": "A"
         }
@@ -2357,7 +2357,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "WITH committed AS (\n  SELECT COALESCE(SUM(COALESCE(si.story_points_at_add, i.story_points, 0)), 0) AS sp\n  FROM sprint_issues si\n  JOIN issues i ON i.key = si.issue_key\n  WHERE si.sprint_id = $sprint::bigint\n    AND si.was_in_initial_scope = TRUE\n),\navg_vel AS (\n  SELECT ROUND(AVG(delivered_points)::numeric, 1) AS avg_sp\n  FROM (\n    SELECT pd.delivered_points\n    FROM v_planning_deviation pd\n    WHERE pd.state = 'closed'\n      AND pd.sprint_id != $sprint::bigint\n      AND pd.sprint_id IN (\n        SELECT DISTINCT si.sprint_id FROM sprint_issues si\n        JOIN issues i ON i.key = si.issue_key\n        JOIN sprint_issues si2 ON si2.issue_key = si.issue_key\n        WHERE si2.sprint_id = $sprint::bigint\n      )\n    ORDER BY pd.complete_date DESC NULLS LAST\n    LIMIT 6\n  ) last6\n)\nSELECT ROUND(100.0 * c.sp / NULLIF(a.avg_sp, 0), 1) AS value\nFROM committed c CROSS JOIN avg_vel a",
+          "rawSql": "WITH committed AS (\n  SELECT COALESCE(SUM(COALESCE(si.story_points_at_add, i.story_points, 0)), 0) AS sp\n  FROM sprint_issues si\n  JOIN issues i ON i.key = si.issue_key\n  WHERE si.sprint_id = $sprint::bigint\n    AND si.was_in_initial_scope = TRUE\n),\navg_vel AS (\n  SELECT ROUND(AVG(delivered_points)::numeric, 1) AS avg_sp\n  FROM (\n    SELECT pd.delivered_points\n    FROM v_planning_deviation pd\n    JOIN sprints s ON s.id = pd.sprint_id\n    WHERE pd.state = 'closed'\n      AND pd.sprint_id != $sprint::bigint\n      AND s.board_id = (SELECT board_id FROM sprints WHERE id = $sprint::bigint)\n    ORDER BY pd.complete_date DESC NULLS LAST\n    LIMIT 6\n  ) last6\n)\nSELECT ROUND(100.0 * c.sp / NULLIF(a.avg_sp, 0), 1) AS value\nFROM committed c CROSS JOIN avg_vel a",
           "format": "table",
           "refId": "A"
         }
