@@ -8,7 +8,7 @@
   ],
   "timezone": "browser",
   "schemaVersion": 38,
-  "version": 7,
+  "version": 8,
   "refresh": "5m",
   "time": {
     "from": "now-1y",
@@ -558,6 +558,56 @@
       "collapsed": false
     },
     {
+      "id": 53,
+      "type": "stat",
+      "title": "Planned",
+      "description": "Issues committed at sprint start (initial scope, excl. Epics, Sub-tasks, Bugs).",
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 0,
+        "y": 9
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT COUNT(*) AS value\nFROM sprint_issues si JOIN issues i ON i.key=si.issue_key\nWHERE si.sprint_id=$sprint::bigint\n  AND si.was_in_initial_scope = TRUE\n  AND i.issue_type NOT IN ('Epic','Sub-task','Bug')",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          }
+        }
+      }
+    },
+    {
       "id": 10,
       "type": "stat",
       "title": "Ready Issues",
@@ -565,7 +615,7 @@
       "gridPos": {
         "h": 4,
         "w": 4,
-        "x": 0,
+        "x": 4,
         "y": 9
       },
       "datasource": {
@@ -615,7 +665,7 @@
       "gridPos": {
         "h": 4,
         "w": 4,
-        "x": 4,
+        "x": 8,
         "y": 9
       },
       "datasource": {
@@ -681,7 +731,7 @@
       "gridPos": {
         "h": 4,
         "w": 4,
-        "x": 8,
+        "x": 12,
         "y": 9
       },
       "datasource": {
@@ -747,7 +797,7 @@
       "gridPos": {
         "h": 4,
         "w": 4,
-        "x": 12,
+        "x": 16,
         "y": 9
       },
       "datasource": {
@@ -813,7 +863,7 @@
       "gridPos": {
         "h": 4,
         "w": 4,
-        "x": 16,
+        "x": 20,
         "y": 9
       },
       "datasource": {
