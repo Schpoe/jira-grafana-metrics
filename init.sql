@@ -256,7 +256,9 @@ JOIN issues  i  ON i.key = si.issue_key;
 -- Both committed and delivered are computed directly from sprint_issues + issues,
 -- removing dependency on sprint_snapshots which may be missing for many sprints.
 -- Committed = was_in_initial_scope=TRUE (from Jira sprint report API).
--- Delivered = issues with status_category='Done' and not removed from sprint.
+-- Delivered = issues resolved (resolved_at) within the sprint window.
+--   Using resolved_at prevents double-counting carry-over issues that accumulate
+--   in sprint_issues across many sprints with removed_at IS NULL.
 CREATE OR REPLACE VIEW v_planning_deviation AS
 WITH committed AS (
     SELECT
@@ -272,22 +274,22 @@ WITH committed AS (
     GROUP BY si.sprint_id
 ),
 delivered AS (
+    -- Credit each Done issue to exactly one sprint: the sprint whose window contains resolved_at.
+    -- This correctly handles carry-over issues that appear in many sprints with removed_at IS NULL.
     SELECT
-        si.sprint_id,
-        COUNT(*) FILTER (WHERE
-            i.status_category = 'Done'
-            AND i.status != 'Obsolete / Won''t Do'
-        )                                                                       AS delivered_issues,
-        COALESCE(SUM(COALESCE(si.story_points_at_add, i.story_points, 0))
-            FILTER (WHERE
-                i.status_category = 'Done'
-                AND i.status != 'Obsolete / Won''t Do'
-            ), 0)                                                               AS delivered_points
+        s.id                                                                    AS sprint_id,
+        COUNT(*)                                                                AS delivered_issues,
+        COALESCE(SUM(COALESCE(si.story_points_at_add, i.story_points, 0)), 0)  AS delivered_points
     FROM sprint_issues si
     JOIN issues i ON i.key = si.issue_key
-    WHERE si.removed_at IS NULL
+    JOIN sprints s ON s.id = si.sprint_id
+    WHERE i.status_category = 'Done'
+      AND i.status != 'Obsolete / Won''t Do'
       AND i.issue_type NOT IN ('Epic', 'Sub-task')
-    GROUP BY si.sprint_id
+      AND i.resolved_at IS NOT NULL
+      AND i.resolved_at >= s.start_date
+      AND i.resolved_at <= COALESCE(s.complete_date, s.end_date, NOW())
+    GROUP BY s.id
 )
 SELECT
     s.id                                                            AS sprint_id,
