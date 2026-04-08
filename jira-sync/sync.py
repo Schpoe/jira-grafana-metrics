@@ -629,6 +629,37 @@ def _sync_sprint_members(conn, sprint_id, sprint_state):
 
 
 
+def backfill_resolved_at(conn):
+    """Set resolved_at from issue_transitions for Done issues where it is missing.
+
+    Jira does not always populate resolutiondate, so ~25% of Done issues arrive
+    with resolved_at=NULL. We derive it from the latest transition into the
+    issue's current (Done) status recorded in issue_transitions.
+    """
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            UPDATE issues i
+            SET resolved_at = (
+                SELECT MAX(t.transitioned_at)
+                FROM issue_transitions t
+                WHERE t.issue_key = i.key
+                  AND t.to_status = i.status
+            )
+            WHERE i.status_category = 'Done'
+              AND i.resolved_at IS NULL
+              AND EXISTS (
+                  SELECT 1 FROM issue_transitions t
+                  WHERE t.issue_key = i.key AND t.to_status = i.status
+              )
+            """
+        )
+        updated = cur.rowcount
+    conn.commit()
+    if updated:
+        log.info("Backfilled resolved_at for %d Done issues", updated)
+
+
 def sync_sprints(conn):
     log.info("Syncing sprints")
     boards = _get_scrum_boards()
@@ -994,6 +1025,12 @@ def main():
     except Exception as exc:
         log.error("Sprint reports sync failed: %s", exc, exc_info=True)
         errors.append(f"sprint_reports: {exc}")
+
+    try:
+        backfill_resolved_at(conn)
+    except Exception as exc:
+        log.error("resolved_at backfill failed: %s", exc, exc_info=True)
+        errors.append(f"resolved_at: {exc}")
 
     try:
         sync_releases(conn)

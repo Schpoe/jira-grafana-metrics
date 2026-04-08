@@ -276,8 +276,10 @@ delivered AS (
             i.status_category = 'Done'
             AND NOT EXISTS (
                 SELECT 1 FROM sprint_issues si2
+                JOIN sprints s2 ON s2.id = si2.sprint_id
+                JOIN sprints s1 ON s1.id = si.sprint_id
                 WHERE si2.issue_key = si.issue_key
-                  AND si2.sprint_id > si.sprint_id
+                  AND s2.start_date > s1.start_date
                   AND si2.removed_at IS NULL
             )
         )                                                                       AS delivered_issues,
@@ -286,8 +288,10 @@ delivered AS (
                 i.status_category = 'Done'
                 AND NOT EXISTS (
                     SELECT 1 FROM sprint_issues si2
+                    JOIN sprints s2 ON s2.id = si2.sprint_id
+                    JOIN sprints s1 ON s1.id = si.sprint_id
                     WHERE si2.issue_key = si.issue_key
-                      AND si2.sprint_id > si.sprint_id
+                      AND s2.start_date > s1.start_date
                       AND si2.removed_at IS NULL
                 )
             ), 0)                                                               AS delivered_points
