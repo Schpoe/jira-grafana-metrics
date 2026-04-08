@@ -633,10 +633,18 @@ def backfill_resolved_at(conn):
     """Set resolved_at from issue_transitions for Done issues where it is missing.
 
     Jira does not always populate resolutiondate, so ~25% of Done issues arrive
-    with resolved_at=NULL. We derive it from the latest transition into the
-    issue's current (Done) status recorded in issue_transitions.
+    with resolved_at=NULL.
+
+    Pass 1: derive from the latest transition into the issue's current Done
+    status (case-insensitive — Jira inconsistently stores e.g. "Done" vs "DONE").
+
+    Pass 2: for issues still missing resolved_at after pass 1 (transition
+    timestamps NULL or no matching transition), fall back to updated_at.
+    updated_at reflects the last time Jira touched the issue and is a
+    reasonable proxy for when it was resolved.
     """
     with conn.cursor() as cur:
+        # Pass 1: derive from transition history
         cur.execute(
             """
             UPDATE issues i
@@ -644,20 +652,35 @@ def backfill_resolved_at(conn):
                 SELECT MAX(t.transitioned_at)
                 FROM issue_transitions t
                 WHERE t.issue_key = i.key
-                  AND t.to_status = i.status
+                  AND LOWER(t.to_status) = LOWER(i.status)
             )
             WHERE i.status_category = 'Done'
               AND i.resolved_at IS NULL
               AND EXISTS (
                   SELECT 1 FROM issue_transitions t
-                  WHERE t.issue_key = i.key AND t.to_status = i.status
+                  WHERE t.issue_key = i.key
+                    AND LOWER(t.to_status) = LOWER(i.status)
+                    AND t.transitioned_at IS NOT NULL
               )
             """
         )
-        updated = cur.rowcount
+        pass1 = cur.rowcount
+
+        # Pass 2: fall back to updated_at for remaining cases
+        cur.execute(
+            """
+            UPDATE issues
+            SET resolved_at = updated_at
+            WHERE status_category = 'Done'
+              AND resolved_at IS NULL
+              AND updated_at IS NOT NULL
+            """
+        )
+        pass2 = cur.rowcount
+
     conn.commit()
-    if updated:
-        log.info("Backfilled resolved_at for %d Done issues", updated)
+    if pass1 or pass2:
+        log.info("Backfilled resolved_at: %d from transitions, %d from updated_at", pass1, pass2)
 
 
 def sync_sprints(conn):
