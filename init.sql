@@ -277,32 +277,21 @@ delivered AS (
         COUNT(*) FILTER (WHERE
             i.status_category = 'Done'
             AND i.status != 'Obsolete / Won''t Do'
-            AND NOT EXISTS (
-                SELECT 1 FROM sprint_issues si2
-                JOIN sprints s2 ON s2.id = si2.sprint_id
-                JOIN sprints s1 ON s1.id = si.sprint_id
-                WHERE si2.issue_key = si.issue_key
-                  AND s2.start_date > s1.start_date
-                  AND s2.board_id = s1.board_id
-                  AND si2.removed_at IS NULL
-            )
+            AND i.resolved_at IS NOT NULL
+            AND i.resolved_at >= s.start_date
+            AND i.resolved_at <= COALESCE(s.complete_date, s.end_date, NOW())
         )                                                                       AS delivered_issues,
         COALESCE(SUM(COALESCE(si.story_points_at_add, i.story_points, 0))
             FILTER (WHERE
                 i.status_category = 'Done'
                 AND i.status != 'Obsolete / Won''t Do'
-                AND NOT EXISTS (
-                    SELECT 1 FROM sprint_issues si2
-                    JOIN sprints s2 ON s2.id = si2.sprint_id
-                    JOIN sprints s1 ON s1.id = si.sprint_id
-                    WHERE si2.issue_key = si.issue_key
-                      AND s2.start_date > s1.start_date
-                      AND s2.board_id = s1.board_id
-                      AND si2.removed_at IS NULL
-                )
+                AND i.resolved_at IS NOT NULL
+                AND i.resolved_at >= s.start_date
+                AND i.resolved_at <= COALESCE(s.complete_date, s.end_date, NOW())
             ), 0)                                                               AS delivered_points
     FROM sprint_issues si
     JOIN issues i ON i.key = si.issue_key
+    JOIN sprints s ON s.id = si.sprint_id
     WHERE si.removed_at IS NULL
       AND i.issue_type NOT IN ('Epic', 'Sub-task')
     GROUP BY si.sprint_id
