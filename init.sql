@@ -266,7 +266,9 @@ WITH committed AS (
     FROM sprint_issues si
     JOIN issues i ON i.key = si.issue_key
     WHERE si.was_in_initial_scope = TRUE
+      AND si.removed_at IS NULL
       AND i.issue_type NOT IN ('Epic', 'Sub-task')
+      AND i.status != 'Obsolete / Won''t Do'
     GROUP BY si.sprint_id
 ),
 delivered AS (
@@ -274,6 +276,7 @@ delivered AS (
         si.sprint_id,
         COUNT(*) FILTER (WHERE
             i.status_category = 'Done'
+            AND i.status != 'Obsolete / Won''t Do'
             AND NOT EXISTS (
                 SELECT 1 FROM sprint_issues si2
                 JOIN sprints s2 ON s2.id = si2.sprint_id
@@ -286,6 +289,7 @@ delivered AS (
         COALESCE(SUM(COALESCE(si.story_points_at_add, i.story_points, 0))
             FILTER (WHERE
                 i.status_category = 'Done'
+                AND i.status != 'Obsolete / Won''t Do'
                 AND NOT EXISTS (
                     SELECT 1 FROM sprint_issues si2
                     JOIN sprints s2 ON s2.id = si2.sprint_id
