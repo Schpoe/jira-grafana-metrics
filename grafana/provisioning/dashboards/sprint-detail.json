@@ -3111,7 +3111,7 @@
         "multi": false,
         "name": "sprint",
         "options": [],
-        "query": "SELECT CONCAT(s.name, CASE WHEN s.state = 'active' THEN ' \u2605' ELSE '' END) AS __text, s.id::text AS __value FROM sprints s WHERE date_trunc('quarter', COALESCE(s.complete_date, s.start_date)) = '$quarter'::date AND (SELECT COUNT(*) FROM sprint_issues si JOIN issues i ON i.key = si.issue_key WHERE si.sprint_id = s.id AND i.project_key IN ($project) AND si.was_in_initial_scope = TRUE) * 2 > (SELECT COUNT(*) FROM sprint_issues si WHERE si.sprint_id = s.id AND si.was_in_initial_scope = TRUE) ORDER BY CASE WHEN s.state = 'active' THEN 0 ELSE 1 END, s.start_date DESC NULLS LAST",
+        "query": "SELECT CONCAT(s.name, CASE WHEN s.state = 'active' THEN ' \u2605' ELSE '' END) AS __text, s.id::text AS __value FROM sprints s WHERE date_trunc('quarter', s.start_date) = '$quarter'::date AND (SELECT COUNT(*) FROM sprint_issues si JOIN issues i ON i.key = si.issue_key WHERE si.sprint_id = s.id AND i.project_key IN ($project) AND si.was_in_initial_scope = TRUE) * 2 > (SELECT COUNT(*) FROM sprint_issues si WHERE si.sprint_id = s.id AND si.was_in_initial_scope = TRUE) ORDER BY CASE WHEN s.state = 'active' THEN 0 ELSE 1 END, s.start_date DESC NULLS LAST",
         "refresh": 2,
         "regex": "",
         "skipUrlSync": false,
