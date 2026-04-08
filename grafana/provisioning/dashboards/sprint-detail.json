@@ -753,7 +753,7 @@
             "uid": "jira-metrics-pg"
           },
           "format": "table",
-          "rawSql": "SELECT ROUND(AVG(delivered_points)::numeric, 1) AS value\nFROM (\n  SELECT pd.delivered_points\n  FROM v_planning_deviation pd\n  JOIN sprints s ON s.id = pd.sprint_id\n  WHERE pd.state = 'closed'\n    AND s.complete_date < (SELECT start_date FROM sprints WHERE id = $sprint::bigint)\n    AND (SELECT COUNT(*) FROM sprint_issues si JOIN issues i ON i.key = si.issue_key\n         WHERE si.sprint_id = pd.sprint_id AND si.removed_at IS NULL\n           AND i.project_key IN (SELECT DISTINCT i2.project_key FROM sprint_issues si2\n             JOIN issues i2 ON i2.key = si2.issue_key WHERE si2.sprint_id = $sprint::bigint AND si2.removed_at IS NULL)\n        ) * 2 > (SELECT COUNT(*) FROM sprint_issues si WHERE si.sprint_id = pd.sprint_id AND si.removed_at IS NULL)\n  ORDER BY s.complete_date DESC NULLS LAST\n  LIMIT 6\n) last6",
+          "rawSql": "SELECT ROUND(AVG(delivered_points)::numeric, 1) AS value\nFROM (\n  SELECT pd.delivered_points\n  FROM v_planning_deviation pd\n  JOIN sprints s ON s.id = pd.sprint_id\n  WHERE pd.state = 'closed'\n    AND s.complete_date < (SELECT start_date FROM sprints WHERE id = $sprint::bigint)\n    AND (SELECT COUNT(*) FROM sprint_issues si JOIN issues i ON i.key = si.issue_key\n         WHERE si.sprint_id = pd.sprint_id AND si.was_in_initial_scope = TRUE\n           AND i.project_key IN (SELECT DISTINCT i2.project_key FROM sprint_issues si2\n             JOIN issues i2 ON i2.key = si2.issue_key WHERE si2.sprint_id = $sprint::bigint AND si2.was_in_initial_scope = TRUE)\n        ) * 2 > (SELECT COUNT(*) FROM sprint_issues si WHERE si.sprint_id = pd.sprint_id AND si.was_in_initial_scope = TRUE)\n  ORDER BY s.complete_date DESC NULLS LAST\n  LIMIT 6\n) last6",
           "refId": "A"
         }
       ],
@@ -3111,7 +3111,7 @@
         "multi": false,
         "name": "sprint",
         "options": [],
-        "query": "SELECT CONCAT(s.name, CASE WHEN s.state = 'active' THEN ' \u2605' ELSE '' END) AS __text, s.id::text AS __value FROM sprints s WHERE s.id IN (  SELECT DISTINCT si.sprint_id FROM sprint_issues si   JOIN issues i ON i.key = si.issue_key   WHERE i.project_key IN ($project)) AND date_trunc('quarter', COALESCE(s.complete_date, s.start_date)) = '$quarter'::date ORDER BY CASE WHEN s.state = 'active' THEN 0 ELSE 1 END, s.start_date DESC NULLS LAST",
+        "query": "SELECT CONCAT(s.name, CASE WHEN s.state = 'active' THEN ' \u2605' ELSE '' END) AS __text, s.id::text AS __value FROM sprints s WHERE date_trunc('quarter', COALESCE(s.complete_date, s.start_date)) = '$quarter'::date AND (SELECT COUNT(*) FROM sprint_issues si JOIN issues i ON i.key = si.issue_key WHERE si.sprint_id = s.id AND i.project_key IN ($project) AND si.was_in_initial_scope = TRUE) * 2 > (SELECT COUNT(*) FROM sprint_issues si WHERE si.sprint_id = s.id AND si.was_in_initial_scope = TRUE) ORDER BY CASE WHEN s.state = 'active' THEN 0 ELSE 1 END, s.start_date DESC NULLS LAST",
         "refresh": 2,
         "regex": "",
         "skipUrlSync": false,
