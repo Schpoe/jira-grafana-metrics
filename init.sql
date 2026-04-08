@@ -283,6 +283,7 @@ delivered AS (
                 JOIN sprints s1 ON s1.id = si.sprint_id
                 WHERE si2.issue_key = si.issue_key
                   AND s2.start_date > s1.start_date
+                  AND s2.board_id = s1.board_id
                   AND si2.removed_at IS NULL
             )
         )                                                                       AS delivered_issues,
@@ -296,6 +297,7 @@ delivered AS (
                     JOIN sprints s1 ON s1.id = si.sprint_id
                     WHERE si2.issue_key = si.issue_key
                       AND s2.start_date > s1.start_date
+                      AND s2.board_id = s1.board_id
                       AND si2.removed_at IS NULL
                 )
             ), 0)                                                               AS delivered_points
