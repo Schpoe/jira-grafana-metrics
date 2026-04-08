@@ -8,7 +8,7 @@
   ],
   "timezone": "browser",
   "schemaVersion": 38,
-  "version": 17,
+  "version": 18,
   "refresh": "5m",
   "time": {
     "from": "now-1y",
@@ -540,7 +540,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT COALESCE(ROUND(delivery_pct::numeric,1),0) AS value FROM v_planning_deviation WHERE sprint_id=$sprint::bigint",
+          "rawSql": "SELECT CASE WHEN committed.sp = 0 THEN 0\n  ELSE ROUND(100.0 * completed.sp / committed.sp, 1)\nEND AS value\nFROM\n  (SELECT COALESCE(SUM(COALESCE(si.story_points_at_add,i.story_points,0)),0) AS sp\n   FROM sprint_issues si JOIN issues i ON i.key=si.issue_key\n   WHERE si.sprint_id=$sprint::bigint AND si.was_in_initial_scope=TRUE\n     AND si.removed_at IS NULL\n     AND i.issue_type NOT IN ('Epic','Sub-task') AND i.status != 'Obsolete / Won''t Do'\n  ) committed,\n  (SELECT COALESCE(SUM(COALESCE(si.story_points_at_add,i.story_points,0)),0) AS sp\n   FROM sprint_issues si JOIN issues i ON i.key=si.issue_key\n   WHERE si.sprint_id=$sprint::bigint AND si.removed_at IS NULL\n     AND i.status_category='Done' AND i.status != 'Obsolete / Won''t Do'\n     AND i.issue_type NOT IN ('Epic','Sub-task')\n  ) completed",
           "format": "table",
           "refId": "A"
         }
