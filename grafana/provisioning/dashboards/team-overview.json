@@ -125,7 +125,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT COALESCE(i.assignee, 'Unassigned') AS \"Assignee\", COUNT(*) AS \"Completed\", COALESCE(SUM(i.story_points), 0) AS \"Story Points\"\nFROM issues i\nWHERE i.project_key IN ($project)\n  AND i.status_category = 'Done'\n  AND i.resolved_at IS NOT NULL\n  AND (($sprint::bigint = 0 AND date_trunc('quarter', i.resolved_at) = '$quarter'::date)\n       OR ($sprint::bigint != 0 AND i.key IN (\n         SELECT issue_key FROM sprint_issues WHERE sprint_id = $sprint::bigint AND removed_at IS NULL\n       )))\nGROUP BY i.assignee\nORDER BY \"Completed\" DESC\nLIMIT 20",
+          "rawSql": "SELECT COALESCE(i.assignee, 'Unassigned') AS \"Assignee\", COUNT(*) AS \"Completed\", COALESCE(SUM(i.story_points), 0) AS \"Story Points\"\nFROM issues i\nWHERE i.project_key IN ($project)\n  AND i.status_category = 'Done'\n  AND i.status != 'Obsolete / Won''t Do'\n  AND i.resolved_at IS NOT NULL\n  AND (($sprint::bigint = 0 AND date_trunc('quarter', i.resolved_at) = '$quarter'::date)\n       OR ($sprint::bigint != 0 AND i.key IN (\n         SELECT si.issue_key FROM sprint_issues si JOIN sprints s ON s.id = si.sprint_id WHERE si.sprint_id = $sprint::bigint AND si.removed_at IS NULL AND i.resolved_at >= s.start_date AND i.resolved_at <= COALESCE(s.complete_date, s.end_date, NOW())\n       )))\nGROUP BY i.assignee\nORDER BY \"Completed\" DESC\nLIMIT 20",
           "format": "table",
           "refId": "A"
         }
@@ -366,7 +366,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT DATE_TRUNC('week', i.resolved_at) AS time, i.assignee AS metric, COUNT(*) AS value\nFROM issues i\nWHERE i.project_key IN ($project)\n  AND i.status_category = 'Done'\n  AND i.resolved_at IS NOT NULL\n  AND i.assignee IS NOT NULL\n  AND (($sprint::bigint = 0 AND date_trunc('quarter', i.resolved_at) = '$quarter'::date)\n       OR ($sprint::bigint != 0 AND i.key IN (\n         SELECT issue_key FROM sprint_issues WHERE sprint_id = $sprint::bigint AND removed_at IS NULL\n       )))\nGROUP BY 1, 2\nORDER BY 1",
+          "rawSql": "SELECT DATE_TRUNC('week', i.resolved_at) AS time, i.assignee AS metric, COUNT(*) AS value\nFROM issues i\nWHERE i.project_key IN ($project)\n  AND i.status_category = 'Done'\n  AND i.status != 'Obsolete / Won''t Do'\n  AND i.resolved_at IS NOT NULL\n  AND i.assignee IS NOT NULL\n  AND (($sprint::bigint = 0 AND date_trunc('quarter', i.resolved_at) = '$quarter'::date)\n       OR ($sprint::bigint != 0 AND i.key IN (\n         SELECT si.issue_key FROM sprint_issues si JOIN sprints s ON s.id = si.sprint_id WHERE si.sprint_id = $sprint::bigint AND si.removed_at IS NULL AND i.resolved_at >= s.start_date AND i.resolved_at <= COALESCE(s.complete_date, s.end_date, NOW())\n       )))\nGROUP BY 1, 2\nORDER BY 1",
           "format": "time_series",
           "refId": "A"
         }
@@ -411,7 +411,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT i.assignee AS \"Assignee\", COUNT(DISTINCT i.key) AS \"Issues Completed\", COALESCE(SUM(i.story_points), 0) AS \"Points Delivered\", COUNT(DISTINCT CASE WHEN i.issue_type = 'Bug' THEN i.key END) AS \"Bugs Fixed\", ROUND(AVG(c.hours_rft_to_done)::numeric, 1) AS \"Avg Cycle Time (h)\", COUNT(DISTINCT wip.key) AS \"Current WIP\" FROM issues i LEFT JOIN v_cycle_time_rft_to_done c ON c.issue_key = i.key AND ($sprint::bigint = 0 AND date_trunc('quarter', c.resolved_at) = '$quarter'::date OR $sprint::bigint != 0) LEFT JOIN issues wip ON wip.assignee = i.assignee AND wip.status_category = 'In Progress' WHERE i.project_key IN ($project) AND i.status_category = 'Done' AND (($sprint::bigint = 0 AND date_trunc('quarter', i.resolved_at) = '$quarter'::date) OR ($sprint::bigint != 0 AND i.key IN (SELECT issue_key FROM sprint_issues WHERE sprint_id = $sprint::bigint AND removed_at IS NULL))) AND i.assignee IS NOT NULL GROUP BY i.assignee ORDER BY \"Issues Completed\" DESC",
+          "rawSql": "SELECT i.assignee AS \"Assignee\", COUNT(DISTINCT i.key) AS \"Issues Completed\", COALESCE(SUM(i.story_points), 0) AS \"Points Delivered\", COUNT(DISTINCT CASE WHEN i.issue_type = 'Bug' THEN i.key END) AS \"Bugs Fixed\", ROUND(AVG(c.hours_rft_to_done)::numeric, 1) AS \"Avg Cycle Time (h)\", COUNT(DISTINCT wip.key) AS \"Current WIP\" FROM issues i LEFT JOIN v_cycle_time_rft_to_done c ON c.issue_key = i.key AND ($sprint::bigint = 0 AND date_trunc('quarter', c.resolved_at) = '$quarter'::date OR $sprint::bigint != 0) LEFT JOIN issues wip ON wip.assignee = i.assignee AND wip.status_category = 'In Progress' WHERE i.project_key IN ($project) AND i.status_category = 'Done'\n  AND i.status != 'Obsolete / Won''t Do' AND (($sprint::bigint = 0 AND date_trunc('quarter', i.resolved_at) = '$quarter'::date) OR ($sprint::bigint != 0 AND i.key IN (SELECT issue_key FROM sprint_issues WHERE sprint_id = $sprint::bigint AND removed_at IS NULL))) AND i.assignee IS NOT NULL GROUP BY i.assignee ORDER BY \"Issues Completed\" DESC",
           "format": "table",
           "refId": "A"
         }

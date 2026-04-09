@@ -12,14 +12,15 @@ This document explains how every metric across all dashboards is calculated, whi
 
 These are intentional differences worth understanding when comparing numbers:
 
-| Topic | Sprint Detail / PO KPIs | Sprint Health / Sprint Overview |
-|-------|------------------------|--------------------------------|
-| **Quarter assignment** | Uses `start_date` | Uses `COALESCE(complete_date, start_date)` |
-| **story_points field** | `story_points_at_add` (scope-aware) | Same via `v_planning_deviation` |
-| **Completed SP** | All Done issues with `resolved_at` in sprint window | Only committed Done issues (via view) |
-| **QASE panels** | Excludes Epic + Sub-task | Excludes Epic only |
+| Topic | Sprint Detail / PO KPIs / Sprint Overview | Team Overview | Quality & Bugs |
+|-------|------------------------------------------|---------------|----------------|
+| **Quarter assignment** | `start_date` | `resolved_at` | `created_at` (bugs), `complete_date` (QASE) |
+| **story_points field** | `story_points_at_add` (scope-aware) | `story_points` (current) | N/A |
+| **Completed SP** | All Done issues with `resolved_at` window | N/A | N/A |
+| **Obsolete exclusion** | Yes | Yes (fixed) | No |
+| **QASE Sub-task exclusion** | Yes | N/A | Yes (fixed) |
 
-**Quarter assignment:** Sprint Detail and PO KPIs assign sprints to the quarter they *started* in (`start_date`). Sprint Health uses `COALESCE(complete_date, start_date)` — the quarter they *completed* in (falling back to start for active sprints). A sprint starting in Q1 and closing in Q2 will appear in **Q1** in Sprint Detail but **Q2** in Sprint Health.
+**Quarter assignment:** All dashboards now use `start_date` to assign sprints to quarters. A sprint belongs to the quarter it started in, regardless of when it closed.
 
 ---
 
