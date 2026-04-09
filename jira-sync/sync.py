@@ -191,15 +191,19 @@ def sync_projects(conn):
 
 
 def _fetch_changelog(issue_key):
-    """Fetch all status transitions for a single issue via the changelog endpoint.
+    """Fetch status transitions and fix-version history for a single issue.
 
     Jira Cloud deprecated expand=changelog on the bulk search endpoint (410).
     This calls the dedicated per-issue changelog API instead.
 
     Some issues are corrupt on Jira's side (internal PSQLException returned as
     a 400) — these are logged and skipped rather than failing the entire sync.
+
+    Returns (transition_rows, fix_version_events) where fix_version_events is a
+    list of (issue_key, fix_version, added_at, removed_at) tuples.
     """
     transition_rows = []
+    fix_version_events = []  # (issue_key, fix_version, added_at, removed_at)
     start = 0
     while True:
         try:
@@ -209,21 +213,30 @@ def _fetch_changelog(issue_key):
             )
         except requests.exceptions.HTTPError as exc:
             log.warning("Skipping changelog for %s — Jira returned %s", issue_key, exc)
-            return []
+            return [], []
         for history in data.get("values", []):
+            occurred_at = parse_dt(history.get("created"))
             for item in history.get("items", []):
                 if item["field"] == "status":
                     transition_rows.append((
                         issue_key,
                         item.get("fromString"),
                         item.get("toString"),
-                        parse_dt(history.get("created")),
+                        occurred_at,
                         history.get("author", {}).get("displayName"),
                     ))
+                elif item["field"] == "Fix Version":
+                    # Jira reports added/removed fix versions as separate items
+                    added   = item.get("toString")
+                    removed = item.get("fromString")
+                    if added:
+                        fix_version_events.append((issue_key, added, occurred_at, None))
+                    if removed:
+                        fix_version_events.append((issue_key, removed, None, occurred_at))
         if data.get("isLast", True):
             break
         start += data.get("maxResults", 100)
-    return transition_rows
+    return transition_rows, fix_version_events
 
 
 def _last_successful_sync(conn):
@@ -313,6 +326,7 @@ def sync_issues(conn, sync_id, since=None, last_sync_duration=None, resume_token
 
         issue_rows = []
         transition_rows = []
+        fix_version_events = []
         link_rows = []
 
         for issue in issues:
@@ -386,7 +400,9 @@ def sync_issues(conn, sync_id, since=None, last_sync_duration=None, resume_token
                         direction,
                     ))
 
-            transition_rows.extend(_fetch_changelog(key))
+            t_rows, fv_events = _fetch_changelog(key)
+            transition_rows.extend(t_rows)
+            fix_version_events.extend(fv_events)
 
         is_last = data.get("isLast", True)
         next_page_token = None if is_last else data.get("nextPageToken")
@@ -434,6 +450,18 @@ def sync_issues(conn, sync_id, since=None, last_sync_duration=None, resume_token
                     ON CONFLICT (issue_key, transitioned_at, to_status) DO NOTHING
                     """,
                     transition_rows,
+                )
+
+            if fix_version_events:
+                execute_values(
+                    cur,
+                    """
+                    INSERT INTO issue_fix_version_history
+                        (issue_key, fix_version, added_at, removed_at)
+                    VALUES %s
+                    ON CONFLICT (issue_key, fix_version, COALESCE(added_at, '1970-01-01'::timestamptz)) DO NOTHING
+                    """,
+                    fix_version_events,
                 )
 
             # Diff issue links against DB state: record added/removed in history,

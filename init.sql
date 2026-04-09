@@ -121,6 +121,19 @@ CREATE TABLE IF NOT EXISTS app_settings (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Historical fix version assignments per issue
+-- Tracks every fixVersion ever assigned to an issue via changelog,
+-- even if the issue was later moved to a different release.
+CREATE TABLE IF NOT EXISTS issue_fix_version_history (
+    issue_key       TEXT NOT NULL,
+    fix_version     TEXT NOT NULL,
+    added_at        TIMESTAMPTZ,   -- when this fix version was assigned
+    removed_at      TIMESTAMPTZ,   -- NULL if still assigned
+    PRIMARY KEY (issue_key, fix_version, COALESCE(added_at, '1970-01-01'::timestamptz))
+);
+CREATE INDEX IF NOT EXISTS idx_ifvh_issue    ON issue_fix_version_history(issue_key);
+CREATE INDEX IF NOT EXISTS idx_ifvh_version  ON issue_fix_version_history(fix_version);
+
 -- Issue links (e.g., Epic "implements" PROD item)
 CREATE TABLE IF NOT EXISTS issue_links (
     from_key    TEXT NOT NULL,   -- source issue (e.g. Epic key)

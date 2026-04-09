@@ -1571,6 +1571,307 @@
         "x": 0,
         "y": 0
       }
+    },
+    {
+      "id": 103,
+      "type": "row",
+      "title": "Release Bug History (Initial Quality)",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 63
+      }
+    },
+    {
+      "id": 104,
+      "type": "stat",
+      "title": "Bugs Ever in Release",
+      "description": "Total bugs ever assigned to this release via fix_version, including those later moved to another release. Measures initial release quality.",
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 0,
+        "y": 64
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "format": "table",
+          "rawSql": "SELECT COUNT(DISTINCT i.key) AS value\nFROM issues i\nJOIN issue_fix_version_history fvh ON fvh.issue_key = i.key\nWHERE i.issue_type = 'Bug'\n  AND i.project_key IN ($project)\n  AND fvh.fix_version = '$release'\n  AND '$release' != 'ALL'",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 5
+              },
+              {
+                "color": "orange",
+                "value": 15
+              },
+              {
+                "color": "red",
+                "value": 30
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 105,
+      "type": "stat",
+      "title": "Bugs Moved to Another Release",
+      "description": "Bugs that were assigned to this release but later moved to a different fix_version. High count may indicate release scope changes under pressure.",
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 4,
+        "y": 64
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "format": "table",
+          "rawSql": "SELECT COUNT(DISTINCT fvh.issue_key) AS value\nFROM issue_fix_version_history fvh\nJOIN issues i ON i.key = fvh.issue_key\nWHERE i.issue_type = 'Bug'\n  AND i.project_key IN ($project)\n  AND fvh.fix_version = '$release'\n  AND fvh.removed_at IS NOT NULL\n  AND '$release' != 'ALL'",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 3
+              },
+              {
+                "color": "red",
+                "value": 10
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 106,
+      "type": "stat",
+      "title": "Major Bugs Ever in Release",
+      "description": "Blocker, Critical and High bugs ever assigned to this release. Best indicator of initial release quality risk.",
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 8,
+        "y": 64
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "format": "table",
+          "rawSql": "SELECT COUNT(DISTINCT i.key) AS value\nFROM issues i\nJOIN issue_fix_version_history fvh ON fvh.issue_key = i.key\nWHERE i.issue_type = 'Bug'\n  AND i.project_key IN ($project)\n  AND i.priority IN ('Blocker', 'Critical', 'High')\n  AND fvh.fix_version = '$release'\n  AND '$release' != 'ALL'",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 3
+              },
+              {
+                "color": "orange",
+                "value": 10
+              },
+              {
+                "color": "red",
+                "value": 20
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 107,
+      "type": "table",
+      "title": "All Bugs Ever Assigned to Release",
+      "description": "All bugs that were ever assigned to this fix_version, including those later moved. 'Still in Release' = bug is still in the current fix_versions. Allows assessment of initial release quality vs final state.",
+      "gridPos": {
+        "h": 12,
+        "w": 24,
+        "x": 0,
+        "y": 68
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "format": "table",
+          "rawSql": "SELECT\n  i.key AS \"Key\",\n  i.summary AS \"Summary\",\n  i.priority AS \"Priority\",\n  i.status AS \"Status\",\n  COALESCE(i.assignee, 'Unassigned') AS \"Assignee\",\n  CASE WHEN '$release' = ANY(i.fix_versions) THEN '\u2705 Yes' ELSE '\u27a1 Moved' END AS \"Still in Release\",\n  fvh.added_at::date AS \"Assigned Date\",\n  fvh.removed_at::date AS \"Removed Date\",\n  ARRAY_TO_STRING(i.fix_versions, ', ') AS \"Current Fix Version(s)\"\nFROM issue_fix_version_history fvh\nJOIN issues i ON i.key = fvh.issue_key\nWHERE i.issue_type = 'Bug'\n  AND i.project_key IN ($project)\n  AND fvh.fix_version = '$release'\n  AND '$release' != 'ALL'\nORDER BY\n  CASE i.priority WHEN 'Blocker' THEN 1 WHEN 'Critical' THEN 2 WHEN 'High' THEN 3 WHEN 'Medium' THEN 4 ELSE 5 END,\n  fvh.added_at",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "left",
+            "cellOptions": {
+              "type": "auto"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Key"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "targetBlank": true,
+                    "title": "Open in Jira",
+                    "url": "${jira_url}/browse/${__value.text}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Still in Release"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background"
+                }
+              }
+            ]
+          }
+        ]
+      }
     }
   ],
   "templating": {
