@@ -716,7 +716,7 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 3,
+        "w": 2,
         "x": 15,
         "y": 7
       },
@@ -936,7 +936,7 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 3,
+        "w": 2,
         "x": 0,
         "y": 12
       },
@@ -1005,8 +1005,8 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 3,
-        "x": 3,
+        "w": 2,
+        "x": 2,
         "y": 12
       },
       "id": 10,
@@ -1047,7 +1047,7 @@
         "type": "postgres",
         "uid": "jira-metrics-pg"
       },
-      "description": "Stories/Tasks (excl. Bugs) without acceptance criteria.",
+      "description": "Issues with no assignee (all issue types).",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1078,7 +1078,79 @@
       "gridPos": {
         "h": 4,
         "w": 3,
-        "x": 6,
+        "x": 5,
+        "y": 12
+      },
+      "id": 104,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.1.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT COUNT(*) AS value\nFROM sprint_issues si\nJOIN issues i ON i.key = si.issue_key\nWHERE si.sprint_id = $sprint::bigint\n  AND si.removed_at IS NULL\n  AND i.status != 'Obsolete / Won''t Do'\n  AND i.assignee IS NULL",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "title": "Missing Assignee",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "description": "Stories/Tasks (excl. Bugs) without acceptance criteria.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 5
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 2,
+        "x": 8,
         "y": 12
       },
       "id": 52,
@@ -1149,8 +1221,8 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 3,
-        "x": 9,
+        "w": 2,
+        "x": 10,
         "y": 12
       },
       "id": 11,
@@ -1295,7 +1367,7 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 3,
+        "w": 2,
         "x": 15,
         "y": 12
       },
@@ -1329,6 +1401,144 @@
       ],
       "title": "Readiness %",
       "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "description": "Issues resolved in this sprint (excl. Epics, Sub-tasks, Obsolete).",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "green",
+            "mode": "fixed"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 3,
+        "x": 18,
+        "y": 12
+      },
+      "id": 102,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.1.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT COUNT(*) AS value\nFROM sprint_issues si\nJOIN issues i ON i.key = si.issue_key\nJOIN sprints s ON s.id = si.sprint_id\nWHERE si.sprint_id = $sprint::bigint\n  AND si.removed_at IS NULL\n  AND i.issue_type NOT IN ('Epic','Sub-task')\n  AND i.status != 'Obsolete / Won''t Do'\n  AND i.status_category = 'Done'\n  AND i.resolved_at IS NOT NULL\n  AND i.resolved_at >= s.start_date\n  AND i.resolved_at <= COALESCE(s.complete_date, s.end_date, NOW())",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "title": "Completed Issues",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "description": "Issues not yet done in this sprint (excl. Epics, Sub-tasks, Obsolete).",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "orange",
+            "mode": "fixed"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 3,
+        "x": 21,
+        "y": 12
+      },
+      "id": 103,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.1.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT COUNT(*) AS value\nFROM sprint_issues si\nJOIN issues i ON i.key = si.issue_key\nWHERE si.sprint_id = $sprint::bigint\n  AND si.removed_at IS NULL\n  AND i.issue_type NOT IN ('Epic','Sub-task')\n  AND i.status != 'Obsolete / Won''t Do'\n  AND i.status_category != 'Done'",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "title": "Open Issues",
+      "type": "stat"
     },
     {
       "datasource": {
@@ -1421,7 +1631,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 20
+        "y": 16
       },
       "id": 14,
       "options": {
@@ -1972,8 +2182,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -2051,8 +2260,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -2183,8 +2391,7 @@
                   "mode": "absolute",
                   "steps": [
                     {
-                      "color": "text",
-                      "value": null
+                      "color": "text"
                     },
                     {
                       "color": "orange",
@@ -3051,172 +3258,6 @@
       ],
       "title": "Epics Missing Customer-Project",
       "type": "table"
-    },
-    {
-      "id": 102,
-      "type": "stat",
-      "title": "Completed Issues",
-      "description": "Issues resolved in this sprint (excl. Epics, Sub-tasks, Obsolete).",
-      "gridPos": {
-        "h": 4,
-        "w": 3,
-        "x": 18,
-        "y": 12
-      },
-      "datasource": {
-        "type": "postgres",
-        "uid": "jira-metrics-pg"
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "postgres",
-            "uid": "jira-metrics-pg"
-          },
-          "rawSql": "SELECT COUNT(*) AS value\nFROM sprint_issues si\nJOIN issues i ON i.key = si.issue_key\nJOIN sprints s ON s.id = si.sprint_id\nWHERE si.sprint_id = $sprint::bigint\n  AND si.removed_at IS NULL\n  AND i.issue_type NOT IN ('Epic','Sub-task')\n  AND i.status != 'Obsolete / Won''t Do'\n  AND i.status_category = 'Done'\n  AND i.resolved_at IS NOT NULL\n  AND i.resolved_at >= s.start_date\n  AND i.resolved_at <= COALESCE(s.complete_date, s.end_date, NOW())",
-          "format": "table",
-          "refId": "A"
-        }
-      ],
-      "options": {
-        "reduceOptions": {
-          "values": false,
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": ""
-        },
-        "orientation": "auto",
-        "textMode": "auto",
-        "colorMode": "value",
-        "graphMode": "none",
-        "justifyMode": "auto"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "color": {
-            "mode": "fixed",
-            "fixedColor": "green"
-          }
-        }
-      }
-    },
-    {
-      "id": 103,
-      "type": "stat",
-      "title": "Open Issues",
-      "description": "Issues not yet done in this sprint (excl. Epics, Sub-tasks, Obsolete).",
-      "gridPos": {
-        "h": 4,
-        "w": 3,
-        "x": 21,
-        "y": 12
-      },
-      "datasource": {
-        "type": "postgres",
-        "uid": "jira-metrics-pg"
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "postgres",
-            "uid": "jira-metrics-pg"
-          },
-          "rawSql": "SELECT COUNT(*) AS value\nFROM sprint_issues si\nJOIN issues i ON i.key = si.issue_key\nWHERE si.sprint_id = $sprint::bigint\n  AND si.removed_at IS NULL\n  AND i.issue_type NOT IN ('Epic','Sub-task')\n  AND i.status != 'Obsolete / Won''t Do'\n  AND i.status_category != 'Done'",
-          "format": "table",
-          "refId": "A"
-        }
-      ],
-      "options": {
-        "reduceOptions": {
-          "values": false,
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": ""
-        },
-        "orientation": "auto",
-        "textMode": "auto",
-        "colorMode": "value",
-        "graphMode": "none",
-        "justifyMode": "auto"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "color": {
-            "mode": "fixed",
-            "fixedColor": "orange"
-          }
-        }
-      }
-    },
-    {
-      "id": 104,
-      "type": "stat",
-      "title": "Missing Assignee",
-      "description": "Issues with no assignee (all issue types).",
-      "gridPos": {
-        "h": 4,
-        "w": 3,
-        "x": 0,
-        "y": 16
-      },
-      "datasource": {
-        "type": "postgres",
-        "uid": "jira-metrics-pg"
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "postgres",
-            "uid": "jira-metrics-pg"
-          },
-          "rawSql": "SELECT COUNT(*) AS value\nFROM sprint_issues si\nJOIN issues i ON i.key = si.issue_key\nWHERE si.sprint_id = $sprint::bigint\n  AND si.removed_at IS NULL\n  AND i.status != 'Obsolete / Won''t Do'\n  AND i.assignee IS NULL",
-          "format": "table",
-          "refId": "A"
-        }
-      ],
-      "options": {
-        "reduceOptions": {
-          "values": false,
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": ""
-        },
-        "orientation": "auto",
-        "textMode": "auto",
-        "colorMode": "value",
-        "graphMode": "none",
-        "justifyMode": "auto"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "color": {
-            "mode": "thresholds"
-          },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 1
-              },
-              {
-                "color": "red",
-                "value": 5
-              }
-            ]
-          }
-        }
-      }
     }
   ],
   "schemaVersion": 39,
@@ -3336,6 +3377,6 @@
   "timezone": "browser",
   "title": "Sprint Detail",
   "uid": "cfih5an4hj7y8e",
-  "version": 5,
+  "version": 11,
   "weekStart": ""
 }
