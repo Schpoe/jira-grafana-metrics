@@ -3258,6 +3258,324 @@
       ],
       "title": "Epics Missing Customer-Project",
       "type": "table"
+    },
+    {
+      "id": 105,
+      "type": "row",
+      "title": "Cross-Team Dependencies",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 77
+      }
+    },
+    {
+      "id": 106,
+      "type": "stat",
+      "title": "Blocking Other Teams",
+      "description": "Sprint issues that are blocking issues in other projects.",
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 0,
+        "y": 78
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "format": "table",
+          "rawSql": "SELECT COUNT(DISTINCT il.from_key) AS value\nFROM sprint_issues si\nJOIN issues i ON i.key = si.issue_key\nJOIN issue_links il ON il.from_key = si.issue_key\nJOIN issues i2 ON i2.key = il.to_key\nWHERE si.sprint_id = $sprint::bigint\n  AND si.removed_at IS NULL\n  AND il.link_label = 'blocks'\n  AND i2.project_key != i.project_key",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 3
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 107,
+      "type": "stat",
+      "title": "Blocked by Other Teams",
+      "description": "Sprint issues that are blocked by issues from other projects.",
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 4,
+        "y": 78
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "format": "table",
+          "rawSql": "SELECT COUNT(DISTINCT il.from_key) AS value\nFROM sprint_issues si\nJOIN issues i ON i.key = si.issue_key\nJOIN issue_links il ON il.from_key = si.issue_key\nJOIN issues i2 ON i2.key = il.to_key\nWHERE si.sprint_id = $sprint::bigint\n  AND si.removed_at IS NULL\n  AND il.link_label = 'is blocked by'\n  AND i2.project_key != i.project_key",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 3
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 108,
+      "type": "table",
+      "title": "Issues Blocking Other Teams",
+      "description": "Sprint issues that block issues in other projects. Resolve these to unblock dependent teams.",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 82
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "format": "table",
+          "rawSql": "SELECT\n  i.key AS \"Key\", i.summary AS \"Summary\",\n  i.status AS \"Status\", i.priority AS \"Priority\",\n  COALESCE(i.assignee, 'Unassigned') AS \"Assignee\",\n  il.to_key AS \"Blocks\",\n  i2.project_key AS \"Other Team\",\n  i2.summary AS \"Blocked Issue Summary\"\nFROM sprint_issues si\nJOIN issues i ON i.key = si.issue_key\nJOIN issue_links il ON il.from_key = si.issue_key\nJOIN issues i2 ON i2.key = il.to_key\nWHERE si.sprint_id = $sprint::bigint\n  AND si.removed_at IS NULL\n  AND il.link_label = 'blocks'\n  AND i2.project_key != i.project_key\nORDER BY\n  CASE i.priority WHEN 'Blocker' THEN 1 WHEN 'Critical' THEN 2 WHEN 'High' THEN 3 WHEN 'Medium' THEN 4 ELSE 5 END,\n  i.key",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "left",
+            "cellOptions": {
+              "type": "auto"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Key"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "targetBlank": true,
+                    "title": "Open in Jira",
+                    "url": "${jira_url}/browse/${__value.text}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Blocks"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "targetBlank": true,
+                    "title": "Open in Jira",
+                    "url": "${jira_url}/browse/${__value.text}"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 109,
+      "type": "table",
+      "title": "Issues Blocked by Other Teams",
+      "description": "Sprint issues waiting on other projects. Escalate these to keep the sprint on track.",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 82
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "format": "table",
+          "rawSql": "SELECT\n  i.key AS \"Key\", i.summary AS \"Summary\",\n  i.status AS \"Status\", i.priority AS \"Priority\",\n  COALESCE(i.assignee, 'Unassigned') AS \"Assignee\",\n  il.to_key AS \"Blocked By\",\n  i2.project_key AS \"Other Team\",\n  i2.summary AS \"Blocking Issue Summary\"\nFROM sprint_issues si\nJOIN issues i ON i.key = si.issue_key\nJOIN issue_links il ON il.from_key = si.issue_key\nJOIN issues i2 ON i2.key = il.to_key\nWHERE si.sprint_id = $sprint::bigint\n  AND si.removed_at IS NULL\n  AND il.link_label = 'is blocked by'\n  AND i2.project_key != i.project_key\nORDER BY\n  CASE i.priority WHEN 'Blocker' THEN 1 WHEN 'Critical' THEN 2 WHEN 'High' THEN 3 WHEN 'Medium' THEN 4 ELSE 5 END,\n  i.key",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "left",
+            "cellOptions": {
+              "type": "auto"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Key"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "targetBlank": true,
+                    "title": "Open in Jira",
+                    "url": "${jira_url}/browse/${__value.text}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Blocked By"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "targetBlank": true,
+                    "title": "Open in Jira",
+                    "url": "${jira_url}/browse/${__value.text}"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
     }
   ],
   "schemaVersion": 39,
