@@ -152,9 +152,9 @@ Filters to `removed_at IS NULL AND issue_type != 'Epic'`. Sub-tasks are included
 
 Quarter-level view of sprint velocity and delivery across all team sprints.
 
-**Quarter assignment:** Uses `COALESCE(complete_date, start_date)` — sprints appear in the quarter they completed (or started, for active sprints). This differs from Sprint Detail which uses `start_date`.
+**Quarter assignment:** Uses `start_date` — consistent with Sprint Detail and PO KPIs.
 
-**Sprint filter:** Simple `project_key IN ($project)` join — shows sprints that have at least one issue from the selected project.
+**Sprint filter:** Project-majority filter (`was_in_initial_scope = TRUE`, >50% committed issues from selected projects) — consistent with all other dashboards.
 
 All SP metrics flow through `v_planning_deviation`.
 
@@ -221,9 +221,11 @@ Per-assignee metrics for selected team and quarter/sprint.
 
 **Sprint vs Quarter mode:** All panels support both. When `$sprint = 0` (All), filters by `date_trunc('quarter', resolved_at) = '$quarter'`. When a sprint is selected, filters by `key IN (SELECT issue_key FROM sprint_issues WHERE sprint_id = $sprint AND removed_at IS NULL)`.
 
-**Note — story points field:** This dashboard uses `issues.story_points` (current value) rather than `sprint_issues.story_points_at_add`. This means if an issue's estimate changed after sprint start, the current value is used. This is intentional for the WIP display (current workload) but means delivery SP may differ slightly from Sprint Detail.
+**Note — story points field:** This dashboard uses `issues.story_points` (current value) rather than `sprint_issues.story_points_at_add`. This is intentional for WIP display (current workload) but means delivery SP may differ slightly from Sprint Detail.
 
-**Note — Obsolete exclusion:** Issues marked "Obsolete / Won't Do" have `status_category = 'Done'` and will be counted in completed issue counts. This is a known inconsistency with Sprint Detail.
+**Obsolete exclusion:** Issues marked "Obsolete / Won't Do" are excluded from all completed issue counts (`status != 'Obsolete / Won''t Do'`), consistent with Sprint Detail.
+
+**Sprint time window:** When a sprint is selected, completed issue panels enforce `resolved_at >= sprint.start_date AND resolved_at <= COALESCE(sprint.complete_date, sprint.end_date, NOW())`. This prevents counting issues that were technically resolved after the sprint closed.
 
 | Panel | What it measures |
 |-------|-----------------|
@@ -289,20 +291,18 @@ Bug tracking and QASE test coverage. Has an additional `$release` (Fix Version) 
 
 **Release filter:** `$release = 'ALL' OR $release = ANY(fix_versions)` — when a release is selected, only bugs linked to that fix version are shown.
 
-**Quarter assignment for QASE panels:** Uses `COALESCE(s.complete_date, s.start_date)` (sprint completion quarter). This differs from Sprint Detail which uses `start_date`.
+**Quarter assignment for QASE panels:** Uses `COALESCE(s.complete_date, s.start_date)` (sprint completion quarter). This is the only remaining difference from Sprint Detail which uses `start_date` — intentional since QASE coverage is most meaningful when tied to when a sprint shipped.
 
-**QASE panels exclude Epics only** (not Sub-tasks). This differs from Sprint Detail which excludes both.
+**QASE panels exclude Epics and Sub-tasks** — consistent with Sprint Detail.
 
 ### Bug Metrics
 
 | Panel | What it counts | Priority filter |
 |-------|----------------|----------------|
-| Open Critical Bugs | `status_category != 'Done' AND priority = 'Blocker'` | Blocker |
-| Open High Bugs | `status_category != 'Done' AND priority = 'Critical'` | Critical |
-| Open Medium Bugs | `status_category != 'Done' AND priority = 'High'` | High |
-| Open Low Bugs | `status_category != 'Done' AND priority IN ('Medium','Low')` | Medium+Low |
-
-**Note:** The panel titles say Critical/High/Medium/Low but the SQL filters Blocker/Critical/High/Medium+Low respectively. The labels are one level off from the data.
+| Open Blocker Bugs | `status_category != 'Done' AND priority = 'Blocker'` | Blocker |
+| Open Critical Bugs | `status_category != 'Done' AND priority = 'Critical'` | Critical |
+| Open High Bugs | `status_category != 'Done' AND priority = 'High'` | High |
+| Open Medium & Low Bugs | `status_category != 'Done' AND priority IN ('Medium','Low')` | Medium + Low |
 
 **Bug Creation Rate** — Weekly `COUNT(*)` by priority using `$__timeFilter(created_at)`.
 
