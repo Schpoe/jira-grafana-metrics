@@ -33,17 +33,7 @@
       "includeVars": true,
       "keepTime": false,
       "asDropdown": false,
-      "title": "Flow & Cycle Time",
-      "url": "/d/jira-flow-cycle-time"
-    },
-    {
-      "type": "link",
-      "icon": "external link",
-      "targetBlank": false,
-      "includeVars": true,
-      "keepTime": false,
-      "asDropdown": false,
-      "title": "Sprint Overview Quarter",
+      "title": "Sprint Overview",
       "url": "/d/jira-sprint-health"
     },
     {
@@ -53,18 +43,8 @@
       "includeVars": true,
       "keepTime": false,
       "asDropdown": false,
-      "title": "PO KPIs",
-      "url": "/d/jira-po-kpis"
-    },
-    {
-      "type": "link",
-      "icon": "external link",
-      "targetBlank": false,
-      "includeVars": true,
-      "keepTime": false,
-      "asDropdown": false,
-      "title": "PROD Alignment",
-      "url": "/d/jira-prod-alignment"
+      "title": "Quality & Bugs",
+      "url": "/d/jira-quality-bugs"
     },
     {
       "type": "link",
@@ -83,8 +63,28 @@
       "includeVars": true,
       "keepTime": false,
       "asDropdown": false,
-      "title": "Quality & Bugs",
-      "url": "/d/jira-quality-bugs"
+      "title": "Flow & Cycle Time",
+      "url": "/d/jira-flow-cycle-time"
+    },
+    {
+      "type": "link",
+      "icon": "external link",
+      "targetBlank": false,
+      "includeVars": true,
+      "keepTime": false,
+      "asDropdown": false,
+      "title": "PROD Alignment",
+      "url": "/d/jira-prod-alignment"
+    },
+    {
+      "type": "link",
+      "icon": "external link",
+      "targetBlank": false,
+      "includeVars": true,
+      "keepTime": false,
+      "asDropdown": false,
+      "title": "PO KPIs",
+      "url": "/d/jira-po-kpis"
     }
   ],
   "panels": [

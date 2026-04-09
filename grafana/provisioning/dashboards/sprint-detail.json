@@ -22,13 +22,13 @@
   "links": [
     {
       "asDropdown": false,
-      "icon": "home",
+      "icon": "external link",
       "includeVars": true,
       "keepTime": false,
       "targetBlank": false,
-      "title": "Home",
+      "title": "Sprint Detail",
       "type": "link",
-      "url": "/d/jira-home"
+      "url": "/d/cfih5an4hj7y8e"
     },
     {
       "asDropdown": false,
@@ -36,19 +36,9 @@
       "includeVars": true,
       "keepTime": false,
       "targetBlank": false,
-      "title": "Sprint Health",
+      "title": "Sprint Overview",
       "type": "link",
       "url": "/d/jira-sprint-health"
-    },
-    {
-      "asDropdown": false,
-      "icon": "external link",
-      "includeVars": true,
-      "keepTime": false,
-      "targetBlank": false,
-      "title": "Flow & Cycle Time",
-      "type": "link",
-      "url": "/d/jira-flow-cycle-time"
     },
     {
       "asDropdown": false,
@@ -76,19 +66,9 @@
       "includeVars": true,
       "keepTime": false,
       "targetBlank": false,
-      "title": "PO KPIs",
+      "title": "Flow & Cycle Time",
       "type": "link",
-      "url": "/d/jira-po-kpis"
-    },
-    {
-      "asDropdown": false,
-      "icon": "external link",
-      "includeVars": true,
-      "keepTime": false,
-      "targetBlank": false,
-      "title": "Sprint Detail",
-      "type": "link",
-      "url": "/d/cfih5an4hj7y8e"
+      "url": "/d/jira-flow-cycle-time"
     },
     {
       "asDropdown": false,
@@ -99,6 +79,16 @@
       "title": "PROD Alignment",
       "type": "link",
       "url": "/d/jira-prod-alignment"
+    },
+    {
+      "asDropdown": false,
+      "icon": "external link",
+      "includeVars": true,
+      "keepTime": false,
+      "targetBlank": false,
+      "title": "PO KPIs",
+      "type": "link",
+      "url": "/d/jira-po-kpis"
     }
   ],
   "panels": [
