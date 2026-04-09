@@ -337,25 +337,27 @@ WHERE was_in_initial_scope = TRUE
 - `committed_issues`: `COUNT(*)`
 
 ### `delivered` CTE
+
 ```sql
-WHERE status_category = 'Done'
+WHERE was_in_initial_scope = TRUE
+  AND removed_at IS NULL
+  AND status_category = 'Done'
   AND status != 'Obsolete / Won''t Do'
   AND issue_type NOT IN ('Epic', 'Sub-task')
-  AND resolved_at IS NOT NULL
-  AND resolved_at >= sprint.start_date
-  AND resolved_at <= COALESCE(sprint.complete_date, sprint.end_date, NOW())
 ```
+
 - `delivered_points`: `SUM(COALESCE(story_points_at_add, story_points, 0))`
 - `delivered_issues`: `COUNT(*)`
 
-**Why `resolved_at` instead of `removed_at IS NULL`:** A Done issue can have
-`removed_at IS NULL` in a dozen consecutive sprints due to Jira carry-over behaviour,
-causing massive double-counting if we simply join on `sprint_id`. The `resolved_at`
-window credits each delivery to exactly one sprint.
+**Why no `resolved_at` window here:** `was_in_initial_scope = TRUE` is set by the
+Jira sprint report API at sprint start only — it is unique per sprint. There is no
+carry-over double-counting risk, so a resolved_at window is not needed and would
+incorrectly exclude issues resolved slightly outside the sprint window (e.g. a few
+hours after close). Planning accuracy = committed issues that are now Done.
 
-**Important:** `resolved_at` is backfilled from `issue_transitions` using
-`MAX(transitioned_at) WHERE LOWER(to_status) = LOWER(current_status)`. All Done
-issues should have `resolved_at` populated after the backfill step.
+**Note:** The Sprint Detail **Completed SP** panel still uses the `resolved_at`
+sprint-window filter because it counts *all* Done issues (including unplanned), and
+those can appear in multiple sprints' `sprint_issues` rows.
 
 ### Final columns
 
@@ -365,6 +367,33 @@ issues should have `resolved_at` populated after the backfill step.
 | `delivery_pct` | `ROUND(100.0 * delivered_points / committed_points, 1)` — NULL when committed = 0 |
 
 The view LEFT JOINs all sprints so sprints with zero activity still appear.
+
+---
+
+## Cross-Team Dependencies
+
+Uses the `issue_links` table. Only cross-project links are shown
+(`i2.project_key != i.project_key`), so internal blocking within the same team is excluded.
+
+### Blocking Other Teams
+
+Count of active sprint issues that block issues in other projects.
+
+**SQL logic:** `COUNT(DISTINCT il.from_key)` joining `issue_links` where
+`link_label = 'blocks' AND removed_at IS NULL AND i2.project_key != i.project_key`.
+
+**Thresholds:** green = 0, yellow ≥ 1, red ≥ 3.
+
+### Blocked by Other Teams
+
+Count of active sprint issues waiting on issues from other projects.
+
+**SQL logic:** Same as above but `link_label = 'is blocked by'`.
+
+### Issues Blocking Other Teams / Issues Blocked by Other Teams
+Detail tables showing: Key (Jira link), Summary, Status, Priority, Assignee,
+the linked issue key (Jira link), Other Team (project key), and the linked issue's summary.
+Sorted by priority.
 
 ---
 

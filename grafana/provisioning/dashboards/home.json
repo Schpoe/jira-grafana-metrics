@@ -114,7 +114,7 @@
       },
       "options": {
         "mode": "markdown",
-        "content": "**[\ud83c\udfcb Sprint Health](/d/jira-sprint-health)**  \u2014 Velocity, delivery %, scope changes\n\n**[\u23f1 Flow & Cycle Time](/d/jira-flow-cycle-time)**  \u2014 RFT\u2192Done, throughput, WIP\n\n**[\ud83d\udc1b Quality & Bugs](/d/jira-quality-bugs)**  \u2014 Bug rates, priorities, releases\n\n**[\ud83d\udc65 Team Overview](/d/jira-team-overview)**  \u2014 Per-assignee metrics"
+        "content": "**[\ud83c\udfcb Sprint Health](/d/jira-sprint-health)**  \u2014 Velocity, delivery %, scope changes\n\n**[\u23f1 Flow & Cycle Time](/d/jira-flow-cycle-time)**  \u2014 RFT\u2192Done, throughput, WIP\n\n**[\ud83d\udc1b Quality & Bugs](/d/jira-quality-bugs)**  \u2014 Bug rates, priorities, releases\n\n**[\ud83d\udc65 Team Overview](/d/jira-team-overview)**  \u2014 Per-assignee metrics\n\n---\n\n\ud83d\udcd6 **[Metrics Reference](https://github.com/Schpoe/jira-grafana-metrics/blob/master/docs/metrics-reference.md)**  \u2014 How every metric is calculated"
       }
     },
     {
