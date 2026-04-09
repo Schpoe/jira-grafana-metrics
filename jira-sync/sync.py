@@ -670,8 +670,7 @@ def backfill_fix_version_history(conn):
     with conn.cursor() as cur:
         cur.execute("""
             SELECT key FROM issues
-            WHERE fix_versions IS NOT NULL
-              AND array_length(fix_versions, 1) > 0
+            WHERE cardinality(fix_versions) > 0
               AND key NOT IN (SELECT DISTINCT issue_key FROM issue_fix_version_history)
             ORDER BY key
         """)
