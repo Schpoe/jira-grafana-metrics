@@ -786,6 +786,73 @@
                 ]
               }
             ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Priority"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "Blocker": {
+                        "color": "dark-red",
+                        "index": 0,
+                        "text": "Blocker"
+                      },
+                      "Critical": {
+                        "color": "red",
+                        "index": 1,
+                        "text": "Critical"
+                      },
+                      "High": {
+                        "color": "orange",
+                        "index": 2,
+                        "text": "High"
+                      },
+                      "Medium": {
+                        "color": "yellow",
+                        "index": 3,
+                        "text": "Medium"
+                      },
+                      "Low": {
+                        "color": "green",
+                        "index": 4,
+                        "text": "Low"
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background"
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "thresholds"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "text",
+                      "value": null
+                    }
+                  ]
+                }
+              }
+            ]
           }
         ]
       }
@@ -1263,6 +1330,73 @@
                     "targetBlank": true
                   }
                 ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Priority"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "Blocker": {
+                        "color": "dark-red",
+                        "index": 0,
+                        "text": "Blocker"
+                      },
+                      "Critical": {
+                        "color": "red",
+                        "index": 1,
+                        "text": "Critical"
+                      },
+                      "High": {
+                        "color": "orange",
+                        "index": 2,
+                        "text": "High"
+                      },
+                      "Medium": {
+                        "color": "yellow",
+                        "index": 3,
+                        "text": "Medium"
+                      },
+                      "Low": {
+                        "color": "green",
+                        "index": 4,
+                        "text": "Low"
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background"
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "thresholds"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "text",
+                      "value": null
+                    }
+                  ]
+                }
               }
             ]
           }
@@ -1901,6 +2035,73 @@
                 "id": "color",
                 "value": {
                   "mode": "thresholds"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Priority"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "Blocker": {
+                        "color": "dark-red",
+                        "index": 0,
+                        "text": "Blocker"
+                      },
+                      "Critical": {
+                        "color": "red",
+                        "index": 1,
+                        "text": "Critical"
+                      },
+                      "High": {
+                        "color": "orange",
+                        "index": 2,
+                        "text": "High"
+                      },
+                      "Medium": {
+                        "color": "yellow",
+                        "index": 3,
+                        "text": "Medium"
+                      },
+                      "Low": {
+                        "color": "green",
+                        "index": 4,
+                        "text": "Low"
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background"
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "thresholds"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "text",
+                      "value": null
+                    }
+                  ]
                 }
               }
             ]
