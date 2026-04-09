@@ -2628,12 +2628,276 @@
       "type": "table"
     },
     {
-      "collapsed": false,
+      "collapsed": true,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
         "y": 49
+      },
+      "id": 55,
+      "panels": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "description": "Remaining story points per day. Blue = actual remaining SP (issues transitioning to Done). Dashed green = ideal linear burndown.\n\nTip: use the time picker to zoom into the sprint's date range.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 2,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": true,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "short"
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Remaining SP"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "blue",
+                      "mode": "fixed"
+                    }
+                  },
+                  {
+                    "id": "custom.lineWidth",
+                    "value": 2
+                  },
+                  {
+                    "id": "custom.fillOpacity",
+                    "value": 15
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Ideal"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "green",
+                      "mode": "fixed"
+                    }
+                  },
+                  {
+                    "id": "custom.lineStyle",
+                    "value": {
+                      "dash": [
+                        10,
+                        10
+                      ],
+                      "fill": "dash"
+                    }
+                  },
+                  {
+                    "id": "custom.lineWidth",
+                    "value": 1
+                  },
+                  {
+                    "id": "custom.fillOpacity",
+                    "value": 0
+                  }
+                ]
+              }
+            ]
+          },
+          "gridPos": {
+            "h": 12,
+            "w": 24,
+            "x": 0,
+            "y": 69
+          },
+          "id": 56,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "postgres",
+                "uid": "jira-metrics-pg"
+              },
+              "format": "time_series",
+              "rawSql": "\nWITH sprint_info AS (\n    SELECT\n        start_date,\n        COALESCE(complete_date, end_date) AS end_date\n    FROM sprints WHERE id = $sprint::bigint\n),\ncommitted AS (\n    SELECT si.issue_key,\n           COALESCE(si.story_points_at_add, i.story_points, 0) AS sp\n    FROM sprint_issues si\n    JOIN issues i ON i.key = si.issue_key\n    WHERE si.sprint_id = $sprint::bigint\n      AND si.was_in_initial_scope = TRUE\n),\ntotal_sp AS (\n    SELECT COALESCE(SUM(sp), 0) AS total FROM committed\n),\ndone_per_issue AS (\n    SELECT c.issue_key, c.sp,\n           MIN(t.transitioned_at) AS done_at\n    FROM committed c\n    JOIN issue_transitions t ON t.issue_key = c.issue_key\n    WHERE UPPER(t.to_status) = 'DONE'\n      AND t.transitioned_at >= (SELECT start_date FROM sprint_info)\n    GROUP BY c.issue_key, c.sp\n),\ndays AS (\n    SELECT generate_series(\n        DATE_TRUNC('day', (SELECT start_date FROM sprint_info)),\n        DATE_TRUNC('day', (SELECT end_date FROM sprint_info) + INTERVAL '2 days'),\n        '1 day'::interval\n    ) AS day\n)\nSELECT\n    d.day AS time,\n    CASE WHEN d.day <= NOW()\n        THEN (SELECT total FROM total_sp) - COALESCE((\n            SELECT SUM(sp) FROM done_per_issue\n            WHERE done_at < d.day + INTERVAL '1 day'\n        ), 0)\n        ELSE NULL\n    END AS \"Remaining SP\",\n    GREATEST(0, ROUND(\n        (SELECT total FROM total_sp) * (\n            1 - EXTRACT(EPOCH FROM (d.day - (SELECT start_date FROM sprint_info)))\n            / NULLIF(EXTRACT(EPOCH FROM (\n                (SELECT end_date FROM sprint_info) - (SELECT start_date FROM sprint_info)\n            )), 0)\n        )::numeric, 1\n    )) AS \"Ideal\"\nFROM days d\nORDER BY d.day",
+              "refId": "A"
+            }
+          ],
+          "title": "Sprint Burndown",
+          "type": "timeseries"
+        }
+      ],
+      "title": "Burndown",
+      "type": "row"
+    },
+    {
+      "collapsed": true,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 50
+      },
+      "id": 100,
+      "panels": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "description": "Epics linked to issues in this sprint that have no Customer-Project value set.",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "align": "auto",
+                "cellOptions": {
+                  "type": "auto"
+                },
+                "inspect": false
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Key"
+                },
+                "properties": [
+                  {
+                    "id": "links",
+                    "value": [
+                      {
+                        "targetBlank": true,
+                        "title": "Open in Jira",
+                        "url": "${jira_url}/browse/${__value.text}"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          "gridPos": {
+            "h": 6,
+            "w": 24,
+            "x": 0,
+            "y": 70
+          },
+          "id": 101,
+          "options": {
+            "cellHeight": "sm",
+            "footer": {
+              "countRows": false,
+              "fields": "",
+              "reducer": [
+                "sum"
+              ],
+              "show": false
+            },
+            "showHeader": true
+          },
+          "pluginVersion": "11.1.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "postgres",
+                "uid": "jira-metrics-pg"
+              },
+              "format": "table",
+              "rawSql": "SELECT DISTINCT e.key AS \"Key\", e.summary AS \"Summary\",\n  e.status AS \"Status\",\n  COALESCE(e.assignee, 'Unassigned') AS \"Assignee\",\n  COALESCE(e.customer, '\u2014') AS \"Customer\",\n  COALESCE(e.project_name, '\u2014') AS \"Project\"\nFROM issues e\nWHERE e.issue_type = 'Epic'\n  AND (e.customer_project IS NULL OR e.customer_project = '')\n  AND e.key IN (\n    SELECT DISTINCT i.epic_key\n    FROM sprint_issues si\n    JOIN issues i ON i.key = si.issue_key\n    WHERE si.sprint_id = $sprint::bigint\n      AND i.epic_key IS NOT NULL\n      AND si.removed_at IS NULL\n  )\nORDER BY e.key",
+              "refId": "A"
+            }
+          ],
+          "title": "Epics Missing Customer-Project",
+          "type": "table"
+        }
+      ],
+      "title": "Epics Missing Customer-Project",
+      "type": "row"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 51
       },
       "id": 15,
       "title": "Issue Counts",
@@ -2675,7 +2939,7 @@
         "h": 4,
         "w": 24,
         "x": 0,
-        "y": 50
+        "y": 52
       },
       "id": 16,
       "options": {
@@ -2712,7 +2976,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 54
+        "y": 56
       },
       "id": 17,
       "title": "All Issues in Sprint",
@@ -2898,7 +3162,7 @@
         "h": 12,
         "w": 24,
         "x": 0,
-        "y": 55
+        "y": 57
       },
       "id": 18,
       "options": {
@@ -2935,7 +3199,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 67
+        "y": 69
       },
       "id": 30,
       "panels": [
@@ -3480,268 +3744,6 @@
       ],
       "title": "QASE Test Coverage",
       "type": "row"
-    },
-    {
-      "collapsed": false,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 68
-      },
-      "id": 55,
-      "title": "Burndown",
-      "type": "row"
-    },
-    {
-      "datasource": {
-        "type": "postgres",
-        "uid": "jira-metrics-pg"
-      },
-      "description": "Remaining story points per day. Blue = actual remaining SP (issues transitioning to Done). Dashed green = ideal linear burndown.\n\nTip: use the time picker to zoom into the sprint's date range.",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 2,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": true,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "short"
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Remaining SP"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "blue",
-                  "mode": "fixed"
-                }
-              },
-              {
-                "id": "custom.lineWidth",
-                "value": 2
-              },
-              {
-                "id": "custom.fillOpacity",
-                "value": 15
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Ideal"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "green",
-                  "mode": "fixed"
-                }
-              },
-              {
-                "id": "custom.lineStyle",
-                "value": {
-                  "dash": [
-                    10,
-                    10
-                  ],
-                  "fill": "dash"
-                }
-              },
-              {
-                "id": "custom.lineWidth",
-                "value": 1
-              },
-              {
-                "id": "custom.fillOpacity",
-                "value": 0
-              }
-            ]
-          }
-        ]
-      },
-      "gridPos": {
-        "h": 12,
-        "w": 24,
-        "x": 0,
-        "y": 69
-      },
-      "id": 56,
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "none"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "postgres",
-            "uid": "jira-metrics-pg"
-          },
-          "format": "time_series",
-          "rawSql": "\nWITH sprint_info AS (\n    SELECT\n        start_date,\n        COALESCE(complete_date, end_date) AS end_date\n    FROM sprints WHERE id = $sprint::bigint\n),\ncommitted AS (\n    SELECT si.issue_key,\n           COALESCE(si.story_points_at_add, i.story_points, 0) AS sp\n    FROM sprint_issues si\n    JOIN issues i ON i.key = si.issue_key\n    WHERE si.sprint_id = $sprint::bigint\n      AND si.was_in_initial_scope = TRUE\n),\ntotal_sp AS (\n    SELECT COALESCE(SUM(sp), 0) AS total FROM committed\n),\ndone_per_issue AS (\n    SELECT c.issue_key, c.sp,\n           MIN(t.transitioned_at) AS done_at\n    FROM committed c\n    JOIN issue_transitions t ON t.issue_key = c.issue_key\n    WHERE UPPER(t.to_status) = 'DONE'\n      AND t.transitioned_at >= (SELECT start_date FROM sprint_info)\n    GROUP BY c.issue_key, c.sp\n),\ndays AS (\n    SELECT generate_series(\n        DATE_TRUNC('day', (SELECT start_date FROM sprint_info)),\n        DATE_TRUNC('day', (SELECT end_date FROM sprint_info) + INTERVAL '2 days'),\n        '1 day'::interval\n    ) AS day\n)\nSELECT\n    d.day AS time,\n    CASE WHEN d.day <= NOW()\n        THEN (SELECT total FROM total_sp) - COALESCE((\n            SELECT SUM(sp) FROM done_per_issue\n            WHERE done_at < d.day + INTERVAL '1 day'\n        ), 0)\n        ELSE NULL\n    END AS \"Remaining SP\",\n    GREATEST(0, ROUND(\n        (SELECT total FROM total_sp) * (\n            1 - EXTRACT(EPOCH FROM (d.day - (SELECT start_date FROM sprint_info)))\n            / NULLIF(EXTRACT(EPOCH FROM (\n                (SELECT end_date FROM sprint_info) - (SELECT start_date FROM sprint_info)\n            )), 0)\n        )::numeric, 1\n    )) AS \"Ideal\"\nFROM days d\nORDER BY d.day",
-          "refId": "A"
-        }
-      ],
-      "title": "Sprint Burndown",
-      "type": "timeseries"
-    },
-    {
-      "collapsed": true,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 81
-      },
-      "id": 100,
-      "panels": [
-        {
-          "datasource": {
-            "type": "postgres",
-            "uid": "jira-metrics-pg"
-          },
-          "description": "Epics linked to issues in this sprint that have no Customer-Project value set.",
-          "fieldConfig": {
-            "defaults": {
-              "custom": {
-                "align": "auto",
-                "cellOptions": {
-                  "type": "auto"
-                },
-                "inspect": false
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
-                  }
-                ]
-              }
-            },
-            "overrides": [
-              {
-                "matcher": {
-                  "id": "byName",
-                  "options": "Key"
-                },
-                "properties": [
-                  {
-                    "id": "links",
-                    "value": [
-                      {
-                        "targetBlank": true,
-                        "title": "Open in Jira",
-                        "url": "${jira_url}/browse/${__value.text}"
-                      }
-                    ]
-                  }
-                ]
-              }
-            ]
-          },
-          "gridPos": {
-            "h": 6,
-            "w": 24,
-            "x": 0,
-            "y": 71
-          },
-          "id": 101,
-          "options": {
-            "cellHeight": "sm",
-            "footer": {
-              "countRows": false,
-              "fields": "",
-              "reducer": [
-                "sum"
-              ],
-              "show": false
-            },
-            "showHeader": true
-          },
-          "pluginVersion": "11.1.0",
-          "targets": [
-            {
-              "datasource": {
-                "type": "postgres",
-                "uid": "jira-metrics-pg"
-              },
-              "format": "table",
-              "rawSql": "SELECT DISTINCT e.key AS \"Key\", e.summary AS \"Summary\",\n  e.status AS \"Status\",\n  COALESCE(e.assignee, 'Unassigned') AS \"Assignee\",\n  COALESCE(e.customer, '\u2014') AS \"Customer\",\n  COALESCE(e.project_name, '\u2014') AS \"Project\"\nFROM issues e\nWHERE e.issue_type = 'Epic'\n  AND (e.customer_project IS NULL OR e.customer_project = '')\n  AND e.key IN (\n    SELECT DISTINCT i.epic_key\n    FROM sprint_issues si\n    JOIN issues i ON i.key = si.issue_key\n    WHERE si.sprint_id = $sprint::bigint\n      AND i.epic_key IS NOT NULL\n      AND si.removed_at IS NULL\n  )\nORDER BY e.key",
-              "refId": "A"
-            }
-          ],
-          "title": "Epics Missing Customer-Project",
-          "type": "table"
-        }
-      ],
-      "title": "Missin Customer-Project",
-      "type": "row"
     }
   ],
   "schemaVersion": 39,
@@ -3861,6 +3863,6 @@
   "timezone": "browser",
   "title": "Sprint Detail",
   "uid": "cfih5an4hj7y8e",
-  "version": 14,
+  "version": 15,
   "weekStart": ""
 }
