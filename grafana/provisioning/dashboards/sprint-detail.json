@@ -336,7 +336,7 @@
         "type": "postgres",
         "uid": "jira-metrics-pg"
       },
-      "description": "Story points committed at sprint start (initial scope, from Jira sprint report).",
+      "description": "Story points committed at sprint start (initial scope). Excludes Epics, Sub-tasks, Obsolete. Uses story_points_at_add to preserve original estimate.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -615,7 +615,7 @@
         "type": "postgres",
         "uid": "jira-metrics-pg"
       },
-      "description": "SP with status Done.",
+      "description": "SP delivered within this sprint's window. Only counts issues where resolved_at falls between sprint start and complete date, preventing carry-over double-counting. Excludes Epics, Sub-tasks, Obsolete.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -909,7 +909,7 @@
         "type": "postgres",
         "uid": "jira-metrics-pg"
       },
-      "description": "Issues committed at sprint start (initial scope, excl. Epics, Sub-tasks, Bugs).",
+      "description": "Count of issues in initial sprint scope (was_in_initial_scope=TRUE). Excludes Epics and Sub-tasks. Includes Bugs.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -978,7 +978,7 @@
         "type": "postgres",
         "uid": "jira-metrics-pg"
       },
-      "description": "Issues with SP estimated AND Epic linked.",
+      "description": "Issues with SP estimated, Epic linked, AND acceptance criteria documented. All three conditions must be met.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1335,7 +1335,7 @@
         "type": "postgres",
         "uid": "jira-metrics-pg"
       },
-      "description": "% of Stories/Tasks that have SP + Epic. Target \u2265 90%.",
+      "description": "% of active issues (excl. Epics/Sub-tasks) that have SP + Epic link + acceptance criteria. Target \u2265 90%.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1407,7 +1407,7 @@
         "type": "postgres",
         "uid": "jira-metrics-pg"
       },
-      "description": "Issues resolved in this sprint (excl. Epics, Sub-tasks, Obsolete).",
+      "description": "Issues resolved within this sprint's time window (resolved_at between sprint start and complete date). Excludes Epics, Sub-tasks, Obsolete.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1947,7 +1947,7 @@
         "type": "postgres",
         "uid": "jira-metrics-pg"
       },
-      "description": "(SP added + SP removed) \u00f7 Committed SP \u00d7 100. Target: \u226410%. High % indicates reactive planning.",
+      "description": "Total scope churn (SP added + SP removed) \u00f7 committed SP \u00d7 100. Target: \u226410%. Note: no issue-type filter applied to match raw sprint report data.",
       "fieldConfig": {
         "defaults": {
           "color": {
