@@ -965,7 +965,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT COUNT(*) AS value\nFROM sprint_issues si JOIN issues i ON i.key=si.issue_key\nWHERE si.sprint_id=$sprint::bigint\n  AND si.was_in_initial_scope = TRUE\n  AND i.issue_type NOT IN ('Epic','Sub-task','Bug')",
+          "rawSql": "SELECT COUNT(*) AS value\nFROM sprint_issues si JOIN issues i ON i.key=si.issue_key\nWHERE si.sprint_id=$sprint::bigint\n  AND si.was_in_initial_scope = TRUE\n  AND i.issue_type NOT IN ('Epic','Sub-task')",
           "format": "table",
           "refId": "A"
         }
@@ -1106,7 +1106,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT COUNT(*) AS value\nFROM sprint_issues si JOIN issues i ON i.key=si.issue_key\nWHERE si.sprint_id=$sprint::bigint AND si.removed_at IS NULL\n  AND i.status != 'Obsolete / Won''t Do'\n  AND i.issue_type NOT IN ('Epic','Sub-task','Bug')\n  AND (i.has_acceptance_criteria IS NULL OR i.has_acceptance_criteria = FALSE)",
+          "rawSql": "SELECT COUNT(*) AS value\nFROM sprint_issues si JOIN issues i ON i.key=si.issue_key\nWHERE si.sprint_id=$sprint::bigint AND si.removed_at IS NULL\n  AND i.status != 'Obsolete / Won''t Do'\n  AND i.issue_type NOT IN ('Epic','Sub-task')\n  AND (i.has_acceptance_criteria IS NULL OR i.has_acceptance_criteria = FALSE)",
           "format": "table",
           "refId": "A"
         }
