@@ -127,9 +127,9 @@ CREATE TABLE IF NOT EXISTS app_settings (
 CREATE TABLE IF NOT EXISTS issue_fix_version_history (
     issue_key       TEXT NOT NULL,
     fix_version     TEXT NOT NULL,
-    added_at        TIMESTAMPTZ,   -- when this fix version was assigned
+    added_at        TIMESTAMPTZ NOT NULL DEFAULT '1970-01-01',
     removed_at      TIMESTAMPTZ,   -- NULL if still assigned
-    PRIMARY KEY (issue_key, fix_version, COALESCE(added_at, '1970-01-01'::timestamptz))
+    PRIMARY KEY (issue_key, fix_version, added_at)
 );
 CREATE INDEX IF NOT EXISTS idx_ifvh_issue    ON issue_fix_version_history(issue_key);
 CREATE INDEX IF NOT EXISTS idx_ifvh_version  ON issue_fix_version_history(fix_version);

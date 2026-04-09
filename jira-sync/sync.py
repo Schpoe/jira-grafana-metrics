@@ -226,13 +226,15 @@ def _fetch_changelog(issue_key):
                         history.get("author", {}).get("displayName"),
                     ))
                 elif item["field"] == "Fix Version":
-                    # Jira reports added/removed fix versions as separate items
+                    # Jira reports added/removed fix versions as separate items.
+                    # Use epoch sentinel for added_at when unknown (matches column DEFAULT).
+                    EPOCH = "1970-01-01T00:00:00+00:00"
                     added   = item.get("toString")
                     removed = item.get("fromString")
                     if added:
-                        fix_version_events.append((issue_key, added, occurred_at, None))
+                        fix_version_events.append((issue_key, added, occurred_at or EPOCH, None))
                     if removed:
-                        fix_version_events.append((issue_key, removed, None, occurred_at))
+                        fix_version_events.append((issue_key, removed, EPOCH, occurred_at))
         if data.get("isLast", True):
             break
         start += data.get("maxResults", 100)
@@ -459,7 +461,7 @@ def sync_issues(conn, sync_id, since=None, last_sync_duration=None, resume_token
                     INSERT INTO issue_fix_version_history
                         (issue_key, fix_version, added_at, removed_at)
                     VALUES %s
-                    ON CONFLICT (issue_key, fix_version, COALESCE(added_at, '1970-01-01'::timestamptz)) DO NOTHING
+                    ON CONFLICT (issue_key, fix_version, added_at) DO NOTHING
                     """,
                     fix_version_events,
                 )
@@ -694,7 +696,7 @@ def backfill_fix_version_history(conn):
                     INSERT INTO issue_fix_version_history
                         (issue_key, fix_version, added_at, removed_at)
                     VALUES %s
-                    ON CONFLICT (issue_key, fix_version, COALESCE(added_at, '1970-01-01'::timestamptz)) DO NOTHING
+                    ON CONFLICT (issue_key, fix_version, added_at) DO NOTHING
                     """,
                     rows,
                 )
@@ -709,7 +711,7 @@ def backfill_fix_version_history(conn):
                 INSERT INTO issue_fix_version_history
                     (issue_key, fix_version, added_at, removed_at)
                 VALUES %s
-                ON CONFLICT (issue_key, fix_version, COALESCE(added_at, '1970-01-01'::timestamptz)) DO NOTHING
+                ON CONFLICT (issue_key, fix_version, added_at) DO NOTHING
                 """,
                 rows,
             )
