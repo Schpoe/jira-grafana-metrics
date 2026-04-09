@@ -2117,7 +2117,7 @@
         ]
       },
       "gridPos": {
-        "h": 9,
+        "h": 8,
         "w": 24,
         "x": 0,
         "y": 29
@@ -2156,7 +2156,484 @@
         "h": 1,
         "w": 24,
         "x": 0,
+        "y": 37
+      },
+      "id": 105,
+      "panels": [],
+      "title": "Cross-Team Dependencies",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "description": "Sprint issues that are blocking issues in other projects.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 3
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 0,
         "y": 38
+      },
+      "id": 106,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.1.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "format": "table",
+          "rawSql": "SELECT COUNT(DISTINCT il.from_key) AS value\nFROM sprint_issues si\nJOIN issues i ON i.key = si.issue_key\nJOIN issue_links il ON il.from_key = si.issue_key\nJOIN issues i2 ON i2.key = il.to_key\nWHERE si.sprint_id = $sprint::bigint\n  AND si.removed_at IS NULL\n  AND il.link_label = 'blocks'\n  AND i2.project_key != i.project_key",
+          "refId": "A"
+        }
+      ],
+      "title": "Blocking Other Teams",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "description": "Sprint issues that are blocked by issues from other projects.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 3
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 12,
+        "y": 38
+      },
+      "id": 107,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.1.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "format": "table",
+          "rawSql": "SELECT COUNT(DISTINCT il.from_key) AS value\nFROM sprint_issues si\nJOIN issues i ON i.key = si.issue_key\nJOIN issue_links il ON il.from_key = si.issue_key\nJOIN issues i2 ON i2.key = il.to_key\nWHERE si.sprint_id = $sprint::bigint\n  AND si.removed_at IS NULL\n  AND il.link_label = 'is blocked by'\n  AND i2.project_key != i.project_key",
+          "refId": "A"
+        }
+      ],
+      "title": "Blocked by Other Teams",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "description": "Sprint issues that block issues in other projects. Resolve these to unblock dependent teams.",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "left",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Key"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "targetBlank": true,
+                    "title": "Open in Jira",
+                    "url": "${jira_url}/browse/${__value.text}"
+                  }
+                ]
+              },
+              {
+                "id": "custom.width",
+                "value": 128
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Blocks"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "targetBlank": true,
+                    "title": "Open in Jira",
+                    "url": "${jira_url}/browse/${__value.text}"
+                  }
+                ]
+              },
+              {
+                "id": "custom.width",
+                "value": 119
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Summary"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 272
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Status"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 98
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Priority"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 88
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Assignee"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 108
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Other Team"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 103
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 0,
+        "y": 42
+      },
+      "id": 108,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": []
+      },
+      "pluginVersion": "11.1.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "format": "table",
+          "rawSql": "SELECT\n  i.key AS \"Key\", i.summary AS \"Summary\",\n  i.status AS \"Status\", i.priority AS \"Priority\",\n  COALESCE(i.assignee, 'Unassigned') AS \"Assignee\",\n  il.to_key AS \"Blocks\",\n  i2.project_key AS \"Other Team\",\n  i2.summary AS \"Blocked Issue Summary\"\nFROM sprint_issues si\nJOIN issues i ON i.key = si.issue_key\nJOIN issue_links il ON il.from_key = si.issue_key\nJOIN issues i2 ON i2.key = il.to_key\nWHERE si.sprint_id = $sprint::bigint\n  AND si.removed_at IS NULL\n  AND il.link_label = 'blocks'\n  AND i2.project_key != i.project_key\nORDER BY\n  CASE i.priority WHEN 'Blocker' THEN 1 WHEN 'Critical' THEN 2 WHEN 'High' THEN 3 WHEN 'Medium' THEN 4 ELSE 5 END,\n  i.key",
+          "refId": "A"
+        }
+      ],
+      "title": "Issues Blocking Other Teams",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "description": "Sprint issues waiting on other projects. Escalate these to keep the sprint on track.",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "left",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Key"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "targetBlank": true,
+                    "title": "Open in Jira",
+                    "url": "${jira_url}/browse/${__value.text}"
+                  }
+                ]
+              },
+              {
+                "id": "custom.width",
+                "value": 120
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Blocked By"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "targetBlank": true,
+                    "title": "Open in Jira",
+                    "url": "${jira_url}/browse/${__value.text}"
+                  }
+                ]
+              },
+              {
+                "id": "custom.width",
+                "value": 124
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Status"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 89
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Priority"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 92
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Other Team"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 115
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 12,
+        "y": 42
+      },
+      "id": 109,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": []
+      },
+      "pluginVersion": "11.1.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "format": "table",
+          "rawSql": "SELECT\n  i.key AS \"Key\", i.summary AS \"Summary\",\n  i.status AS \"Status\", i.priority AS \"Priority\",\n  COALESCE(i.assignee, 'Unassigned') AS \"Assignee\",\n  il.to_key AS \"Blocked By\",\n  i2.project_key AS \"Other Team\",\n  i2.summary AS \"Blocking Issue Summary\"\nFROM sprint_issues si\nJOIN issues i ON i.key = si.issue_key\nJOIN issue_links il ON il.from_key = si.issue_key\nJOIN issues i2 ON i2.key = il.to_key\nWHERE si.sprint_id = $sprint::bigint\n  AND si.removed_at IS NULL\n  AND il.link_label = 'is blocked by'\n  AND i2.project_key != i.project_key\nORDER BY\n  CASE i.priority WHEN 'Blocker' THEN 1 WHEN 'Critical' THEN 2 WHEN 'High' THEN 3 WHEN 'Medium' THEN 4 ELSE 5 END,\n  i.key",
+          "refId": "A"
+        }
+      ],
+      "title": "Issues Blocked by Other Teams",
+      "type": "table"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 49
       },
       "id": 15,
       "title": "Issue Counts",
@@ -2182,7 +2659,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -2197,7 +2675,7 @@
         "h": 4,
         "w": 24,
         "x": 0,
-        "y": 39
+        "y": 50
       },
       "id": 16,
       "options": {
@@ -2234,7 +2712,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 43
+        "y": 54
       },
       "id": 17,
       "title": "All Issues in Sprint",
@@ -2260,7 +2738,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -2391,7 +2870,8 @@
                   "mode": "absolute",
                   "steps": [
                     {
-                      "color": "text"
+                      "color": "text",
+                      "value": null
                     },
                     {
                       "color": "orange",
@@ -2418,7 +2898,7 @@
         "h": 12,
         "w": 24,
         "x": 0,
-        "y": 44
+        "y": 55
       },
       "id": 18,
       "options": {
@@ -2455,7 +2935,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 56
+        "y": 67
       },
       "id": 30,
       "panels": [
@@ -3007,7 +3487,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 57
+        "y": 68
       },
       "id": 55,
       "title": "Burndown",
@@ -3061,7 +3541,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -3134,7 +3615,7 @@
         "h": 12,
         "w": 24,
         "x": 0,
-        "y": 58
+        "y": 69
       },
       "id": 56,
       "options": {
@@ -3164,418 +3645,103 @@
       "type": "timeseries"
     },
     {
-      "collapsed": false,
+      "collapsed": true,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 70
+        "y": 81
       },
       "id": 100,
+      "panels": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "description": "Epics linked to issues in this sprint that have no Customer-Project value set.",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "align": "auto",
+                "cellOptions": {
+                  "type": "auto"
+                },
+                "inspect": false
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Key"
+                },
+                "properties": [
+                  {
+                    "id": "links",
+                    "value": [
+                      {
+                        "targetBlank": true,
+                        "title": "Open in Jira",
+                        "url": "${jira_url}/browse/${__value.text}"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          "gridPos": {
+            "h": 6,
+            "w": 24,
+            "x": 0,
+            "y": 71
+          },
+          "id": 101,
+          "options": {
+            "cellHeight": "sm",
+            "footer": {
+              "countRows": false,
+              "fields": "",
+              "reducer": [
+                "sum"
+              ],
+              "show": false
+            },
+            "showHeader": true
+          },
+          "pluginVersion": "11.1.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "postgres",
+                "uid": "jira-metrics-pg"
+              },
+              "format": "table",
+              "rawSql": "SELECT DISTINCT e.key AS \"Key\", e.summary AS \"Summary\",\n  e.status AS \"Status\",\n  COALESCE(e.assignee, 'Unassigned') AS \"Assignee\",\n  COALESCE(e.customer, '\u2014') AS \"Customer\",\n  COALESCE(e.project_name, '\u2014') AS \"Project\"\nFROM issues e\nWHERE e.issue_type = 'Epic'\n  AND (e.customer_project IS NULL OR e.customer_project = '')\n  AND e.key IN (\n    SELECT DISTINCT i.epic_key\n    FROM sprint_issues si\n    JOIN issues i ON i.key = si.issue_key\n    WHERE si.sprint_id = $sprint::bigint\n      AND i.epic_key IS NOT NULL\n      AND si.removed_at IS NULL\n  )\nORDER BY e.key",
+              "refId": "A"
+            }
+          ],
+          "title": "Epics Missing Customer-Project",
+          "type": "table"
+        }
+      ],
       "title": "Missin Customer-Project",
       "type": "row"
-    },
-    {
-      "datasource": {
-        "type": "postgres",
-        "uid": "jira-metrics-pg"
-      },
-      "description": "Epics linked to issues in this sprint that have no Customer-Project value set.",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {
-            "align": "auto",
-            "cellOptions": {
-              "type": "auto"
-            },
-            "inspect": false
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green"
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          }
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Key"
-            },
-            "properties": [
-              {
-                "id": "links",
-                "value": [
-                  {
-                    "targetBlank": true,
-                    "title": "Open in Jira",
-                    "url": "${jira_url}/browse/${__value.text}"
-                  }
-                ]
-              }
-            ]
-          }
-        ]
-      },
-      "gridPos": {
-        "h": 6,
-        "w": 24,
-        "x": 0,
-        "y": 71
-      },
-      "id": 101,
-      "options": {
-        "cellHeight": "sm",
-        "footer": {
-          "countRows": false,
-          "fields": "",
-          "reducer": [
-            "sum"
-          ],
-          "show": false
-        },
-        "showHeader": true
-      },
-      "pluginVersion": "11.1.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "postgres",
-            "uid": "jira-metrics-pg"
-          },
-          "format": "table",
-          "rawSql": "SELECT DISTINCT e.key AS \"Key\", e.summary AS \"Summary\",\n  e.status AS \"Status\",\n  COALESCE(e.assignee, 'Unassigned') AS \"Assignee\",\n  COALESCE(e.customer, '\u2014') AS \"Customer\",\n  COALESCE(e.project_name, '\u2014') AS \"Project\"\nFROM issues e\nWHERE e.issue_type = 'Epic'\n  AND (e.customer_project IS NULL OR e.customer_project = '')\n  AND e.key IN (\n    SELECT DISTINCT i.epic_key\n    FROM sprint_issues si\n    JOIN issues i ON i.key = si.issue_key\n    WHERE si.sprint_id = $sprint::bigint\n      AND i.epic_key IS NOT NULL\n      AND si.removed_at IS NULL\n  )\nORDER BY e.key",
-          "refId": "A"
-        }
-      ],
-      "title": "Epics Missing Customer-Project",
-      "type": "table"
-    },
-    {
-      "id": 105,
-      "type": "row",
-      "title": "Cross-Team Dependencies",
-      "collapsed": false,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 77
-      }
-    },
-    {
-      "id": 106,
-      "type": "stat",
-      "title": "Blocking Other Teams",
-      "description": "Sprint issues that are blocking issues in other projects.",
-      "gridPos": {
-        "h": 4,
-        "w": 4,
-        "x": 0,
-        "y": 78
-      },
-      "datasource": {
-        "type": "postgres",
-        "uid": "jira-metrics-pg"
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "postgres",
-            "uid": "jira-metrics-pg"
-          },
-          "format": "table",
-          "rawSql": "SELECT COUNT(DISTINCT il.from_key) AS value\nFROM sprint_issues si\nJOIN issues i ON i.key = si.issue_key\nJOIN issue_links il ON il.from_key = si.issue_key\nJOIN issues i2 ON i2.key = il.to_key\nWHERE si.sprint_id = $sprint::bigint\n  AND si.removed_at IS NULL\n  AND il.link_label = 'blocks'\n  AND i2.project_key != i.project_key",
-          "refId": "A"
-        }
-      ],
-      "options": {
-        "reduceOptions": {
-          "values": false,
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": ""
-        },
-        "orientation": "auto",
-        "textMode": "auto",
-        "colorMode": "background",
-        "graphMode": "none",
-        "justifyMode": "auto"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "color": {
-            "mode": "thresholds"
-          },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 1
-              },
-              {
-                "color": "red",
-                "value": 3
-              }
-            ]
-          }
-        }
-      }
-    },
-    {
-      "id": 107,
-      "type": "stat",
-      "title": "Blocked by Other Teams",
-      "description": "Sprint issues that are blocked by issues from other projects.",
-      "gridPos": {
-        "h": 4,
-        "w": 4,
-        "x": 4,
-        "y": 78
-      },
-      "datasource": {
-        "type": "postgres",
-        "uid": "jira-metrics-pg"
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "postgres",
-            "uid": "jira-metrics-pg"
-          },
-          "format": "table",
-          "rawSql": "SELECT COUNT(DISTINCT il.from_key) AS value\nFROM sprint_issues si\nJOIN issues i ON i.key = si.issue_key\nJOIN issue_links il ON il.from_key = si.issue_key\nJOIN issues i2 ON i2.key = il.to_key\nWHERE si.sprint_id = $sprint::bigint\n  AND si.removed_at IS NULL\n  AND il.link_label = 'is blocked by'\n  AND i2.project_key != i.project_key",
-          "refId": "A"
-        }
-      ],
-      "options": {
-        "reduceOptions": {
-          "values": false,
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": ""
-        },
-        "orientation": "auto",
-        "textMode": "auto",
-        "colorMode": "background",
-        "graphMode": "none",
-        "justifyMode": "auto"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "color": {
-            "mode": "thresholds"
-          },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 1
-              },
-              {
-                "color": "red",
-                "value": 3
-              }
-            ]
-          }
-        }
-      }
-    },
-    {
-      "id": 108,
-      "type": "table",
-      "title": "Issues Blocking Other Teams",
-      "description": "Sprint issues that block issues in other projects. Resolve these to unblock dependent teams.",
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 82
-      },
-      "datasource": {
-        "type": "postgres",
-        "uid": "jira-metrics-pg"
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "postgres",
-            "uid": "jira-metrics-pg"
-          },
-          "format": "table",
-          "rawSql": "SELECT\n  i.key AS \"Key\", i.summary AS \"Summary\",\n  i.status AS \"Status\", i.priority AS \"Priority\",\n  COALESCE(i.assignee, 'Unassigned') AS \"Assignee\",\n  il.to_key AS \"Blocks\",\n  i2.project_key AS \"Other Team\",\n  i2.summary AS \"Blocked Issue Summary\"\nFROM sprint_issues si\nJOIN issues i ON i.key = si.issue_key\nJOIN issue_links il ON il.from_key = si.issue_key\nJOIN issues i2 ON i2.key = il.to_key\nWHERE si.sprint_id = $sprint::bigint\n  AND si.removed_at IS NULL\n  AND il.link_label = 'blocks'\n  AND i2.project_key != i.project_key\nORDER BY\n  CASE i.priority WHEN 'Blocker' THEN 1 WHEN 'Critical' THEN 2 WHEN 'High' THEN 3 WHEN 'Medium' THEN 4 ELSE 5 END,\n  i.key",
-          "refId": "A"
-        }
-      ],
-      "options": {
-        "cellHeight": "sm",
-        "footer": {
-          "countRows": false,
-          "fields": "",
-          "reducer": [
-            "sum"
-          ],
-          "show": false
-        },
-        "showHeader": true
-      },
-      "fieldConfig": {
-        "defaults": {
-          "custom": {
-            "align": "left",
-            "cellOptions": {
-              "type": "auto"
-            }
-          }
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Key"
-            },
-            "properties": [
-              {
-                "id": "links",
-                "value": [
-                  {
-                    "targetBlank": true,
-                    "title": "Open in Jira",
-                    "url": "${jira_url}/browse/${__value.text}"
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Blocks"
-            },
-            "properties": [
-              {
-                "id": "links",
-                "value": [
-                  {
-                    "targetBlank": true,
-                    "title": "Open in Jira",
-                    "url": "${jira_url}/browse/${__value.text}"
-                  }
-                ]
-              }
-            ]
-          }
-        ]
-      }
-    },
-    {
-      "id": 109,
-      "type": "table",
-      "title": "Issues Blocked by Other Teams",
-      "description": "Sprint issues waiting on other projects. Escalate these to keep the sprint on track.",
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 82
-      },
-      "datasource": {
-        "type": "postgres",
-        "uid": "jira-metrics-pg"
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "postgres",
-            "uid": "jira-metrics-pg"
-          },
-          "format": "table",
-          "rawSql": "SELECT\n  i.key AS \"Key\", i.summary AS \"Summary\",\n  i.status AS \"Status\", i.priority AS \"Priority\",\n  COALESCE(i.assignee, 'Unassigned') AS \"Assignee\",\n  il.to_key AS \"Blocked By\",\n  i2.project_key AS \"Other Team\",\n  i2.summary AS \"Blocking Issue Summary\"\nFROM sprint_issues si\nJOIN issues i ON i.key = si.issue_key\nJOIN issue_links il ON il.from_key = si.issue_key\nJOIN issues i2 ON i2.key = il.to_key\nWHERE si.sprint_id = $sprint::bigint\n  AND si.removed_at IS NULL\n  AND il.link_label = 'is blocked by'\n  AND i2.project_key != i.project_key\nORDER BY\n  CASE i.priority WHEN 'Blocker' THEN 1 WHEN 'Critical' THEN 2 WHEN 'High' THEN 3 WHEN 'Medium' THEN 4 ELSE 5 END,\n  i.key",
-          "refId": "A"
-        }
-      ],
-      "options": {
-        "cellHeight": "sm",
-        "footer": {
-          "countRows": false,
-          "fields": "",
-          "reducer": [
-            "sum"
-          ],
-          "show": false
-        },
-        "showHeader": true
-      },
-      "fieldConfig": {
-        "defaults": {
-          "custom": {
-            "align": "left",
-            "cellOptions": {
-              "type": "auto"
-            }
-          }
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Key"
-            },
-            "properties": [
-              {
-                "id": "links",
-                "value": [
-                  {
-                    "targetBlank": true,
-                    "title": "Open in Jira",
-                    "url": "${jira_url}/browse/${__value.text}"
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Blocked By"
-            },
-            "properties": [
-              {
-                "id": "links",
-                "value": [
-                  {
-                    "targetBlank": true,
-                    "title": "Open in Jira",
-                    "url": "${jira_url}/browse/${__value.text}"
-                  }
-                ]
-              }
-            ]
-          }
-        ]
-      }
     }
   ],
   "schemaVersion": 39,
@@ -3695,6 +3861,6 @@
   "timezone": "browser",
   "title": "Sprint Detail",
   "uid": "cfih5an4hj7y8e",
-  "version": 11,
+  "version": 14,
   "weekStart": ""
 }
