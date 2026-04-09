@@ -1421,7 +1421,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 16
+        "y": 20
       },
       "id": 14,
       "options": {
@@ -1445,7 +1445,7 @@
             "uid": "jira-metrics-pg"
           },
           "format": "table",
-          "rawSql": "SELECT i.key AS \"Key\", i.summary AS \"Summary\", i.issue_type AS \"Type\",\n  i.assignee AS \"Assignee\",\n  CASE WHEN i.story_points IS NULL OR i.story_points=0 THEN '\u274c' ELSE '\u2705' END AS \"SP\",\n  CASE WHEN i.epic_key IS NOT NULL THEN '\u2705' ELSE '\u274c' END AS \"Epic\",\n  CASE WHEN i.has_acceptance_criteria = TRUE THEN '\u2705' ELSE '\u274c' END AS \"AC\",\n  COALESCE(i.epic_key,'\u2014') AS \"Epic Key\"\nFROM sprint_issues si JOIN issues i ON i.key=si.issue_key\nWHERE si.sprint_id=$sprint::bigint AND si.removed_at IS NULL AND i.issue_type NOT IN ('Epic','Sub-task')\n  AND ((i.story_points IS NULL OR i.story_points=0) OR i.epic_key IS NULL\n       OR i.has_acceptance_criteria IS NOT TRUE)\nORDER BY\n  CASE i.priority WHEN 'Blocker' THEN 1 WHEN 'Critical' THEN 2 WHEN 'High' THEN 3 WHEN 'Medium' THEN 4 ELSE 5 END",
+          "rawSql": "SELECT i.key AS \"Key\", i.summary AS \"Summary\", i.issue_type AS \"Type\",\n  COALESCE(i.assignee, '\u2014') AS \"Assignee\",\n  CASE WHEN i.story_points IS NULL OR i.story_points=0 THEN '\u274c' ELSE '\u2705' END AS \"SP\",\n  CASE WHEN i.epic_key IS NOT NULL THEN '\u2705' ELSE '\u274c' END AS \"Epic\",\n  CASE WHEN i.issue_type = 'Bug' THEN 'N/A'\n       WHEN i.has_acceptance_criteria = TRUE THEN '\u2705' ELSE '\u274c' END AS \"AC\",\n  CASE WHEN i.assignee IS NOT NULL THEN '\u2705' ELSE '\u274c' END AS \"Assignee\"\nFROM sprint_issues si JOIN issues i ON i.key=si.issue_key\nWHERE si.sprint_id=$sprint::bigint AND si.removed_at IS NULL\n  AND i.issue_type NOT IN ('Epic','Sub-task')\n  AND i.status != 'Obsolete / Won''t Do'\n  AND (\n    (i.story_points IS NULL OR i.story_points = 0)\n    OR i.epic_key IS NULL\n    OR i.assignee IS NULL\n    OR (i.issue_type != 'Bug' AND i.has_acceptance_criteria IS NOT TRUE)\n  )\nORDER BY\n  CASE i.priority WHEN 'Blocker' THEN 1 WHEN 'Critical' THEN 2 WHEN 'High' THEN 3 WHEN 'Medium' THEN 4 ELSE 5 END",
           "refId": "A"
         }
       ],
@@ -3148,6 +3148,72 @@
           "color": {
             "mode": "fixed",
             "fixedColor": "orange"
+          }
+        }
+      }
+    },
+    {
+      "id": 104,
+      "type": "stat",
+      "title": "Missing Assignee",
+      "description": "Issues with no assignee (all issue types).",
+      "gridPos": {
+        "h": 4,
+        "w": 3,
+        "x": 0,
+        "y": 16
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT COUNT(*) AS value\nFROM sprint_issues si\nJOIN issues i ON i.key = si.issue_key\nWHERE si.sprint_id = $sprint::bigint\n  AND si.removed_at IS NULL\n  AND i.status != 'Obsolete / Won''t Do'\n  AND i.assignee IS NULL",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 5
+              }
+            ]
           }
         }
       }
