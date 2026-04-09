@@ -1606,7 +1606,7 @@
             "uid": "jira-metrics-pg"
           },
           "format": "table",
-          "rawSql": "SELECT COUNT(DISTINCT i.key) AS value\nFROM issues i\nWHERE i.issue_type = 'Bug'\n  AND i.project_key IN ($project)\n  AND '$release' != 'ALL'\n  AND (\n    '$release' = ANY(i.fix_versions)\n    OR EXISTS (\n      SELECT 1 FROM issue_fix_version_history fvh\n      WHERE fvh.issue_key = i.key AND fvh.fix_version = '$release'\n    )\n  )",
+          "rawSql": "SELECT COUNT(DISTINCT i.key) AS value\nFROM issues i\nWHERE i.issue_type = 'Bug'\n  AND i.project_key IN ($project)\n  AND $release != 'ALL'\n  AND (\n    $release = ANY(i.fix_versions)\n    OR EXISTS (\n      SELECT 1 FROM issue_fix_version_history fvh\n      WHERE fvh.issue_key = i.key AND fvh.fix_version = '$release'\n    )\n  )",
           "refId": "A"
         }
       ],
@@ -1676,7 +1676,7 @@
             "uid": "jira-metrics-pg"
           },
           "format": "table",
-          "rawSql": "SELECT COUNT(DISTINCT i.key) AS value\nFROM issues i\nWHERE i.issue_type = 'Bug'\n  AND i.project_key IN ($project)\n  AND '$release' != 'ALL'\n  AND NOT ('$release' = ANY(i.fix_versions))\n  AND EXISTS (\n    SELECT 1 FROM issue_fix_version_history fvh\n    WHERE fvh.issue_key = i.key AND fvh.fix_version = '$release'\n  )",
+          "rawSql": "SELECT COUNT(DISTINCT i.key) AS value\nFROM issues i\nWHERE i.issue_type = 'Bug'\n  AND i.project_key IN ($project)\n  AND $release != 'ALL'\n  AND NOT ($release = ANY(i.fix_versions))\n  AND EXISTS (\n    SELECT 1 FROM issue_fix_version_history fvh\n    WHERE fvh.issue_key = i.key AND fvh.fix_version = '$release'\n  )",
           "refId": "A"
         }
       ],
@@ -1742,7 +1742,7 @@
             "uid": "jira-metrics-pg"
           },
           "format": "table",
-          "rawSql": "SELECT COUNT(DISTINCT i.key) AS value\nFROM issues i\nWHERE i.issue_type = 'Bug'\n  AND i.project_key IN ($project)\n  AND i.priority IN ('Blocker', 'Critical', 'High')\n  AND '$release' != 'ALL'\n  AND (\n    '$release' = ANY(i.fix_versions)\n    OR EXISTS (\n      SELECT 1 FROM issue_fix_version_history fvh\n      WHERE fvh.issue_key = i.key AND fvh.fix_version = '$release'\n    )\n  )",
+          "rawSql": "SELECT COUNT(DISTINCT i.key) AS value\nFROM issues i\nWHERE i.issue_type = 'Bug'\n  AND i.project_key IN ($project)\n  AND i.priority IN ('Blocker', 'Critical', 'High')\n  AND $release != 'ALL'\n  AND (\n    $release = ANY(i.fix_versions)\n    OR EXISTS (\n      SELECT 1 FROM issue_fix_version_history fvh\n      WHERE fvh.issue_key = i.key AND fvh.fix_version = '$release'\n    )\n  )",
           "refId": "A"
         }
       ],
@@ -1812,7 +1812,7 @@
             "uid": "jira-metrics-pg"
           },
           "format": "table",
-          "rawSql": "SELECT\n  i.key AS \"Key\",\n  i.summary AS \"Summary\",\n  i.priority AS \"Priority\",\n  i.status AS \"Status\",\n  COALESCE(i.assignee, 'Unassigned') AS \"Assignee\",\n  CASE WHEN '$release' = ANY(i.fix_versions) THEN '\u2705 Yes' ELSE '\u27a1 Moved' END AS \"Still in Release\",\n  ARRAY_TO_STRING(i.fix_versions, ', ') AS \"Current Fix Version(s)\"\nFROM issues i\nWHERE i.issue_type = 'Bug'\n  AND i.project_key IN ($project)\n  AND '$release' != 'ALL'\n  AND (\n    '$release' = ANY(i.fix_versions)\n    OR EXISTS (\n      SELECT 1 FROM issue_fix_version_history fvh\n      WHERE fvh.issue_key = i.key AND fvh.fix_version = '$release'\n    )\n  )\nORDER BY\n  CASE WHEN '$release' = ANY(i.fix_versions) THEN 0 ELSE 1 END,\n  CASE i.priority WHEN 'Blocker' THEN 1 WHEN 'Critical' THEN 2 WHEN 'High' THEN 3 WHEN 'Medium' THEN 4 ELSE 5 END,\n  i.key",
+          "rawSql": "SELECT\n  i.key AS \"Key\",\n  i.summary AS \"Summary\",\n  i.priority AS \"Priority\",\n  i.status AS \"Status\",\n  COALESCE(i.assignee, 'Unassigned') AS \"Assignee\",\n  CASE WHEN $release = ANY(i.fix_versions) THEN '\u2705 Yes' ELSE '\u27a1 Moved' END AS \"Still in Release\",\n  ARRAY_TO_STRING(i.fix_versions, ', ') AS \"Current Fix Version(s)\"\nFROM issues i\nWHERE i.issue_type = 'Bug'\n  AND i.project_key IN ($project)\n  AND $release != 'ALL'\n  AND (\n    $release = ANY(i.fix_versions)\n    OR EXISTS (\n      SELECT 1 FROM issue_fix_version_history fvh\n      WHERE fvh.issue_key = i.key AND fvh.fix_version = '$release'\n    )\n  )\nORDER BY\n  CASE WHEN $release = ANY(i.fix_versions) THEN 0 ELSE 1 END,\n  CASE i.priority WHEN 'Blocker' THEN 1 WHEN 'Critical' THEN 2 WHEN 'High' THEN 3 WHEN 'Medium' THEN 4 ELSE 5 END,\n  i.key",
           "refId": "A"
         }
       ],
