@@ -415,7 +415,7 @@
       "id": 6,
       "type": "barchart",
       "title": "Planning Accuracy % per Sprint",
-      "description": "Delivered story points as % of committed SP per sprint. Target \u2265 80%.",
+      "description": "Committed SP, Delivered SP (committed issues resolved within sprint window), and Planning Accuracy % per sprint. Target \u2265 80%.",
       "gridPos": {
         "h": 8,
         "w": 12,
@@ -432,7 +432,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT pd.sprint_name AS \"Sprint\", COALESCE(pd.delivery_pct,0) AS \"Planning Accuracy %\"\nFROM v_planning_deviation pd\nWHERE pd.sprint_id IN (\n    SELECT DISTINCT si2.sprint_id FROM sprint_issues si2\n    JOIN issues i2 ON i2.key = si2.issue_key\n    WHERE i2.project_key IN ($project)\n      AND si2.was_in_initial_scope = TRUE\n    GROUP BY si2.sprint_id\n    HAVING COUNT(*) * 2 > (\n      SELECT COUNT(*) FROM sprint_issues si3\n      WHERE si3.sprint_id = si2.sprint_id AND si3.was_in_initial_scope = TRUE\n    )\n  )\n  AND pd.state='closed'\n  AND date_trunc('quarter', pd.start_date) = '$quarter'::date\nORDER BY pd.start_date DESC LIMIT 20",
+          "rawSql": "SELECT pd.sprint_name AS \"Sprint\",\n  COALESCE(pd.committed_points, 0) AS \"Committed SP\",\n  COALESCE(pd.delivered_points, 0) AS \"Delivered SP\",\n  COALESCE(pd.delivery_pct, 0) AS \"Planning Accuracy %\"\nFROM v_planning_deviation pd\nWHERE pd.sprint_id IN (\n    SELECT DISTINCT si2.sprint_id FROM sprint_issues si2\n    JOIN issues i2 ON i2.key = si2.issue_key\n    WHERE i2.project_key IN ($project)\n      AND si2.was_in_initial_scope = TRUE\n    GROUP BY si2.sprint_id\n    HAVING COUNT(*) * 2 > (\n      SELECT COUNT(*) FROM sprint_issues si3\n      WHERE si3.sprint_id = si2.sprint_id AND si3.was_in_initial_scope = TRUE\n    )\n  )\n  AND pd.state = 'closed'\n  AND date_trunc('quarter', pd.start_date) = '$quarter'::date\nORDER BY pd.start_date ASC LIMIT 20",
           "format": "table",
           "refId": "A"
         }
@@ -488,6 +488,44 @@
               {
                 "id": "custom.displayMode",
                 "value": "color-background"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Committed SP"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "blue",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Delivered SP"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "green",
+                  "mode": "fixed"
+                }
               }
             ]
           }
