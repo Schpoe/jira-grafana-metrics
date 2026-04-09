@@ -970,6 +970,397 @@
         "x": 0,
         "y": 5
       }
+    },
+    {
+      "id": 107,
+      "type": "row",
+      "title": "Release Bug Quality",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 41
+      }
+    },
+    {
+      "id": 108,
+      "type": "stat",
+      "title": "Major Bugs in Releases",
+      "description": "Count of Blocker, Critical and High bugs fixed in released versions for the selected team and quarter. Lower is better.",
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 0,
+        "y": 42
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "format": "table",
+          "rawSql": "SELECT COUNT(*) AS value\nFROM issues i\nJOIN releases r ON r.name = ANY(i.fix_versions) AND r.project_key = i.project_key\nWHERE i.issue_type = 'Bug'\n  AND i.project_key IN ($project)\n  AND r.released = TRUE\n  AND i.priority IN ('Blocker', 'Critical', 'High')\n  AND date_trunc('quarter', r.release_date) = '$quarter'::date",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 10
+              },
+              {
+                "color": "orange",
+                "value": 30
+              },
+              {
+                "color": "red",
+                "value": 60
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 109,
+      "type": "stat",
+      "title": "Blocker Bugs in Releases",
+      "description": "Count of Blocker-priority bugs fixed in released versions. These represent critical production issues.",
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 4,
+        "y": 42
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "format": "table",
+          "rawSql": "SELECT COUNT(*) AS value\nFROM issues i\nJOIN releases r ON r.name = ANY(i.fix_versions) AND r.project_key = i.project_key\nWHERE i.issue_type = 'Bug'\n  AND i.project_key IN ($project)\n  AND r.released = TRUE\n  AND i.priority = 'Blocker'\n  AND date_trunc('quarter', r.release_date) = '$quarter'::date",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 3
+              },
+              {
+                "color": "orange",
+                "value": 10
+              },
+              {
+                "color": "red",
+                "value": 20
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 110,
+      "type": "stat",
+      "title": "Total Bugs in Releases",
+      "description": "All bugs (any priority) fixed in released versions for the selected team and quarter.",
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 8,
+        "y": 42
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "format": "table",
+          "rawSql": "SELECT COUNT(*) AS value\nFROM issues i\nJOIN releases r ON r.name = ANY(i.fix_versions) AND r.project_key = i.project_key\nWHERE i.issue_type = 'Bug'\n  AND i.project_key IN ($project)\n  AND r.released = TRUE\n  AND date_trunc('quarter', r.release_date) = '$quarter'::date",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "fixedColor": "blue",
+            "mode": "fixed"
+          }
+        }
+      }
+    },
+    {
+      "id": 111,
+      "type": "barchart",
+      "title": "Bugs per Release (by Priority)",
+      "description": "Number of bugs per released version, stacked by priority. Shows which releases had the most quality issues.",
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 46
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "format": "table",
+          "rawSql": "SELECT r.name AS \"Release\",\n  COUNT(*) FILTER (WHERE i.priority = 'Blocker')  AS \"Blocker\",\n  COUNT(*) FILTER (WHERE i.priority = 'Critical') AS \"Critical\",\n  COUNT(*) FILTER (WHERE i.priority = 'High')     AS \"High\",\n  COUNT(*) FILTER (WHERE i.priority = 'Medium')   AS \"Medium\",\n  COUNT(*) FILTER (WHERE i.priority = 'Low')      AS \"Low\"\nFROM releases r\nJOIN issues i ON r.name = ANY(i.fix_versions) AND r.project_key = i.project_key\nWHERE i.issue_type = 'Bug'\n  AND i.project_key IN ($project)\n  AND r.released = TRUE\n  AND date_trunc('quarter', r.release_date) = '$quarter'::date\nGROUP BY r.name, r.release_date\nORDER BY r.release_date ASC",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "xField": "Release",
+        "stacking": "normal",
+        "fillOpacity": 80,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "xTickLabelRotation": -45,
+        "xTickLabelSpacing": 200
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Blocker"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "dark-red",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Critical"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "red",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "High"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "orange",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Medium"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "yellow",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Low"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "green",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 112,
+      "type": "table",
+      "title": "Major Bug Details per Release",
+      "description": "Blocker, Critical and High bugs per release. Click Key to open in Jira.",
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 56
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "format": "table",
+          "rawSql": "SELECT r.name AS \"Release\", r.release_date AS \"Release Date\",\n  i.key AS \"Key\", i.summary AS \"Summary\",\n  i.priority AS \"Priority\", i.status AS \"Status\",\n  COALESCE(i.assignee, 'Unassigned') AS \"Assignee\"\nFROM releases r\nJOIN issues i ON r.name = ANY(i.fix_versions) AND r.project_key = i.project_key\nWHERE i.issue_type = 'Bug'\n  AND i.project_key IN ($project)\n  AND r.released = TRUE\n  AND i.priority IN ('Blocker', 'Critical', 'High')\n  AND date_trunc('quarter', r.release_date) = '$quarter'::date\nORDER BY r.release_date DESC,\n  CASE i.priority WHEN 'Blocker' THEN 1 WHEN 'Critical' THEN 2 WHEN 'High' THEN 3 ELSE 4 END,\n  i.key",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "left",
+            "cellOptions": {
+              "type": "auto"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Key"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "targetBlank": true,
+                    "title": "Open in Jira",
+                    "url": "${jira_url}/browse/${__value.text}"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
     }
   ],
   "templating": {
