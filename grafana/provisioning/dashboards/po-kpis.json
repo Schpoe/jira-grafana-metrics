@@ -109,7 +109,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT ROUND(AVG(\n  100.0 * (COALESCE(added.sp,0) + COALESCE(removed.sp,0))\n  / NULLIF(pd.committed_points, 0)\n)::numeric, 1) AS value\nFROM v_planning_deviation pd\nLEFT JOIN (SELECT sprint_id, SUM(COALESCE(story_points_at_add,0)) AS sp FROM sprint_issues WHERE was_in_initial_scope = FALSE AND removed_at IS NULL GROUP BY sprint_id) added ON added.sprint_id = pd.sprint_id\nLEFT JOIN (SELECT sprint_id, SUM(COALESCE(story_points_at_add,0)) AS sp FROM sprint_issues WHERE removed_at IS NOT NULL GROUP BY sprint_id) removed ON removed.sprint_id = pd.sprint_id\nWHERE pd.sprint_id IN (SELECT DISTINCT si.sprint_id FROM sprint_issues si JOIN issues i ON i.key = si.issue_key WHERE i.project_key IN ($project))\n  AND pd.state = 'closed' AND pd.committed_points > 0\n  AND date_trunc('quarter', COALESCE(pd.complete_date, pd.start_date)) = '$quarter'::date",
+          "rawSql": "SELECT ROUND(AVG(\n  100.0 * (COALESCE(added.sp,0) + COALESCE(removed.sp,0))\n  / NULLIF(pd.committed_points, 0)\n)::numeric, 1) AS value\nFROM v_planning_deviation pd\nLEFT JOIN (SELECT sprint_id, SUM(COALESCE(story_points_at_add,0)) AS sp FROM sprint_issues WHERE was_in_initial_scope = FALSE AND removed_at IS NULL GROUP BY sprint_id) added ON added.sprint_id = pd.sprint_id\nLEFT JOIN (SELECT sprint_id, SUM(COALESCE(story_points_at_add,0)) AS sp FROM sprint_issues WHERE removed_at IS NOT NULL GROUP BY sprint_id) removed ON removed.sprint_id = pd.sprint_id\nWHERE pd.sprint_id IN (\n    SELECT DISTINCT si2.sprint_id FROM sprint_issues si2\n    JOIN issues i2 ON i2.key = si2.issue_key\n    WHERE i2.project_key IN ($project)\n      AND si2.was_in_initial_scope = TRUE\n    GROUP BY si2.sprint_id\n    HAVING COUNT(*) * 2 > (\n      SELECT COUNT(*) FROM sprint_issues si3\n      WHERE si3.sprint_id = si2.sprint_id AND si3.was_in_initial_scope = TRUE\n    )\n  )\n  AND pd.state = 'closed' AND pd.committed_points > 0\n  AND date_trunc('quarter', pd.start_date) = '$quarter'::date",
           "format": "table",
           "refId": "A"
         }
@@ -175,7 +175,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT ROUND(AVG(delivery_pct)::numeric, 1) AS value\nFROM v_planning_deviation pd\nWHERE pd.sprint_id IN (SELECT DISTINCT si.sprint_id FROM sprint_issues si JOIN issues i ON i.key = si.issue_key WHERE i.project_key IN ($project))\nAND pd.state = 'closed' AND pd.delivery_pct IS NOT NULL\nAND date_trunc('quarter', COALESCE(pd.complete_date, pd.start_date)) = '$quarter'::date",
+          "rawSql": "SELECT ROUND(AVG(delivery_pct)::numeric, 1) AS value\nFROM v_planning_deviation pd\nWHERE pd.sprint_id IN (\n    SELECT DISTINCT si2.sprint_id FROM sprint_issues si2\n    JOIN issues i2 ON i2.key = si2.issue_key\n    WHERE i2.project_key IN ($project)\n      AND si2.was_in_initial_scope = TRUE\n    GROUP BY si2.sprint_id\n    HAVING COUNT(*) * 2 > (\n      SELECT COUNT(*) FROM sprint_issues si3\n      WHERE si3.sprint_id = si2.sprint_id AND si3.was_in_initial_scope = TRUE\n    )\n  )\n  AND pd.state = 'closed' AND pd.delivery_pct IS NOT NULL\n  AND date_trunc('quarter', pd.start_date) = '$quarter'::date",
           "format": "table",
           "refId": "A"
         }
@@ -307,7 +307,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT ROUND(AVG(EXTRACT(EPOCH FROM (resolved_at - created_at))/3600.0)::numeric, 1) AS value\nFROM issues\nWHERE project_key IN ($project) AND priority = 'Blocker'\n  AND resolved_at IS NOT NULL\n  AND date_trunc('quarter', resolved_at) = '$quarter'::date",
+          "rawSql": "SELECT ROUND(AVG(EXTRACT(EPOCH FROM (resolved_at - created_at))/3600.0)::numeric, 1) AS value\nFROM issues\nWHERE project_key IN ($project) AND priority = 'Blocker'\n  AND resolved_at IS NOT NULL\n  AND date_trunc('quarter', created_at) = '$quarter'::date",
           "format": "table",
           "refId": "A"
         }
@@ -373,7 +373,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT pd.sprint_name AS \"Sprint\",\n  COALESCE(ROUND(100.0*(COALESCE(added.sp,0)+COALESCE(removed.sp,0))/NULLIF(pd.committed_points,0)::numeric,1),0) AS \"Scope Change %\",\n  COALESCE(added.cnt,0) AS \"Issues Added\",\n  COALESCE(removed.cnt,0) AS \"Issues Removed\"\nFROM v_planning_deviation pd\nLEFT JOIN (SELECT sprint_id, SUM(COALESCE(story_points_at_add,0)) AS sp, COUNT(*) AS cnt FROM sprint_issues WHERE was_in_initial_scope=FALSE AND removed_at IS NULL GROUP BY sprint_id) added ON added.sprint_id=pd.sprint_id\nLEFT JOIN (SELECT sprint_id, SUM(COALESCE(story_points_at_add,0)) AS sp, COUNT(*) AS cnt FROM sprint_issues WHERE removed_at IS NOT NULL GROUP BY sprint_id) removed ON removed.sprint_id=pd.sprint_id\nWHERE pd.sprint_id IN (SELECT DISTINCT si.sprint_id FROM sprint_issues si JOIN issues i ON i.key = si.issue_key WHERE i.project_key IN ($project))\n  AND pd.state='closed' AND pd.committed_points>0\n  AND date_trunc('quarter', COALESCE(pd.complete_date, pd.start_date)) = '$quarter'::date\nORDER BY pd.complete_date DESC LIMIT 20",
+          "rawSql": "SELECT pd.sprint_name AS \"Sprint\",\n  COALESCE(ROUND(100.0*(COALESCE(added.sp,0)+COALESCE(removed.sp,0))/NULLIF(pd.committed_points,0)::numeric,1),0) AS \"Scope Change %\",\n  COALESCE(added.cnt,0) AS \"Issues Added\",\n  COALESCE(removed.cnt,0) AS \"Issues Removed\"\nFROM v_planning_deviation pd\nLEFT JOIN (SELECT sprint_id, SUM(COALESCE(story_points_at_add,0)) AS sp, COUNT(*) AS cnt FROM sprint_issues WHERE was_in_initial_scope=FALSE AND removed_at IS NULL GROUP BY sprint_id) added ON added.sprint_id=pd.sprint_id\nLEFT JOIN (SELECT sprint_id, SUM(COALESCE(story_points_at_add,0)) AS sp, COUNT(*) AS cnt FROM sprint_issues WHERE removed_at IS NOT NULL GROUP BY sprint_id) removed ON removed.sprint_id=pd.sprint_id\nWHERE pd.sprint_id IN (\n    SELECT DISTINCT si2.sprint_id FROM sprint_issues si2\n    JOIN issues i2 ON i2.key = si2.issue_key\n    WHERE i2.project_key IN ($project)\n      AND si2.was_in_initial_scope = TRUE\n    GROUP BY si2.sprint_id\n    HAVING COUNT(*) * 2 > (\n      SELECT COUNT(*) FROM sprint_issues si3\n      WHERE si3.sprint_id = si2.sprint_id AND si3.was_in_initial_scope = TRUE\n    )\n  )\n  AND pd.state='closed' AND pd.committed_points>0\n  AND date_trunc('quarter', pd.start_date) = '$quarter'::date\nORDER BY pd.start_date DESC LIMIT 20",
           "format": "table",
           "refId": "A"
         }
@@ -432,7 +432,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT pd.sprint_name AS \"Sprint\", COALESCE(pd.delivery_pct,0) AS \"Planning Accuracy %\"\nFROM v_planning_deviation pd\nWHERE pd.sprint_id IN (SELECT DISTINCT si.sprint_id FROM sprint_issues si JOIN issues i ON i.key=si.issue_key WHERE i.project_key IN ($project))\n  AND pd.state='closed'\n  AND date_trunc('quarter', COALESCE(pd.complete_date, pd.start_date)) = '$quarter'::date\nORDER BY pd.complete_date DESC LIMIT 20",
+          "rawSql": "SELECT pd.sprint_name AS \"Sprint\", COALESCE(pd.delivery_pct,0) AS \"Planning Accuracy %\"\nFROM v_planning_deviation pd\nWHERE pd.sprint_id IN (\n    SELECT DISTINCT si2.sprint_id FROM sprint_issues si2\n    JOIN issues i2 ON i2.key = si2.issue_key\n    WHERE i2.project_key IN ($project)\n      AND si2.was_in_initial_scope = TRUE\n    GROUP BY si2.sprint_id\n    HAVING COUNT(*) * 2 > (\n      SELECT COUNT(*) FROM sprint_issues si3\n      WHERE si3.sprint_id = si2.sprint_id AND si3.was_in_initial_scope = TRUE\n    )\n  )\n  AND pd.state='closed'\n  AND date_trunc('quarter', pd.start_date) = '$quarter'::date\nORDER BY pd.start_date DESC LIMIT 20",
           "format": "table",
           "refId": "A"
         }
@@ -622,7 +622,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT s.name AS \"Sprint\",\n  ROUND(AVG(EXTRACT(EPOCH FROM (i.resolved_at - i.created_at))/3600.0)::numeric,1) AS \"Avg Hours to Resolve\"\nFROM issues i\nJOIN sprint_issues si ON si.issue_key=i.key\nJOIN sprints s ON s.id=si.sprint_id\nWHERE i.project_key IN ($project) AND i.priority='Blocker'\n  AND i.resolved_at IS NOT NULL\n  AND si.removed_at IS NULL\n  AND date_trunc('quarter', COALESCE(s.complete_date, s.start_date)) = '$quarter'::date\nGROUP BY s.name, s.complete_date ORDER BY s.complete_date DESC LIMIT 20",
+          "rawSql": "SELECT s.name AS \"Sprint\",\n  ROUND(AVG(EXTRACT(EPOCH FROM (i.resolved_at - i.created_at))/3600.0)::numeric,1) AS \"Avg Hours to Resolve\"\nFROM issues i\nJOIN sprint_issues si ON si.issue_key=i.key AND si.was_in_initial_scope=TRUE\nJOIN sprints s ON s.id=si.sprint_id\nWHERE i.project_key IN ($project) AND i.priority='Blocker'\n  AND i.resolved_at IS NOT NULL\n  AND date_trunc('quarter', s.start_date) = '$quarter'::date\n  AND s.id IN (\n    SELECT DISTINCT si2.sprint_id FROM sprint_issues si2\n    JOIN issues i2 ON i2.key = si2.issue_key\n    WHERE i2.project_key IN ($project)\n      AND si2.was_in_initial_scope = TRUE\n    GROUP BY si2.sprint_id\n    HAVING COUNT(*) * 2 > (\n      SELECT COUNT(*) FROM sprint_issues si3\n      WHERE si3.sprint_id = si2.sprint_id AND si3.was_in_initial_scope = TRUE\n    )\n  )\nGROUP BY s.name, s.start_date ORDER BY s.start_date DESC LIMIT 20",
           "format": "table",
           "refId": "A"
         }
@@ -829,7 +829,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT pd.sprint_name AS \"Sprint\",\n  COALESCE(pd.committed_points,0) AS \"Committed\",\n  COALESCE(pd.delivered_points,0) AS \"Delivered\"\nFROM v_planning_deviation pd\nWHERE pd.sprint_id IN (SELECT DISTINCT si.sprint_id FROM sprint_issues si JOIN issues i ON i.key=si.issue_key WHERE i.project_key IN ($project))\n  AND pd.state='closed'\n  AND date_trunc('quarter', COALESCE(pd.complete_date, pd.start_date)) = '$quarter'::date\nORDER BY pd.complete_date DESC LIMIT 20",
+          "rawSql": "SELECT pd.sprint_name AS \"Sprint\",\n  COALESCE(pd.committed_points,0) AS \"Committed\",\n  COALESCE(pd.delivered_points,0) AS \"Delivered\"\nFROM v_planning_deviation pd\nWHERE pd.sprint_id IN (\n    SELECT DISTINCT si2.sprint_id FROM sprint_issues si2\n    JOIN issues i2 ON i2.key = si2.issue_key\n    WHERE i2.project_key IN ($project)\n      AND si2.was_in_initial_scope = TRUE\n    GROUP BY si2.sprint_id\n    HAVING COUNT(*) * 2 > (\n      SELECT COUNT(*) FROM sprint_issues si3\n      WHERE si3.sprint_id = si2.sprint_id AND si3.was_in_initial_scope = TRUE\n    )\n  )\n  AND pd.state='closed'\n  AND date_trunc('quarter', pd.start_date) = '$quarter'::date\nORDER BY pd.start_date DESC LIMIT 20",
           "format": "table",
           "refId": "A"
         }
