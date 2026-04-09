@@ -274,8 +274,9 @@ WITH committed AS (
     GROUP BY si.sprint_id
 ),
 delivered AS (
-    -- Credit each Done issue to exactly one sprint: the sprint whose window contains resolved_at.
-    -- This correctly handles carry-over issues that appear in many sprints with removed_at IS NULL.
+    -- Only count committed issues (was_in_initial_scope=TRUE) that were resolved within
+    -- the sprint window. Planning accuracy = did you deliver what you promised?
+    -- Unplanned issues are excluded so delivery_pct cannot exceed 100% due to extra work.
     SELECT
         s.id                                                                    AS sprint_id,
         COUNT(*)                                                                AS delivered_issues,
@@ -283,7 +284,9 @@ delivered AS (
     FROM sprint_issues si
     JOIN issues i ON i.key = si.issue_key
     JOIN sprints s ON s.id = si.sprint_id
-    WHERE i.status_category = 'Done'
+    WHERE si.was_in_initial_scope = TRUE
+      AND si.removed_at IS NULL
+      AND i.status_category = 'Done'
       AND i.status != 'Obsolete / Won''t Do'
       AND i.issue_type NOT IN ('Epic', 'Sub-task')
       AND i.resolved_at IS NOT NULL
