@@ -668,6 +668,12 @@ def backfill_fix_version_history(conn):
     Subsequent regular syncs will keep the table up to date via _fetch_changelog.
     """
     with conn.cursor() as cur:
+        cur.execute("SELECT COUNT(*) FROM issues WHERE cardinality(fix_versions) > 0")
+        total_with_fv = cur.fetchone()[0]
+        cur.execute("SELECT COUNT(DISTINCT issue_key) FROM issue_fix_version_history")
+        already_scanned = cur.fetchone()[0]
+        log.info("fix_version_history backfill: %d issues with fix_versions, %d already scanned",
+                 total_with_fv, already_scanned)
         cur.execute("""
             SELECT key FROM issues
             WHERE cardinality(fix_versions) > 0
