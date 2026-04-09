@@ -56,6 +56,8 @@ services:
   jira-sync:
     build: ./jira-sync
     restart: unless-stopped
+    volumes:
+      - ./jira-sync/sync.py:/app/sync.py:ro
     environment:
       JIRA_URL: ${JIRA_URL}
       JIRA_EMAIL: ${JIRA_EMAIL}
