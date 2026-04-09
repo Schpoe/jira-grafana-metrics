@@ -18,7 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 7,
+  "id": 9,
   "links": [
     {
       "asDropdown": false,
@@ -546,6 +546,75 @@
         "type": "postgres",
         "uid": "jira-metrics-pg"
       },
+      "description": "Issues marked Obsolete or Won't Do \u2014 excluded from velocity and delivery calculations.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "gray",
+            "mode": "fixed"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 3,
+        "x": 9,
+        "y": 7
+      },
+      "id": 57,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.1.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT COALESCE(SUM(COALESCE(si.story_points_at_add,i.story_points,0)),0) AS value\nFROM sprint_issues si JOIN issues i ON i.key=si.issue_key\nWHERE si.sprint_id=$sprint::bigint AND si.removed_at IS NULL\n  AND i.status = 'Obsolete / Won''t Do'",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "title": "Obsolete / Won't Do",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
       "description": "SP with status Done.",
       "fieldConfig": {
         "defaults": {
@@ -574,7 +643,7 @@
       "gridPos": {
         "h": 4,
         "w": 3,
-        "x": 9,
+        "x": 12,
         "y": 7
       },
       "id": 7,
@@ -648,7 +717,7 @@
       "gridPos": {
         "h": 4,
         "w": 3,
-        "x": 12,
+        "x": 15,
         "y": 7
       },
       "id": 8,
@@ -714,7 +783,7 @@
       "gridPos": {
         "h": 4,
         "w": 3,
-        "x": 17,
+        "x": 18,
         "y": 7
       },
       "id": 50,
@@ -787,8 +856,8 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 4,
-        "x": 20,
+        "w": 3,
+        "x": 21,
         "y": 7
       },
       "id": 51,
@@ -840,6 +909,75 @@
         "type": "postgres",
         "uid": "jira-metrics-pg"
       },
+      "description": "Issues committed at sprint start (initial scope, excl. Epics, Sub-tasks, Bugs).",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "blue",
+            "mode": "fixed"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 3,
+        "x": 0,
+        "y": 12
+      },
+      "id": 53,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.1.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT COUNT(*) AS value\nFROM sprint_issues si JOIN issues i ON i.key=si.issue_key\nWHERE si.sprint_id=$sprint::bigint\n  AND si.was_in_initial_scope = TRUE\n  AND i.issue_type NOT IN ('Epic','Sub-task','Bug')",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "title": "Planned",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
       "description": "Issues with SP estimated AND Epic linked.",
       "fieldConfig": {
         "defaults": {
@@ -868,7 +1006,7 @@
       "gridPos": {
         "h": 4,
         "w": 3,
-        "x": 0,
+        "x": 3,
         "y": 12
       },
       "id": 10,
@@ -909,7 +1047,7 @@
         "type": "postgres",
         "uid": "jira-metrics-pg"
       },
-      "description": "Issues without a story point estimate.",
+      "description": "Stories/Tasks (excl. Bugs) without acceptance criteria.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -941,6 +1079,78 @@
         "h": 4,
         "w": 3,
         "x": 6,
+        "y": 12
+      },
+      "id": 52,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.1.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT COUNT(*) AS value\nFROM sprint_issues si JOIN issues i ON i.key=si.issue_key\nWHERE si.sprint_id=$sprint::bigint AND si.removed_at IS NULL\n  AND i.status != 'Obsolete / Won''t Do'\n  AND i.issue_type NOT IN ('Epic','Sub-task','Bug')\n  AND (i.has_acceptance_criteria IS NULL OR i.has_acceptance_criteria = FALSE)",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "title": "Missing AC",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "description": "Issues without a story point estimate.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 5
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 3,
+        "x": 9,
         "y": 12
       },
       "id": 11,
@@ -1012,7 +1222,7 @@
       "gridPos": {
         "h": 4,
         "w": 3,
-        "x": 9,
+        "x": 12,
         "y": 12
       },
       "id": 12,
@@ -1086,7 +1296,7 @@
       "gridPos": {
         "h": 4,
         "w": 3,
-        "x": 12,
+        "x": 15,
         "y": 12
       },
       "id": 13,
@@ -1270,7 +1480,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "orange",
@@ -1336,7 +1547,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "orange",
@@ -1402,7 +1614,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "orange",
@@ -1468,7 +1681,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "orange",
@@ -1536,7 +1750,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "orange",
@@ -1611,7 +1826,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -1680,7 +1896,8 @@
                   "mode": "absolute",
                   "steps": [
                     {
-                      "color": "text"
+                      "color": "text",
+                      "value": null
                     }
                   ]
                 }
@@ -1755,7 +1972,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -1833,7 +2051,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -1964,7 +2183,8 @@
                   "mode": "absolute",
                   "steps": [
                     {
-                      "color": "text"
+                      "color": "text",
+                      "value": null
                     },
                     {
                       "color": "orange",
@@ -2831,172 +3051,6 @@
       ],
       "title": "Epics Missing Customer-Project",
       "type": "table"
-    },
-    {
-      "id": 57,
-      "type": "stat",
-      "title": "Obsolete / Won't Do",
-      "description": "Issues marked Obsolete or Won't Do \u2014 excluded from velocity and delivery calculations.",
-      "gridPos": {
-        "h": 4,
-        "w": 3,
-        "x": 12,
-        "y": 4
-      },
-      "datasource": {
-        "type": "postgres",
-        "uid": "jira-metrics-pg"
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "postgres",
-            "uid": "jira-metrics-pg"
-          },
-          "rawSql": "SELECT COALESCE(SUM(COALESCE(si.story_points_at_add,i.story_points,0)),0) AS value\nFROM sprint_issues si JOIN issues i ON i.key=si.issue_key\nWHERE si.sprint_id=$sprint::bigint AND si.removed_at IS NULL\n  AND i.status = 'Obsolete / Won''t Do'",
-          "format": "table",
-          "refId": "A"
-        }
-      ],
-      "options": {
-        "reduceOptions": {
-          "values": false,
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": ""
-        },
-        "orientation": "auto",
-        "textMode": "auto",
-        "colorMode": "value",
-        "graphMode": "none",
-        "justifyMode": "auto"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "color": {
-            "mode": "fixed",
-            "fixedColor": "gray"
-          }
-        }
-      }
-    },
-    {
-      "id": 53,
-      "type": "stat",
-      "title": "Planned",
-      "description": "Issues committed at sprint start (initial scope, excl. Epics, Sub-tasks, Bugs).",
-      "gridPos": {
-        "h": 4,
-        "w": 3,
-        "x": 0,
-        "y": 9
-      },
-      "datasource": {
-        "type": "postgres",
-        "uid": "jira-metrics-pg"
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "postgres",
-            "uid": "jira-metrics-pg"
-          },
-          "rawSql": "SELECT COUNT(*) AS value\nFROM sprint_issues si JOIN issues i ON i.key=si.issue_key\nWHERE si.sprint_id=$sprint::bigint\n  AND si.was_in_initial_scope = TRUE\n  AND i.issue_type NOT IN ('Epic','Sub-task','Bug')",
-          "format": "table",
-          "refId": "A"
-        }
-      ],
-      "options": {
-        "reduceOptions": {
-          "values": false,
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": ""
-        },
-        "orientation": "auto",
-        "textMode": "auto",
-        "colorMode": "value",
-        "graphMode": "none",
-        "justifyMode": "auto"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "color": {
-            "mode": "fixed",
-            "fixedColor": "blue"
-          }
-        }
-      }
-    },
-    {
-      "id": 52,
-      "type": "stat",
-      "title": "Missing AC",
-      "description": "Stories/Tasks (excl. Bugs) without acceptance criteria.",
-      "gridPos": {
-        "h": 4,
-        "w": 3,
-        "x": 12,
-        "y": 9
-      },
-      "datasource": {
-        "type": "postgres",
-        "uid": "jira-metrics-pg"
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "postgres",
-            "uid": "jira-metrics-pg"
-          },
-          "rawSql": "SELECT COUNT(*) AS value\nFROM sprint_issues si JOIN issues i ON i.key=si.issue_key\nWHERE si.sprint_id=$sprint::bigint AND si.removed_at IS NULL\n  AND i.status != 'Obsolete / Won''t Do'\n  AND i.issue_type NOT IN ('Epic','Sub-task','Bug')\n  AND (i.has_acceptance_criteria IS NULL OR i.has_acceptance_criteria = FALSE)",
-          "format": "table",
-          "refId": "A"
-        }
-      ],
-      "options": {
-        "reduceOptions": {
-          "values": false,
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": ""
-        },
-        "orientation": "auto",
-        "textMode": "auto",
-        "colorMode": "value",
-        "graphMode": "none",
-        "justifyMode": "auto"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "color": {
-            "mode": "thresholds"
-          },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 1
-              },
-              {
-                "color": "red",
-                "value": 5
-              }
-            ]
-          }
-        }
-      }
     }
   ],
   "schemaVersion": 39,
@@ -3056,14 +3110,12 @@
       },
       {
         "current": {
-          "selected": true,
+          "selected": false,
           "text": [
-            "BEST",
-            "AAONE"
+            "AATWO"
           ],
           "value": [
-            "BEST",
-            "AAONE"
+            "AATWO"
           ]
         },
         "datasource": {
@@ -3086,9 +3138,9 @@
       },
       {
         "current": {
-          "selected": true,
-          "text": "Store-Q1-S2 (26.01-06.02)",
-          "value": "3347"
+          "selected": false,
+          "text": "Q1-26 AudioApp 2 Sprint 6 \u2605",
+          "value": "3076"
         },
         "datasource": {
           "type": "postgres",
@@ -3118,6 +3170,6 @@
   "timezone": "browser",
   "title": "Sprint Detail",
   "uid": "cfih5an4hj7y8e",
-  "version": 58,
+  "version": 5,
   "weekStart": ""
 }
