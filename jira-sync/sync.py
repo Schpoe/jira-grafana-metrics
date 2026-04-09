@@ -657,6 +657,67 @@ def _sync_sprint_members(conn, sprint_id, sprint_state):
 
 
 
+def backfill_fix_version_history(conn):
+    """Backfill issue_fix_version_history for issues not yet scanned.
+
+    Runs incrementally: only fetches changelogs for issues that have at least
+    one fix_version assigned but no entry yet in issue_fix_version_history.
+    Safe to run repeatedly — already-scanned issues are skipped.
+    Subsequent regular syncs will keep the table up to date via _fetch_changelog.
+    """
+    with conn.cursor() as cur:
+        cur.execute("""
+            SELECT key FROM issues
+            WHERE fix_versions IS NOT NULL
+              AND array_length(fix_versions, 1) > 0
+              AND key NOT IN (SELECT DISTINCT issue_key FROM issue_fix_version_history)
+            ORDER BY key
+        """)
+        keys = [row[0] for row in cur.fetchall()]
+
+    if not keys:
+        log.info("fix_version_history backfill: nothing to do")
+        return
+
+    log.info("fix_version_history backfill: fetching changelogs for %d issues", len(keys))
+    rows = []
+    for i, key in enumerate(keys, 1):
+        _, fv_events = _fetch_changelog(key)
+        rows.extend(fv_events)
+        if i % 100 == 0:
+            log.info("fix_version_history backfill: %d/%d issues scanned", i, len(keys))
+        if len(rows) >= 500:
+            with conn.cursor() as cur:
+                execute_values(
+                    cur,
+                    """
+                    INSERT INTO issue_fix_version_history
+                        (issue_key, fix_version, added_at, removed_at)
+                    VALUES %s
+                    ON CONFLICT (issue_key, fix_version, COALESCE(added_at, '1970-01-01'::timestamptz)) DO NOTHING
+                    """,
+                    rows,
+                )
+            conn.commit()
+            rows = []
+
+    if rows:
+        with conn.cursor() as cur:
+            execute_values(
+                cur,
+                """
+                INSERT INTO issue_fix_version_history
+                    (issue_key, fix_version, added_at, removed_at)
+                VALUES %s
+                ON CONFLICT (issue_key, fix_version, COALESCE(added_at, '1970-01-01'::timestamptz)) DO NOTHING
+                """,
+                rows,
+            )
+        conn.commit()
+
+    log.info("fix_version_history backfill: complete (%d issues scanned)", len(keys))
+
+
 def backfill_resolved_at(conn):
     """Set resolved_at from issue_transitions for Done issues where it is missing.
 
@@ -1082,6 +1143,12 @@ def main():
     except Exception as exc:
         log.error("resolved_at backfill failed: %s", exc, exc_info=True)
         errors.append(f"resolved_at: {exc}")
+
+    try:
+        backfill_fix_version_history(conn)
+    except Exception as exc:
+        log.error("fix_version_history backfill failed: %s", exc, exc_info=True)
+        errors.append(f"fix_version_history: {exc}")
 
     try:
         sync_releases(conn)
