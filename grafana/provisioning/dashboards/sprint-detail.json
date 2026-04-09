@@ -2638,30 +2638,6 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Status"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 98
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Priority"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 88
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
               "options": "Assignee"
             },
             "properties": [
@@ -2680,6 +2656,183 @@
               {
                 "id": "custom.width",
                 "value": 103
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Priority"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "Blocker": {
+                        "color": "dark-red",
+                        "index": 0,
+                        "text": "Blocker"
+                      },
+                      "Critical": {
+                        "color": "red",
+                        "index": 1,
+                        "text": "Critical"
+                      },
+                      "High": {
+                        "color": "orange",
+                        "index": 2,
+                        "text": "High"
+                      },
+                      "Medium": {
+                        "color": "yellow",
+                        "index": 3,
+                        "text": "Medium"
+                      },
+                      "Low": {
+                        "color": "green",
+                        "index": 4,
+                        "text": "Low"
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background"
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "thresholds"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "text",
+                      "value": null
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "custom.width",
+                "value": 88
+              },
+              {
+                "id": "custom.width",
+                "value": 92
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Status"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "Done": {
+                        "color": "green",
+                        "index": 0
+                      },
+                      "Closed": {
+                        "color": "green",
+                        "index": 1
+                      },
+                      "In Progress": {
+                        "color": "yellow",
+                        "index": 2
+                      },
+                      "In Review": {
+                        "color": "yellow",
+                        "index": 3
+                      },
+                      "Ready for testing": {
+                        "color": "blue",
+                        "index": 4
+                      },
+                      "Ready For Testing": {
+                        "color": "blue",
+                        "index": 5
+                      },
+                      "Testing": {
+                        "color": "blue",
+                        "index": 6
+                      },
+                      "Blocked": {
+                        "color": "red",
+                        "index": 7
+                      },
+                      "Reopened": {
+                        "color": "orange",
+                        "index": 8
+                      },
+                      "Open": {
+                        "color": "text",
+                        "index": 9
+                      },
+                      "To Do": {
+                        "color": "text",
+                        "index": 10
+                      },
+                      "Backlog": {
+                        "color": "text",
+                        "index": 11
+                      },
+                      "Obsolete / Won't Do": {
+                        "color": "gray",
+                        "index": 12
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background"
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "thresholds"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "text",
+                      "value": null
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "custom.width",
+                "value": 98
+              },
+              {
+                "id": "custom.width",
+                "value": 89
               }
             ]
           }
@@ -2798,12 +2951,12 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Status"
+              "options": "Other Team"
             },
             "properties": [
               {
                 "id": "custom.width",
-                "value": 89
+                "value": 115
               }
             ]
           },
@@ -2814,6 +2967,69 @@
             },
             "properties": [
               {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "Blocker": {
+                        "color": "dark-red",
+                        "index": 0,
+                        "text": "Blocker"
+                      },
+                      "Critical": {
+                        "color": "red",
+                        "index": 1,
+                        "text": "Critical"
+                      },
+                      "High": {
+                        "color": "orange",
+                        "index": 2,
+                        "text": "High"
+                      },
+                      "Medium": {
+                        "color": "yellow",
+                        "index": 3,
+                        "text": "Medium"
+                      },
+                      "Low": {
+                        "color": "green",
+                        "index": 4,
+                        "text": "Low"
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background"
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "thresholds"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "text",
+                      "value": null
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "custom.width",
+                "value": 88
+              },
+              {
                 "id": "custom.width",
                 "value": 92
               }
@@ -2822,12 +3038,102 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Other Team"
+              "options": "Status"
             },
             "properties": [
               {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "Done": {
+                        "color": "green",
+                        "index": 0
+                      },
+                      "Closed": {
+                        "color": "green",
+                        "index": 1
+                      },
+                      "In Progress": {
+                        "color": "yellow",
+                        "index": 2
+                      },
+                      "In Review": {
+                        "color": "yellow",
+                        "index": 3
+                      },
+                      "Ready for testing": {
+                        "color": "blue",
+                        "index": 4
+                      },
+                      "Ready For Testing": {
+                        "color": "blue",
+                        "index": 5
+                      },
+                      "Testing": {
+                        "color": "blue",
+                        "index": 6
+                      },
+                      "Blocked": {
+                        "color": "red",
+                        "index": 7
+                      },
+                      "Reopened": {
+                        "color": "orange",
+                        "index": 8
+                      },
+                      "Open": {
+                        "color": "text",
+                        "index": 9
+                      },
+                      "To Do": {
+                        "color": "text",
+                        "index": 10
+                      },
+                      "Backlog": {
+                        "color": "text",
+                        "index": 11
+                      },
+                      "Obsolete / Won't Do": {
+                        "color": "gray",
+                        "index": 12
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background"
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "thresholds"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "text",
+                      "value": null
+                    }
+                  ]
+                }
+              },
+              {
                 "id": "custom.width",
-                "value": 115
+                "value": 98
+              },
+              {
+                "id": "custom.width",
+                "value": 89
               }
             ]
           }
@@ -3415,64 +3721,6 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Status"
-            },
-            "properties": [
-              {
-                "id": "mappings",
-                "value": [
-                  {
-                    "options": {
-                      "Backlog": {
-                        "color": "text",
-                        "index": 5,
-                        "text": "Backlog"
-                      },
-                      "Blocked": {
-                        "color": "red",
-                        "index": 3,
-                        "text": "Blocked"
-                      },
-                      "Closed": {
-                        "color": "green",
-                        "index": 7,
-                        "text": "Closed"
-                      },
-                      "Done": {
-                        "color": "green",
-                        "index": 0,
-                        "text": "Done"
-                      },
-                      "In Progress": {
-                        "color": "yellow",
-                        "index": 1,
-                        "text": "In Progress"
-                      },
-                      "Ready For Testing": {
-                        "color": "blue",
-                        "index": 2,
-                        "text": "Ready For Testing"
-                      },
-                      "Reopened": {
-                        "color": "orange",
-                        "index": 6,
-                        "text": "Reopened"
-                      },
-                      "To Do": {
-                        "color": "text",
-                        "index": 4,
-                        "text": "To Do"
-                      }
-                    },
-                    "type": "value"
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
               "options": "Times Carried"
             },
             "properties": [
@@ -3568,6 +3816,116 @@
                     }
                   ]
                 }
+              },
+              {
+                "id": "custom.width",
+                "value": 88
+              },
+              {
+                "id": "custom.width",
+                "value": 92
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Status"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "Done": {
+                        "color": "green",
+                        "index": 0
+                      },
+                      "Closed": {
+                        "color": "green",
+                        "index": 1
+                      },
+                      "In Progress": {
+                        "color": "yellow",
+                        "index": 2
+                      },
+                      "In Review": {
+                        "color": "yellow",
+                        "index": 3
+                      },
+                      "Ready for testing": {
+                        "color": "blue",
+                        "index": 4
+                      },
+                      "Ready For Testing": {
+                        "color": "blue",
+                        "index": 5
+                      },
+                      "Testing": {
+                        "color": "blue",
+                        "index": 6
+                      },
+                      "Blocked": {
+                        "color": "red",
+                        "index": 7
+                      },
+                      "Reopened": {
+                        "color": "orange",
+                        "index": 8
+                      },
+                      "Open": {
+                        "color": "text",
+                        "index": 9
+                      },
+                      "To Do": {
+                        "color": "text",
+                        "index": 10
+                      },
+                      "Backlog": {
+                        "color": "text",
+                        "index": 11
+                      },
+                      "Obsolete / Won't Do": {
+                        "color": "gray",
+                        "index": 12
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background"
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "thresholds"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "text",
+                      "value": null
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "custom.width",
+                "value": 98
+              },
+              {
+                "id": "custom.width",
+                "value": 89
               }
             ]
           }
