@@ -1,330 +1,31 @@
-# Sprint Detail Dashboard — Metrics Reference
+# Metrics Reference — All Dashboards
 
-**Dashboard purpose:** Per-sprint drill-down for Scrum Masters and Release Managers.
-Select a team and sprint to see scope, readiness, delivery, and QASE test coverage.
+This document explains how every metric across all dashboards is calculated, which filters are applied, and known differences between dashboards.
 
-**Data source:** PostgreSQL (`jira-metrics-pg`). All metrics derive from
-`sprint_issues`, `issues`, `sprints`, `issue_transitions`, and the
-`v_planning_deviation` view.
-
-**Common exclusions (unless noted):** All story-point and issue-count panels exclude:
-- `issue_type IN ('Epic', 'Sub-task')`
-- `status = 'Obsolete / Won''t Do'`
-- `removed_at IS NOT NULL` (only currently active sprint members)
+**Data source:** PostgreSQL (`jira-metrics-pg`).  
+**Key tables:** `sprint_issues`, `issues`, `sprints`, `issue_transitions`, `issue_links`, `releases`.  
+**Key views:** `v_planning_deviation`, `v_cycle_time_rft_to_done`, `v_cycle_time_in_progress_to_rft`, `v_lead_time`, `v_time_in_status`, `v_prod_epic_progress`, `v_prod_item_progress`.
 
 ---
 
-## Story Points
+## Known Cross-Dashboard Differences
 
-### Committed
-Total story points planned at sprint start.
+These are intentional differences worth understanding when comparing numbers:
 
-**SQL logic:** `SUM(COALESCE(story_points_at_add, story_points, 0))` where
-`was_in_initial_scope = TRUE AND removed_at IS NULL`, excluding Epics, Sub-tasks,
-and Obsolete.
+| Topic | Sprint Detail / PO KPIs | Sprint Health / Sprint Overview |
+|-------|------------------------|--------------------------------|
+| **Quarter assignment** | Uses `start_date` | Uses `COALESCE(complete_date, start_date)` |
+| **story_points field** | `story_points_at_add` (scope-aware) | Same via `v_planning_deviation` |
+| **Completed SP** | All Done issues with `resolved_at` in sprint window | Only committed Done issues (via view) |
+| **QASE panels** | Excludes Epic + Sub-task | Excludes Epic only |
 
-`story_points_at_add` is the estimate recorded when the issue entered the sprint.
-It is preferred over the current `issues.story_points` so that mid-sprint re-estimation
-does not retroactively change what was committed.
-
----
-
-### Unplanned
-Story points added after sprint start.
-
-**SQL logic:** Same SUM as Committed but filtered to
-`was_in_initial_scope = FALSE AND removed_at IS NULL`.
-
-**Target:** ≤ 10% of Committed.
-
----
-
-### Total in Sprint
-All active story points (committed + unplanned, excluding removed).
-
-**SQL logic:** `SUM(COALESCE(story_points_at_add, story_points, 0))` where
-`removed_at IS NULL`, excluding Epics, Sub-tasks, Obsolete.
-
----
-
-### Obsolete / Won't Do
-Story points on issues currently in the sprint that are marked Obsolete.
-
-**SQL logic:** `SUM(COALESCE(story_points_at_add, story_points, 0))` where
-`removed_at IS NULL AND status = 'Obsolete / Won''t Do'`.
-
-No issue-type filter is applied so nothing is silently hidden. These issues are
-excluded from all other SP counters and from velocity calculations.
-
----
-
-### Completed
-Story points delivered within this sprint's time window.
-
-**SQL logic:** `SUM(COALESCE(story_points_at_add, story_points, 0))` where:
-- `status_category = 'Done'`
-- `status != 'Obsolete / Won''t Do'`
-- `issue_type NOT IN ('Epic', 'Sub-task')`
-- `resolved_at IS NOT NULL`
-- `resolved_at >= sprint.start_date`
-- `resolved_at <= COALESCE(sprint.complete_date, sprint.end_date, NOW())`
-
-**Why the `resolved_at` window matters:** Issues can appear in many consecutive
-sprints with `removed_at IS NULL` due to Jira carry-over behaviour (an issue
-carried from sprint A to sprint B exists in `sprint_issues` for both with no
-`removed_at`). Without the window filter, a Done issue would be counted in every
-sprint it ever touched. The `resolved_at` window credits delivery to exactly one
-sprint — the one whose `[start_date, complete_date]` interval contains the resolution
-timestamp.
-
----
-
-### Delivery %
-`ROUND(100.0 * delivered_points / committed_points, 1)` from `v_planning_deviation`.
-
-Displayed as a gauge: red < 60%, yellow 60–80%, green ≥ 80%.
-
-See the [v_planning_deviation view](#v_planning_deviation-view) section for full details.
-
----
-
-### Avg Velocity (Last 6 Sprints)
-Average delivered story points over the 6 most recent closed sprints for the same team.
-
-**SQL logic:**
-1. Find closed sprints (`state = 'closed'`) whose `complete_date` is before the
-   current sprint's `start_date` — this gives a true running average: each sprint
-   shows the velocity of the 6 sprints that preceded it.
-2. Apply the **project-majority filter**: include a historical sprint only if more
-   than 50% of its committed issues (`was_in_initial_scope = TRUE`) share at least
-   one `project_key` with the current sprint's committed issues. This prevents
-   cross-team contamination when multiple teams share a board.
-3. `AVG(delivered_points)` from `v_planning_deviation` across those 6 sprints.
-
-**No board_id filter is applied.** The STORE team, for example, alternates between
-board IDs 100 and 153 across sprints; filtering by board would skip half their history.
-The project-majority filter alone is sufficient.
-
----
-
-### Velocity Booked %
-What fraction of average velocity has been committed in the current sprint.
-
-**SQL logic:**
-```
-ROUND(100.0 * committed_sp / avg_velocity, 1)
-```
-- `committed_sp`: same as the Committed stat panel (Epics/Sub-tasks/Obsolete excluded)
-- `avg_velocity`: same 6-sprint / project-majority formula as above
-
-**Thresholds:** green < 80%, yellow 80–100%, red > 100% (display capped at 150%).
-
----
-
-## Story Readiness
-
-### Planned
-Count of issues in the initial sprint scope.
-
-**SQL logic:** `COUNT(*) WHERE was_in_initial_scope = TRUE AND
-issue_type NOT IN ('Epic', 'Sub-task')`.
-
-Note: no `removed_at` filter — issues that were in initial scope and later removed
-are still counted. Bugs are included.
-
----
-
-### Ready Issues
-Count of issues that satisfy all three readiness conditions simultaneously.
-
-**SQL logic:** `COUNT(*) WHERE removed_at IS NULL AND
-issue_type NOT IN ('Epic', 'Sub-task') AND story_points > 0 AND
-epic_key IS NOT NULL AND has_acceptance_criteria = TRUE`.
-
-An issue is only "ready" when it has: a size estimate, an Epic link, and documented
-acceptance criteria.
-
----
-
-### Missing Assignee
-Issues (all types) currently in the sprint with no assignee.
-
-**SQL logic:** `COUNT(*) WHERE removed_at IS NULL AND assignee IS NULL AND
-status != 'Obsolete / Won''t Do'`.
-
-No issue-type filter — Epics and Sub-tasks are included because they also need owners.
-
----
-
-### Missing AC
-Stories and Tasks without documented acceptance criteria.
-
-**SQL logic:** `COUNT(*) WHERE removed_at IS NULL AND
-status != 'Obsolete / Won''t Do' AND
-issue_type NOT IN ('Epic', 'Sub-task', 'Bug') AND
-(has_acceptance_criteria IS NULL OR has_acceptance_criteria = FALSE)`.
-
-Bugs are excluded because bug reports do not require acceptance criteria.
-
----
-
-### Missing SP
-Issues without a story point estimate.
-
-**SQL logic:** `COUNT(*) WHERE removed_at IS NULL AND
-issue_type NOT IN ('Epic', 'Sub-task') AND
-(story_points IS NULL OR story_points = 0)`.
-
----
-
-### Missing Epic Link
-Issues not linked to a parent Epic.
-
-**SQL logic:** `COUNT(*) WHERE removed_at IS NULL AND
-issue_type NOT IN ('Epic', 'Sub-task') AND epic_key IS NULL`.
-
----
-
-### Readiness %
-Fraction of active sprint issues that are fully ready (SP + Epic + AC).
-
-**SQL logic:**
-```sql
-ROUND(100.0 *
-  COUNT(*) FILTER (WHERE story_points > 0 AND epic_key IS NOT NULL AND has_acceptance_criteria = TRUE)
-  / NULLIF(COUNT(*), 0), 1)
-```
-over `removed_at IS NULL AND issue_type NOT IN ('Epic', 'Sub-task')`.
-
-The denominator includes Bugs even though Bugs are not required to have AC. A Bug
-with SP and Epic link is counted in the numerator even without AC. This means the
-percentage slightly understates readiness for sprints with many Bugs.
-
-**Target:** ≥ 90% (green). Thresholds: red < 70%, yellow 70–90%.
-
----
-
-### Completed Issues
-Count of issues resolved within this sprint's time window.
-
-**SQL logic:** Same `resolved_at` sprint-window filter as the Completed SP panel.
-Excludes Epics, Sub-tasks, Obsolete.
-
----
-
-### Open Issues
-Issues still in progress at query time.
-
-**SQL logic:** `COUNT(*) WHERE removed_at IS NULL AND
-issue_type NOT IN ('Epic', 'Sub-task') AND status != 'Obsolete / Won''t Do' AND
-status_category != 'Done'`.
-
-Uses current `status_category`, not `resolved_at`, so this reflects the live state.
-
----
-
-### Issues Not Ready (detail table)
-Every active non-Epic/Sub-task/Obsolete issue failing at least one readiness check.
-
-| Column   | Fail condition |
-|----------|---------------|
-| SP       | `story_points IS NULL OR story_points = 0` |
-| Epic     | `epic_key IS NULL` |
-| AC       | `issue_type != 'Bug' AND has_acceptance_criteria IS NOT TRUE` (Bugs show N/A) |
-| Assignee | `assignee IS NULL` (shown as name or `—`) |
-
-An issue appears in the table if **any** of these conditions is true. Bugs only
-appear for missing SP, Epic, or Assignee — not for missing AC.
-
-Sorted by priority (Blocker → Critical → High → Medium → other).
-
----
-
-## Scope Change
-
-### Issues Added / SP Added
-Issues and story points added after sprint start (`was_in_initial_scope = FALSE AND
-removed_at IS NULL`). No issue-type filter.
-
-### Issues Removed / SP Removed
-Issues and story points removed from the sprint (`removed_at IS NOT NULL`). No
-issue-type filter.
-
-### Scope Change %
-Total churn relative to committed scope.
-
-```
-ROUND(100.0 * (SP_added + SP_removed) / NULLIF(committed_SP, 0), 1)
-```
-
-Note: the committed denominator here (`was_in_initial_scope = TRUE`, no type
-filters) differs from the Committed stat panel which excludes Epics/Sub-tasks/Obsolete.
-This is intentional — the Scope Change % uses raw sprint report data.
-
-**Target:** ≤ 10%. Thresholds: orange at 10%, red at 25%.
-
----
-
-## Issue Counts — Summary Table
-
-Single-row overview. The Completed column uses `removed_at IS NULL AND
-status_category = 'Done'` without the `resolved_at` sprint-window filter.
-This reflects the current Done state of all active issues and may include
-carry-over issues that happen to be Done now. For the authoritative
-sprint-window-bounded counts use the Completed SP (id=7) and Completed Issues
-(id=102) panels.
-
----
-
-## All Issues in Sprint
-
-Full issue list with: Key, Summary, Type, Priority, Assignee, Status, SP, Epic,
-Scope (Committed/Unplanned), Rmvd, Times Carried.
-
-**Times Carried:** How many prior sprints the issue appeared in with
-`removed_at IS NULL AND sprint_id < current_sprint`. Orange ≥ 1, red ≥ 3.
-
-Sort order: active issues first (removed last), then In Progress → other → Done,
-then by priority.
-
----
-
-## QASE Test Coverage (collapsed)
-
-All panels filter to `removed_at IS NULL AND issue_type != 'Epic'`.
-Sub-tasks are included (unlike SP panels).
-
-| Panel | Logic |
-|-------|-------|
-| With QASE Link | `has_qase_link = TRUE` |
-| Without QASE Link | `has_qase_link = FALSE` |
-| Not Yet Checked | `has_qase_link IS NULL` — sync has not checked yet |
-| QASE Coverage % | `COUNT(TRUE) / COUNT(NOT NULL)` — excludes unchecked from denominator |
-
-Coverage % thresholds: red < 50%, orange 50–80%, green ≥ 80%.
-
----
-
-## Burndown Chart
-
-Daily remaining SP vs. an ideal linear burndown line.
-
-**Steps:**
-1. **Committed issues:** `was_in_initial_scope = TRUE` for the selected sprint.
-2. **Total SP:** sum of committed SP (burndown start value).
-3. **Done per issue:** earliest `issue_transitions.transitioned_at` where
-   `UPPER(to_status) = 'DONE'` and `transitioned_at >= sprint.start_date`.
-4. **Remaining SP (actual):** for each day, `total_sp − SUM(sp for issues Done
-   before end of that day)`. NULL for future days.
-5. **Ideal line:** `total_sp × (1 − elapsed_days / sprint_duration)`, floored at 0.
-
-Chart extends two days past sprint end to show final state.
+**Quarter assignment:** Sprint Detail and PO KPIs assign sprints to the quarter they *started* in (`start_date`). Sprint Health uses `COALESCE(complete_date, start_date)` — the quarter they *completed* in (falling back to start for active sprints). A sprint starting in Q1 and closing in Q2 will appear in **Q1** in Sprint Detail but **Q2** in Sprint Health.
 
 ---
 
 ## `v_planning_deviation` View
 
-Defined in `init.sql`. Used by Delivery % and both velocity panels.
+Used by: Sprint Detail (Delivery %, Avg Velocity, Velocity Booked %), Sprint Overview, PO KPIs.
 
 ### `committed` CTE
 ```sql
@@ -337,7 +38,6 @@ WHERE was_in_initial_scope = TRUE
 - `committed_issues`: `COUNT(*)`
 
 ### `delivered` CTE
-
 ```sql
 WHERE was_in_initial_scope = TRUE
   AND removed_at IS NULL
@@ -345,72 +45,325 @@ WHERE was_in_initial_scope = TRUE
   AND status != 'Obsolete / Won''t Do'
   AND issue_type NOT IN ('Epic', 'Sub-task')
 ```
-
 - `delivered_points`: `SUM(COALESCE(story_points_at_add, story_points, 0))`
 - `delivered_issues`: `COUNT(*)`
 
-**Why no `resolved_at` window here:** `was_in_initial_scope = TRUE` is set by the
-Jira sprint report API at sprint start only — it is unique per sprint. There is no
-carry-over double-counting risk, so a resolved_at window is not needed and would
-incorrectly exclude issues resolved slightly outside the sprint window (e.g. a few
-hours after close). Planning accuracy = committed issues that are now Done.
+**Why no `resolved_at` window:** `was_in_initial_scope = TRUE` is set by the Jira sprint report API at sprint start only — unique per sprint. There is no carry-over double-counting risk. A `resolved_at` window would incorrectly exclude issues resolved slightly outside the sprint window (e.g. a few hours after close).
 
-**Note:** The Sprint Detail **Completed SP** panel still uses the `resolved_at`
-sprint-window filter because it counts *all* Done issues (including unplanned), and
-those can appear in multiple sprints' `sprint_issues` rows.
+**`delivery_pct`:** `ROUND(100.0 * delivered_points / committed_points, 1)` — NULL when committed = 0. Cannot exceed 100% because only committed issues are in the numerator.
 
-### Final columns
-
-| Column | Formula |
-|--------|---------|
-| `deviation_points` | `delivered_points − committed_points` |
-| `delivery_pct` | `ROUND(100.0 * delivered_points / committed_points, 1)` — NULL when committed = 0 |
-
-The view LEFT JOINs all sprints so sprints with zero activity still appear.
+**Note:** The Sprint Detail **Completed SP** panel uses a different formula — it counts *all* Done issues (including unplanned) and does use a `resolved_at` sprint window to prevent carry-over double-counting.
 
 ---
 
-## Cross-Team Dependencies
+## Sprint Detail Dashboard
 
-Uses the `issue_links` table. Only cross-project links are shown
-(`i2.project_key != i.project_key`), so internal blocking within the same team is excluded.
+Per-sprint drill-down for Scrum Masters and Release Managers.
 
-### Blocking Other Teams
+**Common exclusions (unless noted):** `issue_type IN ('Epic', 'Sub-task')`, `status = 'Obsolete / Won''t Do'`, `removed_at IS NOT NULL`.
 
-Count of active sprint issues that block issues in other projects.
+### Story Points
 
-**SQL logic:** `COUNT(DISTINCT il.from_key)` joining `issue_links` where
-`link_label = 'blocks' AND removed_at IS NULL AND i2.project_key != i.project_key`.
+**Committed** — `SUM(COALESCE(story_points_at_add, story_points, 0))` where `was_in_initial_scope = TRUE AND removed_at IS NULL`, excl. Epics, Sub-tasks, Obsolete. Uses `story_points_at_add` so mid-sprint re-estimation doesn't change what was committed.
 
-**Thresholds:** green = 0, yellow ≥ 1, red ≥ 3.
+**Unplanned** — Same SUM for `was_in_initial_scope = FALSE AND removed_at IS NULL`. Target ≤ 10% of Committed.
 
-### Blocked by Other Teams
+**Total in Sprint** — SUM where `removed_at IS NULL`, excl. Epics, Sub-tasks, Obsolete.
 
-Count of active sprint issues waiting on issues from other projects.
+**Obsolete / Won't Do** — SUM where `removed_at IS NULL AND status = 'Obsolete / Won''t Do'`. No type filter — counts all types so nothing is silently hidden.
 
-**SQL logic:** Same as above but `link_label = 'is blocked by'`.
+**Completed** — SUM where `status_category = 'Done'`, excl. Epics/Sub-tasks/Obsolete, with `resolved_at` in sprint window (`>= start_date AND <= COALESCE(complete_date, end_date, NOW())`). Counts all Done issues including unplanned. The `resolved_at` window is required here because unplanned Done issues appear in multiple sprints' `sprint_issues` with `removed_at IS NULL`.
 
-### Issues Blocking Other Teams / Issues Blocked by Other Teams
-Detail tables showing: Key (Jira link), Summary, Status, Priority, Assignee,
-the linked issue key (Jira link), Other Team (project key), and the linked issue's summary.
-Sorted by priority.
+**Delivery %** — `delivery_pct` from `v_planning_deviation`. Gauge: red < 60%, yellow 60–80%, green ≥ 80%.
+
+**Avg Velocity (Last 6 Sprints)** — `AVG(delivered_points)` from `v_planning_deviation` across the 6 most recent closed sprints (by `complete_date`) before the current sprint's `start_date`, filtered to the same team via project-majority filter (>50% of committed issues share a project key). No board_id filter — some teams alternate boards.
+
+**Velocity Booked %** — `ROUND(100.0 * committed_sp / avg_velocity, 1)`. Gauge: green < 80%, yellow 80–100%, red > 100% (capped at 150%).
+
+### Story Readiness
+
+**Planned** — `COUNT(*)` where `was_in_initial_scope = TRUE AND issue_type NOT IN ('Epic','Sub-task')`. No `removed_at` filter. Bugs included.
+
+**Ready Issues** — Issues with SP > 0 AND epic_key IS NOT NULL AND `has_acceptance_criteria = TRUE`. All three must be met. Excl. Epics, Sub-tasks, removed.
+
+**Missing Assignee** — `COUNT(*)` where `removed_at IS NULL AND assignee IS NULL AND status != 'Obsolete/Won''t Do'`. All issue types including Epics and Sub-tasks.
+
+**Missing AC** — Issues where `has_acceptance_criteria IS NULL OR FALSE`, excl. Epics, Sub-tasks, **Bugs** (Bugs don't require AC).
+
+**Missing SP** — Issues where `story_points IS NULL OR story_points = 0`, excl. Epics, Sub-tasks.
+
+**Missing Epic Link** — Issues where `epic_key IS NULL`, excl. Epics, Sub-tasks.
+
+**Readiness %** — `ROUND(100.0 * ready / total, 1)` where ready = SP>0 AND epic IS NOT NULL AND has_ac = TRUE, total = all active non-Epic/Sub-task issues. Bugs count in denominator even without AC requirement. Target ≥ 90%.
+
+**Completed Issues** — `COUNT(*)` with same `resolved_at` sprint window as Completed SP. Excl. Epics, Sub-tasks, Obsolete.
+
+**Open Issues** — `COUNT(*)` where `removed_at IS NULL AND status_category != 'Done'`, excl. Epics, Sub-tasks, Obsolete.
+
+**Issues Not Ready (table)** — Issues failing any of: SP missing, Epic missing, AC missing (N/A for Bugs), Assignee missing. Bugs only appear for SP/Epic/Assignee — not AC. Sorted by priority.
+
+### Scope Change
+
+**Issues Added / SP Added** — `was_in_initial_scope = FALSE AND removed_at IS NULL`. No type filter.
+
+**Issues Removed / SP Removed** — `removed_at IS NOT NULL`. No type filter.
+
+**Scope Change %** — `(SP_added + SP_removed) / committed_SP × 100`. The committed denominator has no type filter (raw sprint data). Target ≤ 10%, orange at 10%, red at 25%.
+
+### Cross-Team Dependencies
+
+Uses `issue_links` table with `link_label = 'blocks'` / `'is blocked by'`. Only cross-project links (`i2.project_key != i.project_key`).
+
+**Blocking Other Teams** / **Blocked by Other Teams** — Stat counts. Thresholds: green = 0, yellow ≥ 1, red ≥ 3.
+
+**Detail tables** — Key, Summary, Status, Priority, Assignee, linked issue key (Jira link), Other Team, linked issue summary. Sorted by priority.
+
+### Issue Counts — Summary Table
+
+Single-row overview. The **Completed** column here uses `removed_at IS NULL AND status_category = 'Done'` without the `resolved_at` window. This reflects live Done status and may include carry-over issues. Use the Completed SP and Completed Issues stat panels for authoritative counts.
+
+### All Issues in Sprint
+
+**Times Carried** — Count of prior sprints the issue appeared in with `removed_at IS NULL AND sprint_id < current_sprint`. Orange ≥ 1, red ≥ 3.
+
+### QASE Test Coverage (collapsed)
+
+Filters to `removed_at IS NULL AND issue_type != 'Epic'`. Sub-tasks are included.
+
+| Panel | Logic |
+|-------|-------|
+| With QASE Link | `has_qase_link = TRUE` |
+| Without QASE Link | `has_qase_link = FALSE` |
+| Not Yet Checked | `has_qase_link IS NULL` |
+| QASE Coverage % | `COUNT(TRUE) / COUNT(NOT NULL)` — excludes unchecked from denominator |
+
+### Burndown Chart
+
+1. Committed issues: `was_in_initial_scope = TRUE`.
+2. Total SP = sum of committed SP.
+3. Done per issue: earliest `issue_transitions.transitioned_at` where `UPPER(to_status) = 'DONE'` and `transitioned_at >= sprint.start_date`.
+4. Remaining SP: `total_sp − SUM(sp for issues Done before end of day)`. NULL for future days.
+5. Ideal line: `total_sp × (1 − elapsed_fraction)`, floored at 0.
 
 ---
 
-## Variable Filters
+## Sprint Overview Quarter Dashboard
 
-### Quarter
-Derived from `issues.created_at` — shows distinct quarters in descending order.
+Quarter-level view of sprint velocity and delivery across all team sprints.
 
-### Team / Project
-Multi-select list of all `projects.key` values. Controls which sprints appear in
-the Sprint variable.
+**Quarter assignment:** Uses `COALESCE(complete_date, start_date)` — sprints appear in the quarter they completed (or started, for active sprints). This differs from Sprint Detail which uses `start_date`.
 
-### Sprint
-Filtered to sprints whose `start_date` falls in the selected quarter
-(`date_trunc('quarter', s.start_date) = '$quarter'::date`) and where more than 50%
-of committed issues belong to the selected project(s) — the project-majority filter.
-Active sprints are shown first (marked ★), then sorted by `start_date` descending.
+**Sprint filter:** Simple `project_key IN ($project)` join — shows sprints that have at least one issue from the selected project.
 
-The project-majority filter uses `was_in_initial_scope = TRUE` (not `removed_at IS NULL`)
-to avoid contamination from carry-over issues that accumulate across many sprints.
+All SP metrics flow through `v_planning_deviation`.
+
+| Panel | Source | Notes |
+|-------|--------|-------|
+| Sprint Velocity — Committed vs Delivered | `v_planning_deviation` | committed_points, delivered_points |
+| Delivery % per Sprint | `v_planning_deviation` | `delivery_pct`, green ≥ 90%, yellow ≥ 70%, red < 70% |
+| Sprint Issue Count — Committed vs Delivered | `v_planning_deviation` | committed_issues, delivered_issues |
+| Sprint Summary Table | `v_planning_deviation` | Includes Deviation = delivered − committed |
+
+---
+
+## PO KPIs Dashboard
+
+Quarterly KPIs for Product Owners: planning quality, delivery accuracy, re-work, blockers, release quality.
+
+**Quarter assignment:** Uses `start_date` (sprints assigned to the quarter they started in). Consistent with Sprint Detail, differs from Sprint Overview Quarter.
+
+**Sprint filter:** Project-majority filter (`was_in_initial_scope = TRUE`, >50% committed issues from selected projects). More accurate than simple join for multi-team boards.
+
+### Planning & Delivery
+
+**Avg Scope Change %** — `AVG((added_sp + removed_sp) / committed_sp × 100)` across closed sprints in quarter. Target ≤ 10%.
+
+**Avg Planning Accuracy %** — `AVG(delivery_pct)` from `v_planning_deviation` for closed sprints. Since `delivery_pct` only counts committed issues, this cannot exceed 100%.
+
+**Ticket Reopens** — Issues that transitioned from a testing status to In Progress: `LOWER(from_status) LIKE '%test%' AND LOWER(to_status) LIKE '%progress%'`. Filtered by `transitioned_at` quarter.
+
+**Avg Blocker Resolution Time** — `AVG((resolved_at - created_at) / 3600)` in hours for Blocker issues created in the quarter. Uses `created_at` for quarter assignment so it measures blockers that originated in the quarter, regardless of when resolved.
+
+**Scope Change % per Sprint** — Per-sprint bar chart of `(added_sp + removed_sp) / committed_sp`. Ordered by `start_date ASC`.
+
+**Planning Accuracy % per Sprint** — Shows Committed SP, Delivered SP, and Delivery % per sprint from `v_planning_deviation`. Ordered oldest to newest.
+
+**Sprint Velocity — Committed vs Delivered** — Bar chart from `v_planning_deviation`.
+
+**Blocker Resolution Time per Sprint** — `AVG((resolved_at - created_at) / 3600)` per sprint for Blocker issues. Uses `was_in_initial_scope = TRUE` to avoid carry-over double-counting.
+
+**Open Blockers** — Currently open (`status_category != 'Done'`) Blocker issues, ordered by age. No time filter — shows all open blockers regardless of quarter.
+
+**Weekly Ticket Reopen Rate** — Time-series using Grafana `$__timeFilter`. Spike = quality regression.
+
+**Most Reopened Issues** — Issues with most reopen transitions in selected quarter.
+
+### Release Bug Quality
+
+Links `issues.fix_versions` (array) to `releases` via `r.name = ANY(i.fix_versions) AND r.project_key = i.project_key`. Quarter filtered by `release_date`.
+
+**Major Bugs in Releases** — Count of Blocker+Critical+High bugs in released versions. Thresholds: green < 10, yellow 10–30, orange 30–60, red ≥ 60.
+
+**Blocker Bugs in Releases** — Blocker-only count. Thresholds: green < 3, yellow 3–10, orange 10–20, red ≥ 20.
+
+**Total Bugs in Releases** — All priorities combined.
+
+**Bugs per Release (bar chart)** — Stacked by priority (dark-red=Blocker, red=Critical, orange=High, yellow=Medium, green=Low), ordered by `release_date ASC`.
+
+**Major Bug Details** — Table of Blocker/Critical/High bugs with release name, date, priority, status, assignee, Jira link.
+
+---
+
+## Team Overview Dashboard
+
+Per-assignee metrics for selected team and quarter/sprint.
+
+**Sprint vs Quarter mode:** All panels support both. When `$sprint = 0` (All), filters by `date_trunc('quarter', resolved_at) = '$quarter'`. When a sprint is selected, filters by `key IN (SELECT issue_key FROM sprint_issues WHERE sprint_id = $sprint AND removed_at IS NULL)`.
+
+**Note — story points field:** This dashboard uses `issues.story_points` (current value) rather than `sprint_issues.story_points_at_add`. This means if an issue's estimate changed after sprint start, the current value is used. This is intentional for the WIP display (current workload) but means delivery SP may differ slightly from Sprint Detail.
+
+**Note — Obsolete exclusion:** Issues marked "Obsolete / Won't Do" have `status_category = 'Done'` and will be counted in completed issue counts. This is a known inconsistency with Sprint Detail.
+
+| Panel | What it measures |
+|-------|-----------------|
+| Current WIP per Assignee | Open `In Progress` issues, current `story_points` |
+| Avg Cycle Time (RFT→Done) per Assignee | From `v_cycle_time_rft_to_done`, avg `hours_rft_to_done` |
+| Issues Completed per Assignee | `status_category = 'Done'` count + SP, filtered by quarter or sprint |
+| Where Issues Spend Most Time | From `v_time_in_status`, avg hours per status, ≥ 5 issues, < 8760h (1yr cap) |
+| Throughput Trend (weekly) | `DATE_TRUNC('week', resolved_at)` count per assignee |
+| Assignee Detail Table | Summary: issues completed, SP, bugs fixed, avg cycle time, current WIP |
+
+---
+
+## Flow & Cycle Time Dashboard
+
+Time-based metrics for process flow analysis. Uses Grafana `$__timeFilter` (time picker) for most panels rather than the quarter variable.
+
+**Quarter variable** is used for cycle time breakdowns (by type, by priority) but the main trend panels use the time picker. This means the time scope may differ from other dashboards when comparing quarterly numbers.
+
+**Cycle time views** (`v_cycle_time_rft_to_done`, `v_cycle_time_in_progress_to_rft`) exclude Epics and Sub-tasks. No explicit Obsolete exclusion.
+
+### Cycle Time: RFT → Done
+
+Time from the first transition into a "Ready For Testing" status to `resolved_at`. Measures testing and review speed.
+
+| Panel | Logic |
+|-------|-------|
+| Weekly trend | Avg, Median, p85 per week by `resolved_at` |
+| By Issue Type | Avg per type, quarter filter |
+| By Priority | Avg per priority, ordered Blocker→Low |
+| Slowest Issues | Top 25 by `hours_rft_to_done` |
+
+### Cycle Time: In Progress → RFT
+
+Time from first "In Progress" transition to first "Ready For Testing" entry. Measures development speed.
+
+Same panel structure as RFT→Done, filtered by `entered_rft_at` date.
+
+### Weekly Throughput
+
+`COUNT(*)` of issues with `status_category = 'Done'` per week, filtered by `resolved_at` quarter. No type or Obsolete filter.
+
+### Current WIP by Status
+
+Open `In Progress` issues grouped by status. SUM of `story_points` (current). No time filter — always shows current live state.
+
+### Lead Time
+
+`v_lead_time` view: days from `created_at` to `resolved_at`. Uses `$__timeFilter` on `resolved_at`.
+
+| Panel | Logic |
+|-------|-------|
+| Avg Lead Time | `AVG(days_lead_time)` |
+| Median Lead Time | `PERCENTILE_CONT(0.5)` |
+| Lead Time Trend | Weekly avg |
+| By Issue Type / Priority | Avg per group |
+| Slowest Issues | Top 50 |
+
+---
+
+## Quality & Bugs Dashboard
+
+Bug tracking and QASE test coverage. Has an additional `$release` (Fix Version) variable.
+
+**Release filter:** `$release = 'ALL' OR $release = ANY(fix_versions)` — when a release is selected, only bugs linked to that fix version are shown.
+
+**Quarter assignment for QASE panels:** Uses `COALESCE(s.complete_date, s.start_date)` (sprint completion quarter). This differs from Sprint Detail which uses `start_date`.
+
+**QASE panels exclude Epics only** (not Sub-tasks). This differs from Sprint Detail which excludes both.
+
+### Bug Metrics
+
+| Panel | What it counts | Priority filter |
+|-------|----------------|----------------|
+| Open Critical Bugs | `status_category != 'Done' AND priority = 'Blocker'` | Blocker |
+| Open High Bugs | `status_category != 'Done' AND priority = 'Critical'` | Critical |
+| Open Medium Bugs | `status_category != 'Done' AND priority = 'High'` | High |
+| Open Low Bugs | `status_category != 'Done' AND priority IN ('Medium','Low')` | Medium+Low |
+
+**Note:** The panel titles say Critical/High/Medium/Low but the SQL filters Blocker/Critical/High/Medium+Low respectively. The labels are one level off from the data.
+
+**Bug Creation Rate** — Weekly `COUNT(*)` by priority using `$__timeFilter(created_at)`.
+
+**Bugs per Release** — `UNNEST(fix_versions)` join, filtered by `created_at` quarter. Shows Total, Resolved, Open per release.
+
+**Bug Resolution Rate vs Creation Rate** — Two time-series: `COUNT(*)` by `created_at` vs `resolved_at` per week.
+
+**Open Bugs — Critical & High** — `status_category != 'Done' AND priority IN ('Blocker','Critical')`, ordered by age ASC (oldest first).
+
+### QASE Coverage (Quality & Bugs)
+
+All panels filter to `issue_type != 'Epic'` (Sub-tasks included) and use sprint-quarter linkage via `key IN (SELECT DISTINCT si.issue_key FROM sprint_issues si JOIN sprints s ... WHERE date_trunc('quarter', COALESCE(s.complete_date, s.start_date)) = '$quarter'::date)`.
+
+| Panel | Logic |
+|-------|-------|
+| With QASE Link | `has_qase_link = TRUE` |
+| Without QASE Link | `has_qase_link = FALSE` |
+| QASE Coverage % | `COUNT(TRUE) / COUNT(NOT NULL)` |
+| Not Yet Checked | `has_qase_link IS NULL` |
+| By Issue Type (bar) | With/Without counts per `issue_type` |
+| By Issue Type (table) | Total, With, Without, Not Checked, Coverage % per type |
+| By Issue Status (table) | Same breakdown per `status` |
+
+---
+
+## PROD Alignment Dashboard
+
+Tracks delivery against PROD-level items via Epic→PROD issue links.
+
+**Quarter variable:** Derived from `issues.created_at WHERE issue_type = 'Epic'` — shows quarters in which Epics were created. This means it filters by when Epics were written, not by when they were delivered.
+
+**PROD link:** Epics link to PROD items via `issue_links` where `to_key LIKE 'PROD-%' AND link_label = 'implements'`. Deduplication handled in views (`v_prod_epic_progress`, `v_prod_item_progress`).
+
+**Completion %** is calculated at two levels:
+- **Epic level** (`v_prod_epic_progress`): Done child issues / total child issues × 100
+- **PROD level** (`v_prod_item_progress`): Aggregated across all Epics linked to the PROD item
+
+Child issues exclude Epics and Sub-tasks.
+
+| Panel | What it measures |
+|-------|-----------------|
+| PROD Items Linked | Distinct PROD keys referenced by Epics in project+quarter |
+| Epics Linked to PROD | Count of Epics with at least one implements link |
+| Epics Without PROD Link | Epics with no `PROD-%` link target, in project+quarter |
+| Avg Completion % | `AVG(completion_pct_issues)` from `v_prod_item_progress` |
+| All PROD Items table | Per-PROD: epic count, issues, SP, done count, completion % (SP-based) |
+| Epic Breakdown table | Per-Epic: PROD key, status, issues, SP, completion % |
+| Epics Without PROD Link table | No quarter filter — shows all unlinked Epics for the project |
+
+**Note:** The "Epics Without PROD Link" table has no quarter filter and shows all historical unlinked Epics. This is intentional (backlog visibility).
+
+---
+
+## Variable Filters (all dashboards)
+
+| Variable | Source | Notes |
+|----------|--------|-------|
+| `$jira_url` | `app_settings` table | Hidden variable used for Jira deep-links |
+| `$project` | `projects.key` | Multi-select, drives all team/project filters |
+| `$quarter` | `issues.created_at` distinct quarters | Descending order; used as `date_trunc('quarter', ...) = '$quarter'::date` |
+| `$sprint` | `sprints` table | Quarter + project-majority filtered; 0 = All |
+| `$release` | `UNNEST(issues.fix_versions)` | Quality & Bugs only; ALL = no release filter |
+| `$prod_item` | `issue_links.to_key LIKE 'PROD-%'` | PROD Alignment only; ALL = all items |
+
+**Sprint variable project-majority filter:** A sprint is included in the dropdown only if more than 50% of its `was_in_initial_scope = TRUE` issues belong to the selected project(s). This prevents cross-team sprints appearing when a few issues from another team are in the sprint.
