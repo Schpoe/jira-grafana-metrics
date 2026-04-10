@@ -3,7 +3,7 @@
 This document explains how every metric across all dashboards is calculated, which filters are applied, and known differences between dashboards.
 
 **Data source:** PostgreSQL (`jira-metrics-pg`).  
-**Key tables:** `sprint_issues`, `issues`, `sprints`, `issue_transitions`, `issue_links`, `releases`.  
+**Key tables:** `sprint_issues`, `issues`, `sprints`, `issue_transitions`, `issue_links`, `releases`, `issue_fix_version_history`.  
 **Key views:** `v_planning_deviation`, `v_cycle_time_rft_to_done`, `v_cycle_time_in_progress_to_rft`, `v_lead_time`, `v_time_in_status`, `v_prod_epic_progress`, `v_prod_item_progress`.
 
 ---
@@ -14,31 +14,34 @@ These are intentional differences worth understanding when comparing numbers:
 
 | Topic | Sprint Detail / PO KPIs / Sprint Overview | Team Overview | Quality & Bugs |
 |-------|------------------------------------------|---------------|----------------|
-| **Quarter assignment** | `start_date` | `resolved_at` | `created_at` (bugs), `complete_date` (QASE) |
+| **Quarter assignment** | `start_date` | `resolved_at` (quarter mode) | `created_at` (bugs), `COALESCE(complete_date, start_date)` (QASE) |
 | **story_points field** | `story_points_at_add` (scope-aware) | `story_points` (current) | N/A |
-| **Completed SP** | All Done issues with `resolved_at` window | N/A | N/A |
-| **Obsolete exclusion** | Yes | Yes (fixed) | No |
-| **QASE Sub-task exclusion** | Yes | N/A | Yes (fixed) |
+| **Completed SP** | All Done issues with `resolved_at` window (Sprint Detail stat panels) | N/A | N/A |
+| **Obsolete exclusion** | Yes | Yes | Yes (bug stats and QASE) |
+| **QASE issue exclusion** | Epics, Sub-tasks, Open status, Obsolete status | N/A | Epics, Sub-tasks, Open status, Obsolete status |
 
-**Quarter assignment:** All dashboards now use `start_date` to assign sprints to quarters. A sprint belongs to the quarter it started in, regardless of when it closed.
+**Quarter assignment:** Sprint Detail, PO KPIs, and Sprint Overview Quarter all use `start_date` to assign sprints to quarters. A sprint belongs to the quarter it started in, regardless of when it closed. Quality & Bugs QASE panels use `COALESCE(complete_date, start_date)` for sprint-quarter linkage.
 
 ---
 
 ## `v_planning_deviation` View
 
-Used by: Sprint Detail (Delivery %, Avg Velocity, Velocity Booked %), Sprint Overview, PO KPIs.
+Used by: Sprint Detail (Delivery %, Avg Velocity, Velocity Booked %), Sprint Overview Quarter, PO KPIs.
 
 ### `committed` CTE
+
 ```sql
 WHERE was_in_initial_scope = TRUE
   AND removed_at IS NULL
   AND issue_type NOT IN ('Epic', 'Sub-task')
   AND status != 'Obsolete / Won''t Do'
 ```
+
 - `committed_points`: `SUM(COALESCE(story_points_at_add, story_points, 0))`
 - `committed_issues`: `COUNT(*)`
 
 ### `delivered` CTE
+
 ```sql
 WHERE was_in_initial_scope = TRUE
   AND removed_at IS NULL
@@ -46,6 +49,7 @@ WHERE was_in_initial_scope = TRUE
   AND status != 'Obsolete / Won''t Do'
   AND issue_type NOT IN ('Epic', 'Sub-task')
 ```
+
 - `delivered_points`: `SUM(COALESCE(story_points_at_add, story_points, 0))`
 - `delivered_issues`: `COUNT(*)`
 
@@ -53,7 +57,22 @@ WHERE was_in_initial_scope = TRUE
 
 **`delivery_pct`:** `ROUND(100.0 * delivered_points / committed_points, 1)` — NULL when committed = 0. Cannot exceed 100% because only committed issues are in the numerator.
 
-**Note:** The Sprint Detail **Completed SP** panel uses a different formula — it counts *all* Done issues (including unplanned) and does use a `resolved_at` sprint window to prevent carry-over double-counting.
+**Note:** The Sprint Detail **Completed SP** stat panel uses a different formula — it counts *all* Done issues (including unplanned) and does use a `resolved_at` sprint window (`>= start_date AND <= COALESCE(complete_date, end_date, NOW())`) to prevent carry-over double-counting.
+
+---
+
+## `issue_fix_version_history` Table
+
+Tracks every `fix_version` ever assigned to an issue via the Jira changelog, even if the issue was later moved to a different release.
+
+| Column | Description |
+|--------|-------------|
+| `issue_key` | Issue key |
+| `fix_version` | Fix version name |
+| `added_at` | When this fix version was assigned (defaults to epoch if not known) |
+| `removed_at` | When this fix version was removed; NULL if still assigned |
+
+Used by the Quality & Bugs dashboard **Release Bug History** section to identify bugs that were ever scoped into a release, including those subsequently moved to a different fix version.
 
 ---
 
@@ -67,13 +86,13 @@ Per-sprint drill-down for Scrum Masters and Release Managers.
 
 **Committed** — `SUM(COALESCE(story_points_at_add, story_points, 0))` where `was_in_initial_scope = TRUE AND removed_at IS NULL`, excl. Epics, Sub-tasks, Obsolete. Uses `story_points_at_add` so mid-sprint re-estimation doesn't change what was committed.
 
-**Unplanned** — Same SUM for `was_in_initial_scope = FALSE AND removed_at IS NULL`. Target ≤ 10% of Committed.
+**Unplanned** — Same SUM for `was_in_initial_scope = FALSE AND removed_at IS NULL`, excl. Epics, Sub-tasks, Obsolete. Target ≤ 10% of Committed.
 
 **Total in Sprint** — SUM where `removed_at IS NULL`, excl. Epics, Sub-tasks, Obsolete.
 
 **Obsolete / Won't Do** — SUM where `removed_at IS NULL AND status = 'Obsolete / Won''t Do'`. No type filter — counts all types so nothing is silently hidden.
 
-**Completed** — SUM where `status_category = 'Done'`, excl. Epics/Sub-tasks/Obsolete, with `resolved_at` in sprint window (`>= start_date AND <= COALESCE(complete_date, end_date, NOW())`). Counts all Done issues including unplanned. The `resolved_at` window is required here because unplanned Done issues appear in multiple sprints' `sprint_issues` with `removed_at IS NULL`.
+**Completed** — SUM where `status_category = 'Done'`, excl. Epics/Sub-tasks/Obsolete, with `resolved_at` in sprint window (`>= start_date AND <= COALESCE(complete_date, end_date, NOW())`). `resolved_at IS NOT NULL` required. Counts all Done issues including unplanned. The `resolved_at` window is required here because unplanned Done issues appear in multiple sprints' `sprint_issues` with `removed_at IS NULL`.
 
 **Delivery %** — `delivery_pct` from `v_planning_deviation`. Gauge: red < 60%, yellow 60–80%, green ≥ 80%.
 
@@ -87,9 +106,9 @@ Per-sprint drill-down for Scrum Masters and Release Managers.
 
 **Ready Issues** — Issues with SP > 0 AND epic_key IS NOT NULL AND `has_acceptance_criteria = TRUE`. All three must be met. Excl. Epics, Sub-tasks, removed.
 
-**Missing Assignee** — `COUNT(*)` where `removed_at IS NULL AND assignee IS NULL AND status != 'Obsolete/Won''t Do'`. All issue types including Epics and Sub-tasks.
+**Missing Assignee** — `COUNT(*)` where `removed_at IS NULL AND assignee IS NULL AND status != 'Obsolete / Won''t Do'`. All issue types including Epics and Sub-tasks.
 
-**Missing AC** — Issues where `has_acceptance_criteria IS NULL OR FALSE`, excl. Epics, Sub-tasks, **Bugs** (Bugs don't require AC).
+**Missing AC** — Issues where `has_acceptance_criteria IS NULL OR FALSE`, excl. Epics, Sub-tasks, **Bugs** (Bugs don't require AC). Also excl. Obsolete.
 
 **Missing SP** — Issues where `story_points IS NULL OR story_points = 0`, excl. Epics, Sub-tasks.
 
@@ -117,7 +136,7 @@ Uses `issue_links` table with `link_label = 'blocks'` / `'is blocked by'`. Only 
 
 **Blocking Other Teams** / **Blocked by Other Teams** — Stat counts. Thresholds: green = 0, yellow ≥ 1, red ≥ 3.
 
-**Detail tables** — Key, Summary, Status, Priority, Assignee, linked issue key (Jira link), Other Team, linked issue summary. Sorted by priority.
+**Detail tables** — Key, Summary, Status, Priority, Assignee, linked issue key (Jira link), Other Team, linked issue summary. Sorted by priority. Priority and Status columns have color-background cell formatting.
 
 ### Issue Counts — Summary Table
 
@@ -125,11 +144,13 @@ Single-row overview. The **Completed** column here uses `removed_at IS NULL AND 
 
 ### All Issues in Sprint
 
-**Times Carried** — Count of prior sprints the issue appeared in with `removed_at IS NULL AND sprint_id < current_sprint`. Orange ≥ 1, red ≥ 3.
+**Times Carried** — Count of prior sprints the issue appeared in with `removed_at IS NULL AND sprint_id < current_sprint`. Orange ≥ 1, red ≥ 3. Priority and Status columns have color-background cell formatting.
 
 ### QASE Test Coverage (collapsed)
 
-Filters to `removed_at IS NULL AND issue_type != 'Epic'`. Sub-tasks are included.
+Filters to `removed_at IS NULL AND issue_type != 'Epic' AND status NOT IN ('Open', 'Obsolete / Won''t Do')`.
+
+Only issues that are actively in progress or done count toward coverage — open (not yet started) and obsolete issues are excluded from all QASE panels.
 
 | Panel | Logic |
 |-------|-------|
@@ -152,18 +173,18 @@ Filters to `removed_at IS NULL AND issue_type != 'Epic'`. Sub-tasks are included
 
 Quarter-level view of sprint velocity and delivery across all team sprints.
 
-**Quarter assignment:** Uses `start_date` — consistent with Sprint Detail and PO KPIs.
+**Quarter assignment:** Uses `start_date` — sprints are assigned to the quarter they started in. The Velocity and Delivery % panels use `date_trunc('quarter', start_date) = '$quarter'::date`. The Sprint Issue Count panel uses `COALESCE(complete_date, start_date)` for the quarter filter (minor inconsistency within this dashboard). The Sprint Summary Table uses `start_date`.
 
-**Sprint filter:** Project-majority filter (`was_in_initial_scope = TRUE`, >50% committed issues from selected projects) — consistent with all other dashboards.
+**Sprint filter:** Project-majority filter — a sprint is included only if more than 50% of its `was_in_initial_scope = TRUE` issues belong to the selected project(s). Consistent with all other dashboards.
 
 All SP metrics flow through `v_planning_deviation`.
 
 | Panel | Source | Notes |
 |-------|--------|-------|
-| Sprint Velocity — Committed vs Delivered | `v_planning_deviation` | committed_points, delivered_points |
-| Delivery % per Sprint | `v_planning_deviation` | `delivery_pct`, green ≥ 90%, yellow ≥ 70%, red < 70% |
-| Sprint Issue Count — Committed vs Delivered | `v_planning_deviation` | committed_issues, delivered_issues |
-| Sprint Summary Table | `v_planning_deviation` | Includes Deviation = delivered − committed |
+| Sprint Velocity — Committed vs Delivered | `v_planning_deviation` | committed_points, delivered_points; `state = 'closed'` only |
+| Delivery % per Sprint | `v_planning_deviation` | `delivery_pct`, green ≥ 90%, yellow ≥ 70%, red < 70%; `state = 'closed'` only |
+| Sprint Issue Count — Committed vs Delivered | `v_planning_deviation` | committed_issues, delivered_issues; `committed_issues > 0` |
+| Sprint Summary Table | `v_planning_deviation` | Includes Deviation = delivered − committed; active sprints shown first |
 
 ---
 
@@ -171,7 +192,7 @@ All SP metrics flow through `v_planning_deviation`.
 
 Quarterly KPIs for Product Owners: planning quality, delivery accuracy, re-work, blockers, release quality.
 
-**Quarter assignment:** Uses `start_date` (sprints assigned to the quarter they started in). Consistent with Sprint Detail, differs from Sprint Overview Quarter.
+**Quarter assignment:** Uses `start_date` (sprints assigned to the quarter they started in). Consistent with Sprint Detail and Sprint Overview Quarter.
 
 **Sprint filter:** Project-majority filter (`was_in_initial_scope = TRUE`, >50% committed issues from selected projects). More accurate than simple join for multi-team boards.
 
@@ -183,7 +204,7 @@ Quarterly KPIs for Product Owners: planning quality, delivery accuracy, re-work,
 
 **Ticket Reopens** — Issues that transitioned from a testing status to In Progress: `LOWER(from_status) LIKE '%test%' AND LOWER(to_status) LIKE '%progress%'`. Filtered by `transitioned_at` quarter.
 
-**Avg Blocker Resolution Time** — `AVG((resolved_at - created_at) / 3600)` in hours for Blocker issues created in the quarter. Uses `created_at` for quarter assignment so it measures blockers that originated in the quarter, regardless of when resolved.
+**Avg Blocker Resolution Time** — `AVG(EXTRACT(EPOCH FROM (resolved_at - created_at))/3600.0)` in hours for Blocker issues where `resolved_at IS NOT NULL` and `date_trunc('quarter', created_at) = '$quarter'::date`. Uses `created_at` for quarter assignment so it measures blockers that originated in the quarter, regardless of when resolved.
 
 **Scope Change % per Sprint** — Per-sprint bar chart of `(added_sp + removed_sp) / committed_sp`. Ordered by `start_date ASC`.
 
@@ -193,7 +214,7 @@ Quarterly KPIs for Product Owners: planning quality, delivery accuracy, re-work,
 
 **Blocker Resolution Time per Sprint** — `AVG((resolved_at - created_at) / 3600)` per sprint for Blocker issues. Uses `was_in_initial_scope = TRUE` to avoid carry-over double-counting.
 
-**Open Blockers** — Currently open (`status_category != 'Done'`) Blocker issues, ordered by age. No time filter — shows all open blockers regardless of quarter.
+**Open Blockers** — Currently open (`status_category != 'Done'`) Blocker issues, ordered by age. No time filter — shows all open blockers regardless of quarter. Table columns: Key, Summary, Assignee, Status, Age (days).
 
 **Weekly Ticket Reopen Rate** — Time-series using Grafana `$__timeFilter`. Spike = quality regression.
 
@@ -211,7 +232,7 @@ Links `issues.fix_versions` (array) to `releases` via `r.name = ANY(i.fix_versio
 
 **Bugs per Release (bar chart)** — Stacked by priority (dark-red=Blocker, red=Critical, orange=High, yellow=Medium, green=Low), ordered by `release_date ASC`.
 
-**Major Bug Details** — Table of Blocker/Critical/High bugs with release name, date, priority, status, assignee, Jira link.
+**Major Bug Details** — Table of Blocker/Critical/High bugs with release name, date, priority, status, assignee, Jira link. Priority and Status columns have color-background cell formatting.
 
 ---
 
@@ -219,7 +240,7 @@ Links `issues.fix_versions` (array) to `releases` via `r.name = ANY(i.fix_versio
 
 Per-assignee metrics for selected team and quarter/sprint.
 
-**Sprint vs Quarter mode:** All panels support both. When `$sprint = 0` (All), filters by `date_trunc('quarter', resolved_at) = '$quarter'`. When a sprint is selected, filters by `key IN (SELECT issue_key FROM sprint_issues WHERE sprint_id = $sprint AND removed_at IS NULL)`.
+**Sprint vs Quarter mode:** All panels support both. When `$sprint = 0` (All), filters by `date_trunc('quarter', resolved_at) = '$quarter'::date`. When a sprint is selected, filters by `key IN (SELECT issue_key FROM sprint_issues WHERE sprint_id = $sprint AND removed_at IS NULL)`.
 
 **Note — story points field:** This dashboard uses `issues.story_points` (current value) rather than `sprint_issues.story_points_at_add`. This is intentional for WIP display (current workload) but means delivery SP may differ slightly from Sprint Detail.
 
@@ -231,10 +252,10 @@ Per-assignee metrics for selected team and quarter/sprint.
 |-------|-----------------|
 | Current WIP per Assignee | Open `In Progress` issues, current `story_points` |
 | Avg Cycle Time (RFT→Done) per Assignee | From `v_cycle_time_rft_to_done`, avg `hours_rft_to_done` |
-| Issues Completed per Assignee | `status_category = 'Done'` count + SP, filtered by quarter or sprint |
+| Issues Completed per Assignee | `status_category = 'Done'` AND `status != 'Obsolete / Won''t Do'` count + SP, filtered by quarter or sprint window |
 | Where Issues Spend Most Time | From `v_time_in_status`, avg hours per status, ≥ 5 issues, < 8760h (1yr cap) |
-| Throughput Trend (weekly) | `DATE_TRUNC('week', resolved_at)` count per assignee |
-| Assignee Detail Table | Summary: issues completed, SP, bugs fixed, avg cycle time, current WIP |
+| Throughput Trend (weekly) | `DATE_TRUNC('week', resolved_at)` count per assignee; excludes Obsolete |
+| Assignee Detail Table | Summary: issues completed, SP, bugs fixed, avg cycle time, current WIP; excludes Obsolete |
 
 ---
 
@@ -289,20 +310,22 @@ Open `In Progress` issues grouped by status. SUM of `story_points` (current). No
 
 Bug tracking and QASE test coverage. Has an additional `$release` (Fix Version) variable.
 
-**Release filter:** `$release = 'ALL' OR $release = ANY(fix_versions)` — when a release is selected, only bugs linked to that fix version are shown.
+**Release filter:** `$release = 'ALL' OR $release = ANY(fix_versions)` — when a release is selected, only bugs linked to that fix version are shown (for standard bug panels).
 
-**Quarter assignment for QASE panels:** Uses `COALESCE(s.complete_date, s.start_date)` (sprint completion quarter). This is the only remaining difference from Sprint Detail which uses `start_date` — intentional since QASE coverage is most meaningful when tied to when a sprint shipped.
+**Quarter assignment for QASE panels:** Uses `COALESCE(s.complete_date, s.start_date)` for sprint-quarter linkage. This differs from Sprint Detail which uses `start_date`. QASE coverage tied to when a sprint shipped is the intended behaviour.
 
-**QASE panels exclude Epics and Sub-tasks** — consistent with Sprint Detail.
+**QASE panels exclude Epics, Sub-tasks, Open status, and Obsolete / Won't Do status** — only issues actively in progress or done count toward coverage.
 
 ### Bug Metrics
 
 | Panel | What it counts | Priority filter |
 |-------|----------------|----------------|
-| Open Blocker Bugs | `status_category != 'Done' AND priority = 'Blocker'` | Blocker |
-| Open Critical Bugs | `status_category != 'Done' AND priority = 'Critical'` | Critical |
-| Open High Bugs | `status_category != 'Done' AND priority = 'High'` | High |
-| Open Medium & Low Bugs | `status_category != 'Done' AND priority IN ('Medium','Low')` | Medium + Low |
+| Open Blocker Bugs | `issue_type = 'Bug' AND status_category != 'Done' AND priority = 'Blocker'` | Blocker |
+| Open Critical Bugs | `issue_type = 'Bug' AND status_category != 'Done' AND priority = 'Critical'` | Critical |
+| Open High Bugs | `issue_type = 'Bug' AND status_category != 'Done' AND priority = 'High'` | High |
+| Open Medium & Low Bugs | `issue_type = 'Bug' AND status_category != 'Done' AND priority IN ('Medium','Low')` | Medium + Low |
+
+These panels do not exclude Obsolete — `status_category != 'Done'` is the only filter besides priority. Release filter applies (`$release = 'ALL' OR $release = ANY(fix_versions)`).
 
 **Bug Creation Rate** — Weekly `COUNT(*)` by priority using `$__timeFilter(created_at)`.
 
@@ -310,17 +333,41 @@ Bug tracking and QASE test coverage. Has an additional `$release` (Fix Version) 
 
 **Bug Resolution Rate vs Creation Rate** — Two time-series: `COUNT(*)` by `created_at` vs `resolved_at` per week.
 
-**Open Bugs — Critical & High** — `status_category != 'Done' AND priority IN ('Blocker','Critical')`, ordered by age ASC (oldest first).
+**Open Bugs — Critical & High** — `status_category != 'Done' AND priority IN ('Blocker','Critical')`, ordered by age ASC (oldest first). Priority and Status columns have color-background cell formatting.
 
-### QASE Coverage (Quality & Bugs)
+### Release Bug History (Initial Quality)
 
-All panels filter to `issue_type != 'Epic'` (Sub-tasks included) and use sprint-quarter linkage via `key IN (SELECT DISTINCT si.issue_key FROM sprint_issues si JOIN sprints s ... WHERE date_trunc('quarter', COALESCE(s.complete_date, s.start_date)) = '$quarter'::date)`.
+This section requires a specific release to be selected (`$release != 'ALL'`) — all panels in this section return no data when "ALL" is selected.
+
+Uses `issue_fix_version_history` to include bugs that were ever assigned to the selected release, even if subsequently moved to a different fix version. All panels exclude `status = 'Obsolete / Won''t Do'`.
 
 | Panel | Logic |
 |-------|-------|
-| With QASE Link | `has_qase_link = TRUE` |
-| Without QASE Link | `has_qase_link = FALSE` |
-| QASE Coverage % | `COUNT(TRUE) / COUNT(NOT NULL)` |
+| Bugs Ever in Release | `COUNT(DISTINCT i.key)` where `$release = ANY(fix_versions) OR EXISTS (SELECT 1 FROM issue_fix_version_history fvh WHERE fvh.issue_key = i.key AND fvh.fix_version = $release)` |
+| Bugs Moved to Another Release | Same as above but additionally requires `NOT ($release = ANY(i.fix_versions))` — i.e. was in release historically but is no longer. Thresholds: green < 3, yellow 3–9, red ≥ 10. |
+| Major Bugs Ever in Release | Same as "Bugs Ever in Release" filtered to `priority IN ('Blocker', 'Critical', 'High')`. Thresholds: green < 3, yellow 3–9, orange 10–19, red ≥ 20. |
+| All Bugs Ever Assigned to Release | Detail table: Key, Summary, Priority, Status, Assignee, Still in Release (✅ Yes / ➡ Moved), Current Fix Version(s). Ordered by: still-in-release first, then priority, then key. Priority column has color-background. |
+
+### QASE Coverage (Quality & Bugs)
+
+All panels filter to `issue_type NOT IN ('Epic','Sub-task') AND status NOT IN ('Open', 'Obsolete / Won''t Do')` and use sprint-quarter linkage via:
+
+```sql
+key IN (
+  SELECT DISTINCT si.issue_key
+  FROM sprint_issues si
+  JOIN sprints s ON s.id = si.sprint_id
+  WHERE date_trunc('quarter', COALESCE(s.complete_date, s.start_date)) = '$quarter'::date
+)
+```
+
+The release filter also applies: `$release = 'ALL' OR $release = ANY(fix_versions)`.
+
+| Panel | Logic |
+|-------|-------|
+| Issues with QASE Link | `has_qase_link = TRUE` |
+| Issues Confirmed Without QASE Link | `has_qase_link = FALSE` |
+| QASE Coverage % | `COUNT(TRUE) / COUNT(NOT NULL)` — excludes unchecked from denominator |
 | Not Yet Checked | `has_qase_link IS NULL` |
 | By Issue Type (bar) | With/Without counts per `issue_type` |
 | By Issue Type (table) | Total, With, Without, Not Checked, Coverage % per type |
@@ -337,6 +384,7 @@ Tracks delivery against PROD-level items via Epic→PROD issue links.
 **PROD link:** Epics link to PROD items via `issue_links` where `to_key LIKE 'PROD-%' AND link_label = 'implements'`. Deduplication handled in views (`v_prod_epic_progress`, `v_prod_item_progress`).
 
 **Completion %** is calculated at two levels:
+
 - **Epic level** (`v_prod_epic_progress`): Done child issues / total child issues × 100
 - **PROD level** (`v_prod_item_progress`): Aggregated across all Epics linked to the PROD item
 
@@ -368,3 +416,21 @@ Child issues exclude Epics and Sub-tasks.
 | `$prod_item` | `issue_links.to_key LIKE 'PROD-%'` | PROD Alignment only; ALL = all items |
 
 **Sprint variable project-majority filter:** A sprint is included in the dropdown only if more than 50% of its `was_in_initial_scope = TRUE` issues belong to the selected project(s). This prevents cross-team sprints appearing when a few issues from another team are in the sprint.
+
+---
+
+## Color Coding — All Table Panels
+
+All table panels across all dashboards apply `color-background` cell formatting to **Priority** and **Status** columns where present.
+
+**Priority color mapping:**
+
+| Priority | Color |
+|----------|-------|
+| Blocker | dark-red |
+| Critical | red |
+| High | orange |
+| Medium | yellow |
+| Low | green |
+
+Status columns use threshold-based color backgrounds. Specific thresholds vary by context (e.g. the "Still in Release" column in the Release Bug History table uses green/red based on whether the bug is still assigned to the selected release).
