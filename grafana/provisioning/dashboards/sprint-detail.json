@@ -3981,7 +3981,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "description": "Sprint issues (excl. Epics) confirmed to have a QASE test case linked.",
+          "description": "Sprint issues with a QASE test case linked. Excludes Epics, Sub-tasks, and issues with status Open or Obsolete / Won't Do.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -4043,7 +4043,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "description": "Sprint issues (excl. Epics) confirmed to have no QASE test case linked.",
+          "description": "Sprint issues confirmed to have no QASE test case linked. Excludes Epics, Sub-tasks, Open, and Obsolete / Won't Do issues.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -4109,7 +4109,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "description": "Percentage of checked sprint issues (excl. Epics) with a QASE test case.",
+          "description": "% of active sprint issues (excl. Epics, Sub-tasks, Open, Obsolete) that have a QASE test case. Denominator excludes unchecked issues.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -4182,7 +4182,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "description": "Sprint issues where QASE status is pending next sync.",
+          "description": "Sprint issues where QASE status has not been fetched yet (pending next sync). Excludes Epics, Sub-tasks, Open, and Obsolete / Won't Do.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -4244,7 +4244,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "description": "Sprint issues (excl. Epics) confirmed to have no QASE test case, ordered by priority.",
+          "description": "Sprint issues (excl. Epics, Sub-tasks, Open, Obsolete) confirmed to have no QASE test case, ordered by priority.",
           "fieldConfig": {
             "defaults": {
               "custom": {
@@ -4501,7 +4501,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "description": "Sprint issues grouped by status showing QASE link coverage. Excludes Epics and removed issues.",
+          "description": "Sprint issues grouped by status showing QASE coverage. Excludes Epics, Sub-tasks, removed issues, Open and Obsolete / Won't Do.",
           "fieldConfig": {
             "defaults": {
               "custom": {
