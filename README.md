@@ -8,21 +8,24 @@ A self-hosted metrics platform that syncs Jira Cloud data into PostgreSQL and vi
 Jira Cloud → jira-sync (Python) → PostgreSQL → Grafana
 ```
 
-- **jira-sync**: Python service that pulls issues, sprints, transitions, and releases from the Jira Cloud REST API and upserts them into PostgreSQL. Runs on a cron schedule (07:00 and 19:00 UTC) and supports incremental + full sync.
-- **PostgreSQL**: Stores all Jira data plus derived views (`v_planning_deviation`, `v_lead_time`, `v_prod_epic_progress`).
-- **Grafana**: Dashboards provisioned from JSON files in `grafana/provisioning/dashboards/`. Auto-reloads every 30 seconds.
+- **jira-sync**: Python service that pulls issues, sprints, transitions, releases, and fix-version history from the Jira Cloud REST API and upserts them into PostgreSQL. Runs on a cron schedule (07:00 and 19:00 UTC) and supports incremental + full sync.
+- **PostgreSQL**: Stores all Jira data plus derived views (`v_planning_deviation`, `v_lead_time`, `v_cycle_time_rft_to_done`, `v_cycle_time_in_progress_to_rft`, `v_time_in_status`, `v_prod_epic_progress`, `v_prod_item_progress`).
+- **Grafana**: Dashboards provisioned from JSON files in `grafana/provisioning/dashboards/`. `allowUiUpdates: false` keeps provisioned files authoritative.
 
 ## Dashboards
 
 | Dashboard | Description |
 | --- | --- |
-| Sprint Detail | Per-sprint breakdown: story points, burndown, scope changes, readiness (SP/Epic/AC), QASE coverage, velocity, data quality |
+| Home | Landing page with quick-stats and navigation links |
+| Sprint Detail | Per-sprint: story points, burndown, scope changes, story readiness (SP/Epic/AC/Assignee), cross-team dependencies, QASE coverage, velocity |
 | Sprint Overview Quarter | Cross-sprint velocity, delivery %, scope change trends per quarter |
-| Flow & Cycle Time | Lead time, cycle time, throughput |
-| Team Overview | Per-team summary: completed issues, assignee breakdown, cycle time, time in status |
-| PO KPIs | Planning accuracy, scope change %, blockers, velocity |
-| PROD Alignment | Epic progress, customer-project tracking |
-| Quality & Bugs | Bug counts, reopen rates, QASE coverage |
+| Flow & Cycle Time | Lead time, cycle time (RFT→Done, In Progress→RFT), throughput |
+| Team Overview | Per-assignee: completed issues, cycle time, throughput, WIP |
+| PO KPIs | Planning accuracy, scope change %, blockers, velocity, release bug quality |
+| PROD Alignment | Epic progress against PROD items, customer-project tracking |
+| Quality & Bugs | Bug counts by priority, reopen rates, QASE coverage, release bug history |
+
+📖 See [docs/metrics-reference.md](docs/metrics-reference.md) for a full explanation of how every metric is calculated.
 
 ## Setup
 
@@ -57,15 +60,17 @@ Grafana is available at `http://localhost:3000`.
 ### Initial data load
 
 ```bash
-docker compose exec -e FULL_SYNC=1 jira-sync python sync.py
+docker compose exec -T jira-sync python sync.py
 ```
+
+Set `FULL_SYNC=1` in the environment to force a full re-sync of all issues regardless of last sync time.
 
 ### Subsequent syncs
 
 Run automatically at 07:00 and 19:00 UTC. Trigger manually:
 
 ```bash
-docker compose exec jira-sync python sync.py
+docker compose exec -T jira-sync python sync.py
 ```
 
 ## Custom fields synced
@@ -73,8 +78,9 @@ docker compose exec jira-sync python sync.py
 | Field | Jira ID | Column |
 | --- | --- | --- |
 | Story Points | `customfield_10016` (configurable) | `story_points` |
-| Acceptance Criteria | `customfield_10028` (configurable) | `has_acceptance_criteria` |
+| Acceptance Criteria | `customfield_10028` (configurable) | `has_acceptance_criteria` (boolean) |
 | Customer-Project | `customfield_10662` | `customer`, `project_name`, `customer_project` |
+| QASE test case link | Synced separately via QASE API | `has_qase_link` (boolean, NULL = not yet checked) |
 
 The Customer-Project field is a cascading select. Both parent (customer) and child (project) values are stored separately.
 
@@ -82,24 +88,27 @@ The Customer-Project field is a cascading select. Both parent (customer) and chi
 
 ```bash
 # List all Jira custom fields
-docker compose exec jira-sync python list_custom_fields.py
+docker compose exec -T jira-sync python list_custom_fields.py
 
 # Filter by keyword
-docker compose exec jira-sync python list_custom_fields.py customer
+docker compose exec -T jira-sync python list_custom_fields.py customer
 
 # Inspect raw value of a custom field on recent epics
-docker compose exec jira-sync python debug_field.py customfield_10662
+docker compose exec -T jira-sync python debug_field.py customfield_10662
 ```
 
 ## Updating dashboards
 
-Grafana reads dashboard JSON files from `grafana/provisioning/dashboards/` and reloads every 30 seconds.
+Dashboard JSON files are in `grafana/provisioning/dashboards/` and are the single source of truth (`allowUiUpdates: false`). The save button in Grafana UI is disabled for provisioned dashboards.
 
-To save changes made in the Grafana UI:
+To incorporate layout changes made in the Grafana UI:
 
-1. Open dashboard → Share → Export → Save to file
-2. Overwrite the corresponding file in `grafana/provisioning/dashboards/`
-3. Commit and push
+1. In Grafana: Share → Export → Save to file
+2. On your local machine, run the merge script (or let Claude Code merge it):
+   - The exported JSON preserves your layout but has SQL from before your fixes
+   - The merge applies correct SQL from the provisioned file to the exported layout
+3. Overwrite `grafana/provisioning/dashboards/<dashboard>.json` with the merged file
+4. Commit, push, and `git pull && docker compose restart grafana` on the server
 
 ## Sprint data model
 
@@ -114,6 +123,15 @@ To save changes made in the Grafana UI:
 | `was_in_initial_scope` | `TRUE` = committed at sprint start; `FALSE` = added mid-sprint |
 | `removed_at` | `NULL` = still in sprint; timestamp = punted/removed mid-sprint |
 | `story_points_at_add` | SP value at the moment the issue entered the sprint |
+
+**`issue_fix_version_history`** — historical fix-version assignments per issue, populated from the Jira changelog. Unlike `issues.fix_versions` (current value only), this table tracks every release a bug was ever assigned to, including ones it was later moved away from. Used by the Release Bug History panels in Quality & Bugs.
+
+| Column | Meaning |
+| --- | --- |
+| `issue_key` | Issue key |
+| `fix_version` | Release/fix-version name |
+| `added_at` | When this fix version was assigned (epoch sentinel if unknown) |
+| `removed_at` | When it was removed; `NULL` if still assigned |
 
 ### How sprint membership is populated
 
@@ -136,36 +154,48 @@ Calls the Jira internal sprint report API (`/greenhopper/1.0/rapid/charts/sprint
 
 `v_planning_deviation` computes per-sprint:
 
-- **`committed_points`** — SUM of `story_points_at_add` for issues where `was_in_initial_scope = TRUE`, excluding Epics and Sub-tasks
-- **`delivered_points`** — SUM of SP for Done issues where `removed_at IS NULL` and the issue does **not** appear in any later sprint (prevents carry-over double-counting), excluding Epics and Sub-tasks
-- **`delivery_pct`** — `delivered_points / committed_points × 100`
+**`committed_points`** — `SUM(COALESCE(story_points_at_add, story_points, 0))` for issues where:
 
-The Avg Velocity panel in Sprint Detail takes the average `delivered_points` of the last 6 closed sprints on the **same board** where the majority of issues belong to the same project(s) as the selected sprint. This double filter (board + project majority) handles the case where two teams share a single Jira board.
+- `was_in_initial_scope = TRUE AND removed_at IS NULL`
+- `issue_type NOT IN ('Epic', 'Sub-task')`
+- `status != 'Obsolete / Won''t Do'`
+
+**`delivered_points`** — same SUM, additionally filtered to `status_category = 'Done'`.
+
+No `resolved_at` sprint-window filter is applied here. Because `was_in_initial_scope = TRUE` is set by the Jira sprint report (unique per sprint), there is no carry-over double-counting risk. A resolved_at window would incorrectly exclude issues resolved slightly after sprint close.
+
+**`delivery_pct`** — `delivered_points / committed_points × 100`. Cannot exceed 100% because both numerator and denominator use only committed issues.
+
+**Avg Velocity** in Sprint Detail takes `AVG(delivered_points)` over the 6 most recent closed sprints *before* the selected sprint's `start_date`, filtered by **project-majority**: a historical sprint is included only if >50% of its committed issues share a project key with the current sprint. No board_id filter is applied — some teams alternate between boards.
+
+**Note:** The Sprint Detail **Completed SP** panel uses a different formula — it counts all Done issues (including unplanned) whose `resolved_at` falls within the sprint window `[start_date, COALESCE(complete_date, end_date, NOW())]`. This prevents carry-over double-counting for unplanned issues that appear in multiple sprints' `sprint_issues` with `removed_at IS NULL`.
 
 ### Known limitations
 
-- **Active sprint scope tracking is heuristic**: `was_in_initial_scope` is inferred from sync timing for active sprints. The sprint report pass (Pass 2) corrects this for closed sprints using authoritative Jira data.
-- **`resolved_at` missing on ~25% of Done issues**: some issues were resolved without a tracked status transition. These issues are still counted in `delivered_points` but cannot be precisely dated.
-- **Cross-team boards**: if two teams share a Jira board, sprint velocity filters by project majority (>50% of sprint issues from the selected project) to exclude the other team's sprints.
+- **Active sprint scope tracking is heuristic**: `was_in_initial_scope` is inferred from sync timing for active sprints. Pass 2 corrects this for closed sprints using authoritative Jira sprint report data.
+- **Cross-team boards**: if two teams share a Jira board, sprint velocity and sprint variable filters use project-majority (>50% of committed issues from the selected project) to separate teams. This works even when teams alternate board IDs.
+- **fix_version history backfill**: the `issue_fix_version_history` table is populated incrementally. Issues not yet scanned are picked up on the next sync run. The first run after enabling this feature will scan all issues with fix_versions set (can take 60–90 minutes for large instances).
 
 ## Applying schema changes
 
-After a `git pull` that includes `init.sql` changes, re-run the file to apply new columns and views (all statements are idempotent):
+After a `git pull` that includes `init.sql` changes, apply new columns and views (all statements are idempotent):
 
 ```bash
-docker compose exec postgres psql -U metrics -d jira_metrics -f /docker-entrypoint-initdb.d/init.sql
+echo "$(cat init.sql)" | docker compose exec -T postgres psql -U metrics -d jira_metrics
 ```
 
-No restart required for view-only changes. New columns require a full sync to backfill existing issues:
+Or for views only (faster):
 
 ```bash
-docker compose exec -e FULL_SYNC=1 jira-sync python sync.py
+docker compose exec -T postgres psql -U metrics -d jira_metrics -c "$(grep -A 100 'CREATE OR REPLACE VIEW v_planning_deviation' init.sql | head -60)"
 ```
+
+No restart required for view-only changes.
 
 ## Database
 
 Direct access:
 
 ```bash
-docker compose exec postgres psql -U metrics -d jira_metrics
+docker compose exec -T postgres psql -U metrics -d jira_metrics
 ```
