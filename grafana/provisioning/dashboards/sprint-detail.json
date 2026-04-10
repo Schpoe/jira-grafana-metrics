@@ -4031,7 +4031,7 @@
                 "uid": "jira-metrics-pg"
               },
               "format": "table",
-              "rawSql": "SELECT COUNT(*) AS value FROM sprint_issues si JOIN issues i ON i.key = si.issue_key WHERE si.sprint_id = $sprint::bigint AND si.removed_at IS NULL AND i.issue_type != 'Epic' AND i.has_qase_link = TRUE",
+              "rawSql": "SELECT COUNT(*) AS value FROM sprint_issues si JOIN issues i ON i.key = si.issue_key WHERE si.sprint_id = $sprint::bigint AND si.removed_at IS NULL AND i.issue_type != 'Epic'\n  AND i.status NOT IN ('Open', 'Obsolete / Won''t Do') AND i.has_qase_link = TRUE",
               "refId": "A"
             }
           ],
@@ -4097,7 +4097,7 @@
                 "uid": "jira-metrics-pg"
               },
               "format": "table",
-              "rawSql": "SELECT COUNT(*) AS value FROM sprint_issues si JOIN issues i ON i.key = si.issue_key WHERE si.sprint_id = $sprint::bigint AND si.removed_at IS NULL AND i.issue_type != 'Epic' AND i.has_qase_link = FALSE",
+              "rawSql": "SELECT COUNT(*) AS value FROM sprint_issues si JOIN issues i ON i.key = si.issue_key WHERE si.sprint_id = $sprint::bigint AND si.removed_at IS NULL AND i.issue_type != 'Epic'\n  AND i.status NOT IN ('Open', 'Obsolete / Won''t Do') AND i.has_qase_link = FALSE",
               "refId": "A"
             }
           ],
@@ -4170,7 +4170,7 @@
                 "uid": "jira-metrics-pg"
               },
               "format": "table",
-              "rawSql": "SELECT ROUND(100.0 * COUNT(*) FILTER (WHERE i.has_qase_link = TRUE) / NULLIF(COUNT(*) FILTER (WHERE i.has_qase_link IS NOT NULL), 0), 1) AS value FROM sprint_issues si JOIN issues i ON i.key = si.issue_key WHERE si.sprint_id = $sprint::bigint AND si.removed_at IS NULL AND i.issue_type != 'Epic'",
+              "rawSql": "SELECT ROUND(100.0 * COUNT(*) FILTER (WHERE i.has_qase_link = TRUE) / NULLIF(COUNT(*) FILTER (WHERE i.has_qase_link IS NOT NULL), 0), 1) AS value FROM sprint_issues si JOIN issues i ON i.key = si.issue_key WHERE si.sprint_id = $sprint::bigint AND si.removed_at IS NULL AND i.issue_type != 'Epic'\n  AND i.status NOT IN ('Open', 'Obsolete / Won''t Do')",
               "refId": "A"
             }
           ],
@@ -4232,7 +4232,7 @@
                 "uid": "jira-metrics-pg"
               },
               "format": "table",
-              "rawSql": "SELECT COUNT(*) AS value FROM sprint_issues si JOIN issues i ON i.key = si.issue_key WHERE si.sprint_id = $sprint::bigint AND si.removed_at IS NULL AND i.issue_type != 'Epic' AND i.has_qase_link IS NULL",
+              "rawSql": "SELECT COUNT(*) AS value FROM sprint_issues si JOIN issues i ON i.key = si.issue_key WHERE si.sprint_id = $sprint::bigint AND si.removed_at IS NULL AND i.issue_type != 'Epic'\n  AND i.status NOT IN ('Open', 'Obsolete / Won''t Do') AND i.has_qase_link IS NULL",
               "refId": "A"
             }
           ],
@@ -4489,7 +4489,7 @@
                 "uid": "jira-metrics-pg"
               },
               "format": "table",
-              "rawSql": "SELECT i.key AS \"Key\", i.summary AS \"Summary\", i.issue_type AS \"Type\", i.priority AS \"Priority\", i.status AS \"Status\", COALESCE(i.assignee, 'Unassigned') AS \"Assignee\", CASE WHEN si.was_in_initial_scope THEN 'Committed' ELSE 'Unplanned' END AS \"Scope\" FROM sprint_issues si JOIN issues i ON i.key = si.issue_key WHERE si.sprint_id = $sprint::bigint AND si.removed_at IS NULL AND i.issue_type != 'Epic' AND i.has_qase_link = FALSE ORDER BY CASE i.priority WHEN 'Blocker' THEN 1 WHEN 'Critical' THEN 2 WHEN 'High' THEN 3 WHEN 'Medium' THEN 4 ELSE 5 END",
+              "rawSql": "SELECT i.key AS \"Key\", i.summary AS \"Summary\", i.issue_type AS \"Type\", i.priority AS \"Priority\", i.status AS \"Status\", COALESCE(i.assignee, 'Unassigned') AS \"Assignee\", CASE WHEN si.was_in_initial_scope THEN 'Committed' ELSE 'Unplanned' END AS \"Scope\" FROM sprint_issues si JOIN issues i ON i.key = si.issue_key WHERE si.sprint_id = $sprint::bigint AND si.removed_at IS NULL AND i.issue_type != 'Epic'\n  AND i.status NOT IN ('Open', 'Obsolete / Won''t Do') AND i.has_qase_link = FALSE ORDER BY CASE i.priority WHEN 'Blocker' THEN 1 WHEN 'Critical' THEN 2 WHEN 'High' THEN 3 WHEN 'Medium' THEN 4 ELSE 5 END",
               "refId": "A"
             }
           ],
@@ -4788,7 +4788,7 @@
                 "uid": "jira-metrics-pg"
               },
               "format": "table",
-              "rawSql": "SELECT i.status AS \"Status\", COUNT(*) AS \"Total (checked)\", COUNT(*) FILTER (WHERE i.has_qase_link = TRUE) AS \"With QASE\", COUNT(*) FILTER (WHERE i.has_qase_link = FALSE) AS \"Without QASE\", COUNT(*) FILTER (WHERE i.has_qase_link IS NULL) AS \"Not Checked\", ROUND(100.0 * COUNT(*) FILTER (WHERE i.has_qase_link = TRUE) / NULLIF(COUNT(*) FILTER (WHERE i.has_qase_link IS NOT NULL), 0), 1) AS \"Coverage %\" FROM sprint_issues si JOIN issues i ON i.key = si.issue_key WHERE si.sprint_id = $sprint::bigint AND si.removed_at IS NULL AND i.issue_type != 'Epic' GROUP BY i.status ORDER BY \"Without QASE\" DESC",
+              "rawSql": "SELECT i.status AS \"Status\", COUNT(*) AS \"Total (checked)\", COUNT(*) FILTER (WHERE i.has_qase_link = TRUE) AS \"With QASE\", COUNT(*) FILTER (WHERE i.has_qase_link = FALSE) AS \"Without QASE\", COUNT(*) FILTER (WHERE i.has_qase_link IS NULL) AS \"Not Checked\", ROUND(100.0 * COUNT(*) FILTER (WHERE i.has_qase_link = TRUE) / NULLIF(COUNT(*) FILTER (WHERE i.has_qase_link IS NOT NULL), 0), 1) AS \"Coverage %\" FROM sprint_issues si JOIN issues i ON i.key = si.issue_key WHERE si.sprint_id = $sprint::bigint AND si.removed_at IS NULL AND i.issue_type != 'Epic'\n  AND i.status NOT IN ('Open', 'Obsolete / Won''t Do') GROUP BY i.status ORDER BY \"Without QASE\" DESC",
               "refId": "A"
             }
           ],
