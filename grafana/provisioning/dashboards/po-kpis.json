@@ -536,7 +536,7 @@
         "type": "postgres",
         "uid": "jira-metrics-pg"
       },
-      "description": "Avg % of committed Stories/Tasks per sprint that meet Definition of Ready (Assignee, SP, Acceptance Criteria, Epic). Target: \u2265 80%.",
+      "description": "Avg % of committed Stories/Tasks per sprint that meet Definition of Ready (Assignee, QA, SP, Acceptance Criteria, Epic). Target: \u2265 80%.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -610,7 +610,7 @@
         "type": "postgres",
         "uid": "jira-metrics-pg"
       },
-      "description": "Avg % of Done Stories/Tasks per sprint that meet Definition of Done (Assignee, SP, Acceptance Criteria, Epic). Target: \u2265 80%.",
+      "description": "Avg % of Done Stories/Tasks per sprint that meet Definition of Done (Assignee, QA, SP, Acceptance Criteria, Epic). Target: \u2265 80%.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -671,7 +671,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "WITH sprint_dod AS (\n  SELECT\n    si.sprint_id,\n    COUNT(*) FILTER (\n      WHERE i.status = 'Done'\n    ) AS total_done,\n    COUNT(*) FILTER (\n      WHERE i.status = 'Done'\n        AND i.assignee IS NOT NULL\n        AND COALESCE(si.story_points_at_add, i.story_points, 0) > 0\n        AND i.has_acceptance_criteria = TRUE\n        AND i.epic_key IS NOT NULL\n    ) AS done_dod\n  FROM sprint_issues si\n  JOIN issues i ON i.key = si.issue_key\n  JOIN sprints s ON s.id = si.sprint_id\n  WHERE i.project_key IN ($project)\n    AND i.issue_type NOT IN ('Epic', 'Sub-task', 'Bug')\n    AND si.was_in_initial_scope = TRUE\n    AND si.removed_at IS NULL\n    AND s.state = 'closed'\n    AND date_trunc('quarter', s.start_date) = '$quarter'::date\n    AND s.id IN (\n    SELECT DISTINCT si2.sprint_id FROM sprint_issues si2\n    JOIN issues i2 ON i2.key = si2.issue_key\n    WHERE i2.project_key IN ($project)\n      AND si2.was_in_initial_scope = TRUE\n    GROUP BY si2.sprint_id\n    HAVING COUNT(*) * 2 > (\n      SELECT COUNT(*) FROM sprint_issues si3\n      WHERE si3.sprint_id = si2.sprint_id AND si3.was_in_initial_scope = TRUE\n    )\n    )\n  GROUP BY si.sprint_id\n  HAVING COUNT(*) FILTER (\n    WHERE i.status = 'Done'\n  ) > 0\n)\nSELECT ROUND(AVG(100.0 * done_dod / NULLIF(total_done, 0))::numeric, 1) AS value\nFROM sprint_dod",
+          "rawSql": "WITH sprint_dod AS (\n  SELECT\n    si.sprint_id,\n    COUNT(*) FILTER (\n      WHERE i.status = 'Done'\n    ) AS total_done,\n    COUNT(*) FILTER (\n      WHERE i.status = 'Done'\n        AND i.assignee IS NOT NULL\n        AND i.qa_assignee IS NOT NULL\n        AND COALESCE(si.story_points_at_add, i.story_points, 0) > 0\n        AND i.has_acceptance_criteria = TRUE\n        AND i.epic_key IS NOT NULL\n    ) AS done_dod\n  FROM sprint_issues si\n  JOIN issues i ON i.key = si.issue_key\n  JOIN sprints s ON s.id = si.sprint_id\n  WHERE i.project_key IN ($project)\n    AND i.issue_type NOT IN ('Epic', 'Sub-task', 'Bug')\n    AND si.was_in_initial_scope = TRUE\n    AND si.removed_at IS NULL\n    AND s.state = 'closed'\n    AND date_trunc('quarter', s.start_date) = '$quarter'::date\n    AND s.id IN (\n    SELECT DISTINCT si2.sprint_id FROM sprint_issues si2\n    JOIN issues i2 ON i2.key = si2.issue_key\n    WHERE i2.project_key IN ($project)\n      AND si2.was_in_initial_scope = TRUE\n    GROUP BY si2.sprint_id\n    HAVING COUNT(*) * 2 > (\n      SELECT COUNT(*) FROM sprint_issues si3\n      WHERE si3.sprint_id = si2.sprint_id AND si3.was_in_initial_scope = TRUE\n    )\n    )\n  GROUP BY si.sprint_id\n  HAVING COUNT(*) FILTER (\n    WHERE i.status = 'Done'\n  ) > 0\n)\nSELECT ROUND(AVG(100.0 * done_dod / NULLIF(total_done, 0))::numeric, 1) AS value\nFROM sprint_dod",
           "format": "table",
           "refId": "A"
         }
@@ -2346,6 +2346,6 @@
   "timezone": "browser",
   "title": "PO KPIs",
   "uid": "jira-po-kpis",
-  "version": 28,
+  "version": 29,
   "weekStart": ""
 }
