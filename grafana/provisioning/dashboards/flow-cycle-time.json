@@ -8,13 +8,86 @@
   ],
   "timezone": "browser",
   "schemaVersion": 38,
-  "version": 4,
+  "version": 5,
   "refresh": "1h",
   "time": {
     "from": "now-1y",
     "to": "now"
   },
   "panels": [
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "description": "Hours since the last successful Jira sync. Green \u2264 12 h \u2022 Yellow 12\u201324 h \u2022 Red > 24 h.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 12
+              },
+              {
+                "color": "red",
+                "value": 24
+              }
+            ]
+          },
+          "unit": "h"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 2,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 999,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "value_and_name",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.1.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT ROUND(EXTRACT(EPOCH FROM (NOW() - finished_at)) / 3600.0, 1) AS \"Data Age (h)\"\nFROM sync_log\nWHERE status IN ('success', 'partial') AND finished_at IS NOT NULL\nORDER BY finished_at DESC LIMIT 1",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "title": "Data Age",
+      "type": "stat"
+    },
     {
       "id": 1,
       "type": "timeseries",
@@ -24,7 +97,7 @@
         "h": 9,
         "w": 24,
         "x": 0,
-        "y": 1
+        "y": 3
       },
       "datasource": {
         "type": "postgres",
@@ -126,7 +199,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 10
+        "y": 12
       },
       "datasource": {
         "type": "postgres",
@@ -171,7 +244,7 @@
         "h": 10,
         "w": 12,
         "x": 12,
-        "y": 10
+        "y": 12
       },
       "datasource": {
         "type": "postgres",
@@ -366,7 +439,7 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 18
+        "y": 20
       },
       "datasource": {
         "type": "postgres",
@@ -546,7 +619,7 @@
         "h": 10,
         "w": 12,
         "x": 12,
-        "y": 18
+        "y": 20
       },
       "datasource": {
         "type": "postgres",
@@ -697,7 +770,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 26
+        "y": 28
       },
       "datasource": {
         "type": "postgres",
@@ -866,7 +939,7 @@
         "h": 9,
         "w": 24,
         "x": 0,
-        "y": 35
+        "y": 37
       },
       "datasource": {
         "type": "postgres",
@@ -911,7 +984,7 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 44
+        "y": 46
       },
       "datasource": {
         "type": "postgres",
@@ -1092,7 +1165,7 @@
         "h": 10,
         "w": 12,
         "x": 12,
-        "y": 44
+        "y": 46
       },
       "datasource": {
         "type": "postgres",
@@ -1243,7 +1316,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 52
+        "y": 54
       },
       "datasource": {
         "type": "postgres",
@@ -1411,7 +1484,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 60
+        "y": 62
       },
       "collapsed": false
     },
@@ -1424,7 +1497,7 @@
         "h": 4,
         "w": 4,
         "x": 0,
-        "y": 61
+        "y": 63
       },
       "datasource": {
         "type": "postgres",
@@ -1494,7 +1567,7 @@
         "h": 4,
         "w": 4,
         "x": 4,
-        "y": 61
+        "y": 63
       },
       "datasource": {
         "type": "postgres",
@@ -1564,7 +1637,7 @@
         "h": 9,
         "w": 16,
         "x": 8,
-        "y": 61
+        "y": 63
       },
       "datasource": {
         "type": "postgres",
@@ -1609,7 +1682,7 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 70
+        "y": 72
       },
       "datasource": {
         "type": "postgres",
@@ -1791,7 +1864,7 @@
         "h": 10,
         "w": 12,
         "x": 12,
-        "y": 70
+        "y": 72
       },
       "datasource": {
         "type": "postgres",
@@ -1943,7 +2016,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 78
+        "y": 80
       },
       "datasource": {
         "type": "postgres",
@@ -2118,7 +2191,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 34
+        "y": 36
       }
     },
     {
@@ -2130,7 +2203,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 0
+        "y": 2
       }
     }
   ],

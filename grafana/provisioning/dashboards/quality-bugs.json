@@ -92,12 +92,85 @@
   ],
   "panels": [
     {
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "description": "Hours since the last successful Jira sync. Green \u2264 12 h \u2022 Yellow 12\u201324 h \u2022 Red > 24 h.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 12
+              },
+              {
+                "color": "red",
+                "value": 24
+              }
+            ]
+          },
+          "unit": "h"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 2,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 999,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "value_and_name",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.1.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT ROUND(EXTRACT(EPOCH FROM (NOW() - finished_at)) / 3600.0, 1) AS \"Data Age (h)\"\nFROM sync_log\nWHERE status IN ('success', 'partial') AND finished_at IS NOT NULL\nORDER BY finished_at DESC LIMIT 1",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "title": "Data Age",
+      "type": "stat"
+    },
+    {
       "collapsed": false,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 0
+        "y": 2
       },
       "id": 102,
       "title": "Bug Metrics",
@@ -135,7 +208,7 @@
         "h": 4,
         "w": 6,
         "x": 0,
-        "y": 1
+        "y": 3
       },
       "id": 1,
       "options": {
@@ -206,7 +279,7 @@
         "h": 4,
         "w": 6,
         "x": 6,
-        "y": 1
+        "y": 3
       },
       "id": 2,
       "options": {
@@ -277,7 +350,7 @@
         "h": 4,
         "w": 6,
         "x": 12,
-        "y": 1
+        "y": 3
       },
       "id": 3,
       "options": {
@@ -344,7 +417,7 @@
         "h": 4,
         "w": 6,
         "x": 18,
-        "y": 1
+        "y": 3
       },
       "id": 4,
       "options": {
@@ -505,7 +578,7 @@
         "h": 9,
         "w": 24,
         "x": 0,
-        "y": 5
+        "y": 7
       },
       "id": 5,
       "options": {
@@ -619,7 +692,7 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 14
+        "y": 16
       },
       "id": 6,
       "options": {
@@ -907,7 +980,7 @@
         "h": 9,
         "w": 12,
         "x": 12,
-        "y": 14
+        "y": 16
       },
       "id": 7,
       "options": {
@@ -1039,7 +1112,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 24
+        "y": 26
       },
       "id": 8,
       "options": {
@@ -1083,7 +1156,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 32
+        "y": 34
       },
       "id": 103,
       "panels": [],
@@ -1131,7 +1204,7 @@
         "h": 4,
         "w": 4,
         "x": 0,
-        "y": 33
+        "y": 35
       },
       "id": 104,
       "options": {
@@ -1203,7 +1276,7 @@
         "h": 4,
         "w": 4,
         "x": 4,
-        "y": 33
+        "y": 35
       },
       "id": 105,
       "options": {
@@ -1279,7 +1352,7 @@
         "h": 4,
         "w": 4,
         "x": 8,
-        "y": 33
+        "y": 35
       },
       "id": 106,
       "options": {
@@ -1557,7 +1630,7 @@
         "h": 12,
         "w": 24,
         "x": 0,
-        "y": 37
+        "y": 39
       },
       "id": 107,
       "options": {
@@ -1593,7 +1666,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 49
+        "y": 51
       },
       "id": 20,
       "panels": [
@@ -3007,6 +3080,6 @@
   "timezone": "browser",
   "title": "Quality & Bugs",
   "uid": "jira-quality-bugs",
-  "version": 41,
+  "version": 42,
   "weekStart": ""
 }

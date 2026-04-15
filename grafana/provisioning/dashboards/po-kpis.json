@@ -97,6 +97,79 @@
         "type": "postgres",
         "uid": "jira-metrics-pg"
       },
+      "description": "Hours since the last successful Jira sync. Green \u2264 12 h \u2022 Yellow 12\u201324 h \u2022 Red > 24 h.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 12
+              },
+              {
+                "color": "red",
+                "value": 24
+              }
+            ]
+          },
+          "unit": "h"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 2,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 999,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "value_and_name",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.1.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT ROUND(EXTRACT(EPOCH FROM (NOW() - finished_at)) / 3600.0, 1) AS \"Data Age (h)\"\nFROM sync_log\nWHERE status IN ('success', 'partial') AND finished_at IS NOT NULL\nORDER BY finished_at DESC LIMIT 1",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "title": "Data Age",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
       "description": "Average % of story points added or removed after sprint start (lower = more stable plans). Target: \u2264 10%",
       "fieldConfig": {
         "defaults": {
@@ -131,7 +204,7 @@
         "h": 5,
         "w": 6,
         "x": 0,
-        "y": 0
+        "y": 2
       },
       "id": 1,
       "options": {
@@ -205,7 +278,7 @@
         "h": 5,
         "w": 6,
         "x": 6,
-        "y": 0
+        "y": 2
       },
       "id": 2,
       "options": {
@@ -277,7 +350,7 @@
         "h": 5,
         "w": 6,
         "x": 12,
-        "y": 0
+        "y": 2
       },
       "id": 3,
       "options": {
@@ -349,7 +422,7 @@
         "h": 5,
         "w": 6,
         "x": 18,
-        "y": 0
+        "y": 2
       },
       "id": 4,
       "options": {
@@ -423,7 +496,7 @@
         "h": 5,
         "w": 6,
         "x": 0,
-        "y": 5
+        "y": 7
       },
       "id": 113,
       "options": {
@@ -497,7 +570,7 @@
         "h": 5,
         "w": 6,
         "x": 6,
-        "y": 5
+        "y": 7
       },
       "id": 114,
       "options": {
@@ -571,7 +644,7 @@
         "h": 5,
         "w": 6,
         "x": 12,
-        "y": 5
+        "y": 7
       },
       "id": 115,
       "options": {
@@ -644,7 +717,7 @@
         "h": 5,
         "w": 6,
         "x": 18,
-        "y": 5
+        "y": 7
       },
       "id": 116,
       "options": {
@@ -685,7 +758,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 10
+        "y": 12
       },
       "id": 106,
       "title": "Scope Change",
@@ -758,7 +831,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 11
+        "y": 13
       },
       "id": 5,
       "options": {
@@ -923,7 +996,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 11
+        "y": 13
       },
       "id": 6,
       "options": {
@@ -969,7 +1042,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 19
+        "y": 21
       },
       "id": 105,
       "title": "Ticket Reopens",
@@ -1040,7 +1113,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 20
+        "y": 22
       },
       "id": 7,
       "options": {
@@ -1191,7 +1264,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 20
+        "y": 22
       },
       "id": 8,
       "options": {
@@ -1233,7 +1306,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 28
+        "y": 30
       },
       "id": 104,
       "title": "Blockers",
@@ -1326,7 +1399,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 29
+        "y": 31
       },
       "id": 9,
       "options": {
@@ -1479,7 +1552,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 29
+        "y": 31
       },
       "id": 10,
       "options": {
@@ -1521,7 +1594,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 46
+        "y": 48
       },
       "id": 107,
       "title": "Release Bug Quality",
@@ -1568,7 +1641,7 @@
         "h": 4,
         "w": 4,
         "x": 0,
-        "y": 47
+        "y": 49
       },
       "id": 108,
       "options": {
@@ -1644,7 +1717,7 @@
         "h": 4,
         "w": 4,
         "x": 4,
-        "y": 47
+        "y": 49
       },
       "id": 109,
       "options": {
@@ -1713,7 +1786,7 @@
         "h": 4,
         "w": 4,
         "x": 8,
-        "y": 47
+        "y": 49
       },
       "id": 110,
       "options": {
@@ -1878,7 +1951,7 @@
         "h": 10,
         "w": 24,
         "x": 0,
-        "y": 51
+        "y": 53
       },
       "id": 111,
       "options": {
@@ -2147,7 +2220,7 @@
         "h": 10,
         "w": 24,
         "x": 0,
-        "y": 61
+        "y": 63
       },
       "id": 112,
       "options": {
@@ -2273,6 +2346,6 @@
   "timezone": "browser",
   "title": "PO KPIs",
   "uid": "jira-po-kpis",
-  "version": 25,
+  "version": 26,
   "weekStart": ""
 }
