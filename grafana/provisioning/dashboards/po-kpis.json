@@ -421,7 +421,7 @@
       },
       "gridPos": {
         "h": 5,
-        "w": 8,
+        "w": 6,
         "x": 0,
         "y": 5
       },
@@ -495,8 +495,8 @@
       },
       "gridPos": {
         "h": 5,
-        "w": 8,
-        "x": 8,
+        "w": 6,
+        "x": 6,
         "y": 5
       },
       "id": 114,
@@ -569,8 +569,8 @@
       },
       "gridPos": {
         "h": 5,
-        "w": 8,
-        "x": 16,
+        "w": 6,
+        "x": 12,
         "y": 5
       },
       "id": 115,
@@ -604,6 +604,79 @@
         }
       ],
       "title": "Avg Tickets DOD Rate",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "description": "Weighted bug score per release: (Blocker\u00d75 + Critical\u00d74 + High\u00d73 + Medium\u00d72 + Low\u00d71) divided by number of releases in the quarter. Lower is better.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 10
+              },
+              {
+                "color": "red",
+                "value": 25
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 18,
+        "y": 5
+      },
+      "id": 116,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.1.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT ROUND(\n  COALESCE(SUM(\n    CASE i.priority\n      WHEN 'Blocker'  THEN 5\n      WHEN 'Critical' THEN 4\n      WHEN 'High'     THEN 3\n      WHEN 'Medium'   THEN 2\n      WHEN 'Low'      THEN 1\n      ELSE 0\n    END\n  ), 0)::numeric\n  / NULLIF((\n    SELECT COUNT(DISTINCT r2.id)\n    FROM releases r2\n    WHERE r2.project_key IN ($project)\n      AND r2.released = TRUE\n      AND date_trunc('quarter', r2.release_date) = '$quarter'::date\n  ), 0),\n  1\n) AS value\nFROM releases r\nJOIN issues i\n  ON r.name = ANY(i.fix_versions)\n AND r.project_key = i.project_key\nWHERE i.issue_type = 'Bug'\n  AND i.project_key IN ($project)\n  AND r.released = TRUE\n  AND date_trunc('quarter', r.release_date) = '$quarter'::date",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "title": "Avg Release Quality Score",
       "type": "stat"
     },
     {
@@ -2200,6 +2273,6 @@
   "timezone": "browser",
   "title": "PO KPIs",
   "uid": "jira-po-kpis",
-  "version": 23,
+  "version": 24,
   "weekStart": ""
 }
