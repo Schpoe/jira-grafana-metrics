@@ -1150,8 +1150,8 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 3,
-        "x": 5,
+        "w": 2,
+        "x": 4,
         "y": 14
       },
       "id": 104,
@@ -1223,7 +1223,7 @@
       "gridPos": {
         "h": 4,
         "w": 2,
-        "x": 8,
+        "x": 6,
         "y": 14
       },
       "id": 52,
@@ -1295,7 +1295,7 @@
       "gridPos": {
         "h": 4,
         "w": 2,
-        "x": 10,
+        "x": 8,
         "y": 14
       },
       "id": 11,
@@ -1366,8 +1366,8 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 3,
-        "x": 12,
+        "w": 2,
+        "x": 10,
         "y": 14
       },
       "id": 12,
@@ -1408,6 +1408,78 @@
         "type": "postgres",
         "uid": "jira-metrics-pg"
       },
+      "description": "Issues with no Component assigned. Excludes Epics, Sub-tasks, and Obsolete.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 5
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 2,
+        "x": 12,
+        "y": 14
+      },
+      "id": 117,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.1.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "format": "table",
+          "rawSql": "SELECT COUNT(*) AS value\nFROM sprint_issues si JOIN issues i ON i.key=si.issue_key\nWHERE si.sprint_id=$sprint::bigint AND si.removed_at IS NULL\n  AND i.issue_type NOT IN ('Epic','Sub-task')\n  AND i.status != 'Obsolete / Won''t Do'\n  AND COALESCE(cardinality(i.components), 0) = 0",
+          "refId": "A"
+        }
+      ],
+      "title": "Missing Component",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
       "description": "% of active issues (excl. Epics/Sub-tasks) that have SP \u2265 1 + Epic link + Acceptance Criteria + Component set. Target \u2265 90%.",
       "fieldConfig": {
         "defaults": {
@@ -1441,7 +1513,7 @@
       "gridPos": {
         "h": 4,
         "w": 2,
-        "x": 15,
+        "x": 14,
         "y": 14
       },
       "id": 13,
@@ -4990,6 +5062,6 @@
   "timezone": "browser",
   "title": "Sprint Detail",
   "uid": "cfih5an4hj7y8e",
-  "version": 19,
+  "version": 20,
   "weekStart": ""
 }
