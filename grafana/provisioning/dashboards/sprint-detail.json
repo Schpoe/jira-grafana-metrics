@@ -157,8 +157,8 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT ROUND(EXTRACT(EPOCH FROM (NOW() - finished_at)) / 3600.0, 1) AS \"Data Age (h)\"\nFROM sync_log\nWHERE status IN ('success', 'partial') AND finished_at IS NOT NULL\nORDER BY finished_at DESC LIMIT 1",
           "format": "table",
+          "rawSql": "SELECT ROUND(EXTRACT(EPOCH FROM (NOW() - finished_at)) / 3600.0, 1) AS \"Data Age (h)\"\nFROM sync_log\nWHERE status IN ('success', 'partial') AND finished_at IS NOT NULL\nORDER BY finished_at DESC LIMIT 1",
           "refId": "A"
         }
       ],
@@ -675,8 +675,8 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT COALESCE(SUM(COALESCE(si.story_points_at_add,i.story_points,0)),0) AS value\nFROM sprint_issues si JOIN issues i ON i.key=si.issue_key\nWHERE si.sprint_id=$sprint::bigint AND si.removed_at IS NULL\n  AND i.status = 'Obsolete / Won''t Do'",
           "format": "table",
+          "rawSql": "SELECT COALESCE(SUM(COALESCE(si.story_points_at_add,i.story_points,0)),0) AS value\nFROM sprint_issues si JOIN issues i ON i.key=si.issue_key\nWHERE si.sprint_id=$sprint::bigint AND si.removed_at IS NULL\n  AND i.status = 'Obsolete / Won''t Do'",
           "refId": "A"
         }
       ],
@@ -790,7 +790,7 @@
       "gridPos": {
         "h": 4,
         "w": 2,
-        "x": 15,
+        "x": 16,
         "y": 9
       },
       "id": 8,
@@ -1038,12 +1038,81 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT COUNT(*) AS value\nFROM sprint_issues si JOIN issues i ON i.key=si.issue_key\nWHERE si.sprint_id=$sprint::bigint\n  AND si.was_in_initial_scope = TRUE\n  AND i.issue_type NOT IN ('Epic','Sub-task')",
           "format": "table",
+          "rawSql": "SELECT COUNT(*) AS value\nFROM sprint_issues si JOIN issues i ON i.key=si.issue_key\nWHERE si.sprint_id=$sprint::bigint\n  AND si.was_in_initial_scope = TRUE\n  AND i.issue_type NOT IN ('Epic','Sub-task')",
           "refId": "A"
         }
       ],
       "title": "Planned",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "description": "All currently active tickets in the sprint (removed_at IS NULL). Excludes Epics and Sub-tasks. Includes unplanned additions and Bugs.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "blue",
+            "mode": "fixed"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 2,
+        "x": 2,
+        "y": 14
+      },
+      "id": 118,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.1.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT COUNT(*) AS value\nFROM sprint_issues si JOIN issues i ON i.key=si.issue_key\nWHERE si.sprint_id=$sprint::bigint\n  AND si.removed_at IS NULL\n  AND i.issue_type NOT IN ('Epic','Sub-task')",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "title": "Total in Sprint",
       "type": "stat"
     },
     {
@@ -1079,7 +1148,7 @@
       "gridPos": {
         "h": 4,
         "w": 2,
-        "x": 2,
+        "x": 4,
         "y": 14
       },
       "id": 10,
@@ -1112,7 +1181,7 @@
           "refId": "A"
         }
       ],
-      "title": "Ready Issues",
+      "title": "Ready",
       "type": "stat"
     },
     {
@@ -1151,7 +1220,7 @@
       "gridPos": {
         "h": 4,
         "w": 2,
-        "x": 4,
+        "x": 6,
         "y": 14
       },
       "id": 104,
@@ -1179,12 +1248,12 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT COUNT(*) AS value\nFROM sprint_issues si\nJOIN issues i ON i.key = si.issue_key\nWHERE si.sprint_id = $sprint::bigint\n  AND si.removed_at IS NULL\n  AND i.status != 'Obsolete / Won''t Do'\n  AND i.assignee IS NULL",
           "format": "table",
+          "rawSql": "SELECT COUNT(*) AS value\nFROM sprint_issues si\nJOIN issues i ON i.key = si.issue_key\nWHERE si.sprint_id = $sprint::bigint\n  AND si.removed_at IS NULL\n  AND i.status != 'Obsolete / Won''t Do'\n  AND i.assignee IS NULL",
           "refId": "A"
         }
       ],
-      "title": "Missing Assignee",
+      "title": "No Assignee",
       "type": "stat"
     },
     {
@@ -1223,7 +1292,7 @@
       "gridPos": {
         "h": 4,
         "w": 2,
-        "x": 6,
+        "x": 8,
         "y": 14
       },
       "id": 52,
@@ -1251,12 +1320,12 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT COUNT(*) AS value\nFROM sprint_issues si JOIN issues i ON i.key=si.issue_key\nWHERE si.sprint_id=$sprint::bigint AND si.removed_at IS NULL\n  AND i.status != 'Obsolete / Won''t Do'\n  AND i.issue_type NOT IN ('Epic','Sub-task','Bug')\n  AND (i.has_acceptance_criteria IS NULL OR i.has_acceptance_criteria = FALSE)",
           "format": "table",
+          "rawSql": "SELECT COUNT(*) AS value\nFROM sprint_issues si JOIN issues i ON i.key=si.issue_key\nWHERE si.sprint_id=$sprint::bigint AND si.removed_at IS NULL\n  AND i.status != 'Obsolete / Won''t Do'\n  AND i.issue_type NOT IN ('Epic','Sub-task','Bug')\n  AND (i.has_acceptance_criteria IS NULL OR i.has_acceptance_criteria = FALSE)",
           "refId": "A"
         }
       ],
-      "title": "Missing AC",
+      "title": "No AC",
       "type": "stat"
     },
     {
@@ -1295,7 +1364,7 @@
       "gridPos": {
         "h": 4,
         "w": 2,
-        "x": 8,
+        "x": 10,
         "y": 14
       },
       "id": 11,
@@ -1328,7 +1397,7 @@
           "refId": "A"
         }
       ],
-      "title": "Missing SP",
+      "title": "No SP",
       "type": "stat"
     },
     {
@@ -1367,7 +1436,7 @@
       "gridPos": {
         "h": 4,
         "w": 2,
-        "x": 10,
+        "x": 12,
         "y": 14
       },
       "id": 12,
@@ -1400,7 +1469,7 @@
           "refId": "A"
         }
       ],
-      "title": "Missing Epic Link",
+      "title": "No Epic",
       "type": "stat"
     },
     {
@@ -1439,7 +1508,7 @@
       "gridPos": {
         "h": 4,
         "w": 2,
-        "x": 12,
+        "x": 14,
         "y": 14
       },
       "id": 117,
@@ -1472,7 +1541,7 @@
           "refId": "A"
         }
       ],
-      "title": "Missing Component",
+      "title": "No Component",
       "type": "stat"
     },
     {
@@ -1513,7 +1582,7 @@
       "gridPos": {
         "h": 4,
         "w": 2,
-        "x": 14,
+        "x": 16,
         "y": 14
       },
       "id": 13,
@@ -1546,75 +1615,6 @@
       ],
       "title": "Readiness %",
       "type": "gauge"
-    },
-    {
-      "datasource": {
-        "type": "postgres",
-        "uid": "jira-metrics-pg"
-      },
-      "description": "All currently active tickets in the sprint (removed_at IS NULL). Excludes Epics and Sub-tasks. Includes unplanned additions and Bugs.",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "fixedColor": "blue",
-            "mode": "fixed"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "short"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 2,
-        "x": 16,
-        "y": 14
-      },
-      "id": 118,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "percentChangeColorMode": "standard",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showPercentChange": false,
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "pluginVersion": "11.1.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "postgres",
-            "uid": "jira-metrics-pg"
-          },
-          "rawSql": "SELECT COUNT(*) AS value\nFROM sprint_issues si JOIN issues i ON i.key=si.issue_key\nWHERE si.sprint_id=$sprint::bigint\n  AND si.removed_at IS NULL\n  AND i.issue_type NOT IN ('Epic','Sub-task')",
-          "format": "table",
-          "refId": "A"
-        }
-      ],
-      "title": "Total in Sprint",
-      "type": "stat"
     },
     {
       "datasource": {
@@ -1677,8 +1677,8 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT COUNT(*) AS value\nFROM sprint_issues si\nJOIN issues i ON i.key = si.issue_key\nJOIN sprints s ON s.id = si.sprint_id\nWHERE si.sprint_id = $sprint::bigint\n  AND si.removed_at IS NULL\n  AND i.issue_type NOT IN ('Epic','Sub-task')\n  AND i.status != 'Obsolete / Won''t Do'\n  AND i.status_category = 'Done'\n  AND i.resolved_at IS NOT NULL\n  AND i.resolved_at >= s.start_date\n  AND i.resolved_at <= COALESCE(s.complete_date, s.end_date, NOW())",
           "format": "table",
+          "rawSql": "SELECT COUNT(*) AS value\nFROM sprint_issues si\nJOIN issues i ON i.key = si.issue_key\nJOIN sprints s ON s.id = si.sprint_id\nWHERE si.sprint_id = $sprint::bigint\n  AND si.removed_at IS NULL\n  AND i.issue_type NOT IN ('Epic','Sub-task')\n  AND i.status != 'Obsolete / Won''t Do'\n  AND i.status_category = 'Done'\n  AND i.resolved_at IS NOT NULL\n  AND i.resolved_at >= s.start_date\n  AND i.resolved_at <= COALESCE(s.complete_date, s.end_date, NOW())",
           "refId": "A"
         }
       ],
@@ -1746,8 +1746,8 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT COUNT(*) AS value\nFROM sprint_issues si\nJOIN issues i ON i.key = si.issue_key\nWHERE si.sprint_id = $sprint::bigint\n  AND si.removed_at IS NULL\n  AND i.issue_type NOT IN ('Epic','Sub-task')\n  AND i.status != 'Obsolete / Won''t Do'\n  AND i.status_category != 'Done'",
           "format": "table",
+          "rawSql": "SELECT COUNT(*) AS value\nFROM sprint_issues si\nJOIN issues i ON i.key = si.issue_key\nWHERE si.sprint_id = $sprint::bigint\n  AND si.removed_at IS NULL\n  AND i.issue_type NOT IN ('Epic','Sub-task')\n  AND i.status != 'Obsolete / Won''t Do'\n  AND i.status_category != 'Done'",
           "refId": "A"
         }
       ],
@@ -1849,7 +1849,6 @@
                 "id": "mappings",
                 "value": [
                   {
-                    "type": "value",
                     "options": {
                       "Blocker": {
                         "color": "dark-red",
@@ -1866,17 +1865,18 @@
                         "index": 2,
                         "text": "High"
                       },
-                      "Medium": {
-                        "color": "yellow",
-                        "index": 3,
-                        "text": "Medium"
-                      },
                       "Low": {
                         "color": "green",
                         "index": 4,
                         "text": "Low"
+                      },
+                      "Medium": {
+                        "color": "yellow",
+                        "index": 3,
+                        "text": "Medium"
                       }
-                    }
+                    },
+                    "type": "value"
                   }
                 ]
               },
@@ -1971,8 +1971,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "orange",
@@ -2038,8 +2037,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "orange",
@@ -2105,8 +2103,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "orange",
@@ -2172,8 +2169,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "orange",
@@ -2241,8 +2237,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "orange",
@@ -2317,8 +2312,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -2387,8 +2381,7 @@
                   "mode": "absolute",
                   "steps": [
                     {
-                      "color": "text",
-                      "value": null
+                      "color": "text"
                     }
                   ]
                 }
@@ -2405,7 +2398,6 @@
                 "id": "mappings",
                 "value": [
                   {
-                    "type": "value",
                     "options": {
                       "Blocker": {
                         "color": "dark-red",
@@ -2422,17 +2414,18 @@
                         "index": 2,
                         "text": "High"
                       },
-                      "Medium": {
-                        "color": "yellow",
-                        "index": 3,
-                        "text": "Medium"
-                      },
                       "Low": {
                         "color": "green",
                         "index": 4,
                         "text": "Low"
+                      },
+                      "Medium": {
+                        "color": "yellow",
+                        "index": 3,
+                        "text": "Medium"
                       }
-                    }
+                    },
+                    "type": "value"
                   }
                 ]
               },
@@ -2454,8 +2447,7 @@
                   "mode": "absolute",
                   "steps": [
                     {
-                      "color": "text",
-                      "value": null
+                      "color": "text"
                     }
                   ]
                 }
@@ -2472,17 +2464,26 @@
                 "id": "mappings",
                 "value": [
                   {
-                    "type": "value",
                     "options": {
-                      "Done": {
-                        "color": "green",
-                        "index": 0,
-                        "text": "Done"
+                      "Backlog": {
+                        "color": "text",
+                        "index": 11,
+                        "text": "Backlog"
+                      },
+                      "Blocked": {
+                        "color": "red",
+                        "index": 7,
+                        "text": "Blocked"
                       },
                       "Closed": {
                         "color": "green",
                         "index": 1,
                         "text": "Closed"
+                      },
+                      "Done": {
+                        "color": "green",
+                        "index": 0,
+                        "text": "Done"
                       },
                       "In Progress": {
                         "color": "yellow",
@@ -2494,52 +2495,43 @@
                         "index": 3,
                         "text": "In Review"
                       },
-                      "Ready for testing": {
-                        "color": "blue",
-                        "index": 4,
-                        "text": "Ready for testing"
-                      },
-                      "Ready For Testing": {
-                        "color": "blue",
-                        "index": 5,
-                        "text": "Ready For Testing"
-                      },
-                      "Testing": {
-                        "color": "blue",
-                        "index": 6,
-                        "text": "Testing"
-                      },
-                      "Blocked": {
-                        "color": "red",
-                        "index": 7,
-                        "text": "Blocked"
-                      },
-                      "Reopened": {
-                        "color": "orange",
-                        "index": 8,
-                        "text": "Reopened"
+                      "Obsolete / Won't Do": {
+                        "color": "gray",
+                        "index": 12,
+                        "text": "Obsolete / Won't Do"
                       },
                       "Open": {
                         "color": "text",
                         "index": 9,
                         "text": "Open"
                       },
+                      "Ready For Testing": {
+                        "color": "blue",
+                        "index": 5,
+                        "text": "Ready For Testing"
+                      },
+                      "Ready for testing": {
+                        "color": "blue",
+                        "index": 4,
+                        "text": "Ready for testing"
+                      },
+                      "Reopened": {
+                        "color": "orange",
+                        "index": 8,
+                        "text": "Reopened"
+                      },
+                      "Testing": {
+                        "color": "blue",
+                        "index": 6,
+                        "text": "Testing"
+                      },
                       "To Do": {
                         "color": "text",
                         "index": 10,
                         "text": "To Do"
-                      },
-                      "Backlog": {
-                        "color": "text",
-                        "index": 11,
-                        "text": "Backlog"
-                      },
-                      "Obsolete / Won't Do": {
-                        "color": "gray",
-                        "index": 12,
-                        "text": "Obsolete / Won't Do"
                       }
-                    }
+                    },
+                    "type": "value"
                   }
                 ]
               },
@@ -2561,8 +2553,7 @@
                   "mode": "absolute",
                   "steps": [
                     {
-                      "color": "text",
-                      "value": null
+                      "color": "text"
                     }
                   ]
                 }
@@ -2634,8 +2625,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "yellow",
@@ -2706,8 +2696,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "yellow",
@@ -2782,8 +2771,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -2883,7 +2871,6 @@
                 "id": "mappings",
                 "value": [
                   {
-                    "type": "value",
                     "options": {
                       "Blocker": {
                         "color": "dark-red",
@@ -2900,17 +2887,18 @@
                         "index": 2,
                         "text": "High"
                       },
-                      "Medium": {
-                        "color": "yellow",
-                        "index": 3,
-                        "text": "Medium"
-                      },
                       "Low": {
                         "color": "green",
                         "index": 4,
                         "text": "Low"
+                      },
+                      "Medium": {
+                        "color": "yellow",
+                        "index": 3,
+                        "text": "Medium"
                       }
-                    }
+                    },
+                    "type": "value"
                   }
                 ]
               },
@@ -2932,8 +2920,7 @@
                   "mode": "absolute",
                   "steps": [
                     {
-                      "color": "text",
-                      "value": null
+                      "color": "text"
                     }
                   ]
                 }
@@ -2958,15 +2945,22 @@
                 "id": "mappings",
                 "value": [
                   {
-                    "type": "value",
                     "options": {
-                      "Done": {
-                        "color": "green",
-                        "index": 0
+                      "Backlog": {
+                        "color": "text",
+                        "index": 11
+                      },
+                      "Blocked": {
+                        "color": "red",
+                        "index": 7
                       },
                       "Closed": {
                         "color": "green",
                         "index": 1
+                      },
+                      "Done": {
+                        "color": "green",
+                        "index": 0
                       },
                       "In Progress": {
                         "color": "yellow",
@@ -2976,43 +2970,36 @@
                         "color": "yellow",
                         "index": 3
                       },
-                      "Ready for testing": {
-                        "color": "blue",
-                        "index": 4
-                      },
-                      "Ready For Testing": {
-                        "color": "blue",
-                        "index": 5
-                      },
-                      "Testing": {
-                        "color": "blue",
-                        "index": 6
-                      },
-                      "Blocked": {
-                        "color": "red",
-                        "index": 7
-                      },
-                      "Reopened": {
-                        "color": "orange",
-                        "index": 8
+                      "Obsolete / Won't Do": {
+                        "color": "gray",
+                        "index": 12
                       },
                       "Open": {
                         "color": "text",
                         "index": 9
                       },
+                      "Ready For Testing": {
+                        "color": "blue",
+                        "index": 5
+                      },
+                      "Ready for testing": {
+                        "color": "blue",
+                        "index": 4
+                      },
+                      "Reopened": {
+                        "color": "orange",
+                        "index": 8
+                      },
+                      "Testing": {
+                        "color": "blue",
+                        "index": 6
+                      },
                       "To Do": {
                         "color": "text",
                         "index": 10
-                      },
-                      "Backlog": {
-                        "color": "text",
-                        "index": 11
-                      },
-                      "Obsolete / Won't Do": {
-                        "color": "gray",
-                        "index": 12
                       }
-                    }
+                    },
+                    "type": "value"
                   }
                 ]
               },
@@ -3034,8 +3021,7 @@
                   "mode": "absolute",
                   "steps": [
                     {
-                      "color": "text",
-                      "value": null
+                      "color": "text"
                     }
                   ]
                 }
@@ -3107,8 +3093,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -3184,7 +3169,6 @@
                 "id": "mappings",
                 "value": [
                   {
-                    "type": "value",
                     "options": {
                       "Blocker": {
                         "color": "dark-red",
@@ -3201,17 +3185,18 @@
                         "index": 2,
                         "text": "High"
                       },
-                      "Medium": {
-                        "color": "yellow",
-                        "index": 3,
-                        "text": "Medium"
-                      },
                       "Low": {
                         "color": "green",
                         "index": 4,
                         "text": "Low"
+                      },
+                      "Medium": {
+                        "color": "yellow",
+                        "index": 3,
+                        "text": "Medium"
                       }
-                    }
+                    },
+                    "type": "value"
                   }
                 ]
               },
@@ -3233,8 +3218,7 @@
                   "mode": "absolute",
                   "steps": [
                     {
-                      "color": "text",
-                      "value": null
+                      "color": "text"
                     }
                   ]
                 }
@@ -3259,15 +3243,22 @@
                 "id": "mappings",
                 "value": [
                   {
-                    "type": "value",
                     "options": {
-                      "Done": {
-                        "color": "green",
-                        "index": 0
+                      "Backlog": {
+                        "color": "text",
+                        "index": 11
+                      },
+                      "Blocked": {
+                        "color": "red",
+                        "index": 7
                       },
                       "Closed": {
                         "color": "green",
                         "index": 1
+                      },
+                      "Done": {
+                        "color": "green",
+                        "index": 0
                       },
                       "In Progress": {
                         "color": "yellow",
@@ -3277,43 +3268,36 @@
                         "color": "yellow",
                         "index": 3
                       },
-                      "Ready for testing": {
-                        "color": "blue",
-                        "index": 4
-                      },
-                      "Ready For Testing": {
-                        "color": "blue",
-                        "index": 5
-                      },
-                      "Testing": {
-                        "color": "blue",
-                        "index": 6
-                      },
-                      "Blocked": {
-                        "color": "red",
-                        "index": 7
-                      },
-                      "Reopened": {
-                        "color": "orange",
-                        "index": 8
+                      "Obsolete / Won't Do": {
+                        "color": "gray",
+                        "index": 12
                       },
                       "Open": {
                         "color": "text",
                         "index": 9
                       },
+                      "Ready For Testing": {
+                        "color": "blue",
+                        "index": 5
+                      },
+                      "Ready for testing": {
+                        "color": "blue",
+                        "index": 4
+                      },
+                      "Reopened": {
+                        "color": "orange",
+                        "index": 8
+                      },
+                      "Testing": {
+                        "color": "blue",
+                        "index": 6
+                      },
                       "To Do": {
                         "color": "text",
                         "index": 10
-                      },
-                      "Backlog": {
-                        "color": "text",
-                        "index": 11
-                      },
-                      "Obsolete / Won't Do": {
-                        "color": "gray",
-                        "index": 12
                       }
-                    }
+                    },
+                    "type": "value"
                   }
                 ]
               },
@@ -3335,8 +3319,7 @@
                   "mode": "absolute",
                   "steps": [
                     {
-                      "color": "text",
-                      "value": null
+                      "color": "text"
                     }
                   ]
                 }
@@ -3446,8 +3429,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -3583,8 +3565,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -3622,17 +3603,26 @@
                     "id": "mappings",
                     "value": [
                       {
-                        "type": "value",
                         "options": {
-                          "Done": {
-                            "color": "green",
-                            "index": 0,
-                            "text": "Done"
+                          "Backlog": {
+                            "color": "text",
+                            "index": 11,
+                            "text": "Backlog"
+                          },
+                          "Blocked": {
+                            "color": "red",
+                            "index": 7,
+                            "text": "Blocked"
                           },
                           "Closed": {
                             "color": "green",
                             "index": 1,
                             "text": "Closed"
+                          },
+                          "Done": {
+                            "color": "green",
+                            "index": 0,
+                            "text": "Done"
                           },
                           "In Progress": {
                             "color": "yellow",
@@ -3644,52 +3634,43 @@
                             "index": 3,
                             "text": "In Review"
                           },
-                          "Ready for testing": {
-                            "color": "blue",
-                            "index": 4,
-                            "text": "Ready for testing"
-                          },
-                          "Ready For Testing": {
-                            "color": "blue",
-                            "index": 5,
-                            "text": "Ready For Testing"
-                          },
-                          "Testing": {
-                            "color": "blue",
-                            "index": 6,
-                            "text": "Testing"
-                          },
-                          "Blocked": {
-                            "color": "red",
-                            "index": 7,
-                            "text": "Blocked"
-                          },
-                          "Reopened": {
-                            "color": "orange",
-                            "index": 8,
-                            "text": "Reopened"
+                          "Obsolete / Won't Do": {
+                            "color": "gray",
+                            "index": 12,
+                            "text": "Obsolete / Won't Do"
                           },
                           "Open": {
                             "color": "text",
                             "index": 9,
                             "text": "Open"
                           },
+                          "Ready For Testing": {
+                            "color": "blue",
+                            "index": 5,
+                            "text": "Ready For Testing"
+                          },
+                          "Ready for testing": {
+                            "color": "blue",
+                            "index": 4,
+                            "text": "Ready for testing"
+                          },
+                          "Reopened": {
+                            "color": "orange",
+                            "index": 8,
+                            "text": "Reopened"
+                          },
+                          "Testing": {
+                            "color": "blue",
+                            "index": 6,
+                            "text": "Testing"
+                          },
                           "To Do": {
                             "color": "text",
                             "index": 10,
                             "text": "To Do"
-                          },
-                          "Backlog": {
-                            "color": "text",
-                            "index": 11,
-                            "text": "Backlog"
-                          },
-                          "Obsolete / Won't Do": {
-                            "color": "gray",
-                            "index": 12,
-                            "text": "Obsolete / Won't Do"
                           }
-                        }
+                        },
+                        "type": "value"
                       }
                     ]
                   },
@@ -3711,8 +3692,7 @@
                       "mode": "absolute",
                       "steps": [
                         {
-                          "color": "text",
-                          "value": null
+                          "color": "text"
                         }
                       ]
                     }
@@ -3791,8 +3771,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -3870,8 +3849,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -3944,8 +3922,7 @@
                   "mode": "absolute",
                   "steps": [
                     {
-                      "color": "text",
-                      "value": null
+                      "color": "text"
                     },
                     {
                       "color": "orange",
@@ -3976,7 +3953,6 @@
                 "id": "mappings",
                 "value": [
                   {
-                    "type": "value",
                     "options": {
                       "Blocker": {
                         "color": "dark-red",
@@ -3993,17 +3969,18 @@
                         "index": 2,
                         "text": "High"
                       },
-                      "Medium": {
-                        "color": "yellow",
-                        "index": 3,
-                        "text": "Medium"
-                      },
                       "Low": {
                         "color": "green",
                         "index": 4,
                         "text": "Low"
+                      },
+                      "Medium": {
+                        "color": "yellow",
+                        "index": 3,
+                        "text": "Medium"
                       }
-                    }
+                    },
+                    "type": "value"
                   }
                 ]
               },
@@ -4025,8 +4002,7 @@
                   "mode": "absolute",
                   "steps": [
                     {
-                      "color": "text",
-                      "value": null
+                      "color": "text"
                     }
                   ]
                 }
@@ -4051,15 +4027,22 @@
                 "id": "mappings",
                 "value": [
                   {
-                    "type": "value",
                     "options": {
-                      "Done": {
-                        "color": "green",
-                        "index": 0
+                      "Backlog": {
+                        "color": "text",
+                        "index": 11
+                      },
+                      "Blocked": {
+                        "color": "red",
+                        "index": 7
                       },
                       "Closed": {
                         "color": "green",
                         "index": 1
+                      },
+                      "Done": {
+                        "color": "green",
+                        "index": 0
                       },
                       "In Progress": {
                         "color": "yellow",
@@ -4069,43 +4052,36 @@
                         "color": "yellow",
                         "index": 3
                       },
-                      "Ready for testing": {
-                        "color": "blue",
-                        "index": 4
-                      },
-                      "Ready For Testing": {
-                        "color": "blue",
-                        "index": 5
-                      },
-                      "Testing": {
-                        "color": "blue",
-                        "index": 6
-                      },
-                      "Blocked": {
-                        "color": "red",
-                        "index": 7
-                      },
-                      "Reopened": {
-                        "color": "orange",
-                        "index": 8
+                      "Obsolete / Won't Do": {
+                        "color": "gray",
+                        "index": 12
                       },
                       "Open": {
                         "color": "text",
                         "index": 9
                       },
+                      "Ready For Testing": {
+                        "color": "blue",
+                        "index": 5
+                      },
+                      "Ready for testing": {
+                        "color": "blue",
+                        "index": 4
+                      },
+                      "Reopened": {
+                        "color": "orange",
+                        "index": 8
+                      },
+                      "Testing": {
+                        "color": "blue",
+                        "index": 6
+                      },
                       "To Do": {
                         "color": "text",
                         "index": 10
-                      },
-                      "Backlog": {
-                        "color": "text",
-                        "index": 11
-                      },
-                      "Obsolete / Won't Do": {
-                        "color": "gray",
-                        "index": 12
                       }
-                    }
+                    },
+                    "type": "value"
                   }
                 ]
               },
@@ -4127,8 +4103,7 @@
                   "mode": "absolute",
                   "steps": [
                     {
-                      "color": "text",
-                      "value": null
+                      "color": "text"
                     }
                   ]
                 }
@@ -4510,7 +4485,6 @@
                     "id": "mappings",
                     "value": [
                       {
-                        "type": "value",
                         "options": {
                           "Blocker": {
                             "color": "dark-red",
@@ -4527,17 +4501,18 @@
                             "index": 2,
                             "text": "High"
                           },
-                          "Medium": {
-                            "color": "yellow",
-                            "index": 3,
-                            "text": "Medium"
-                          },
                           "Low": {
                             "color": "green",
                             "index": 4,
                             "text": "Low"
+                          },
+                          "Medium": {
+                            "color": "yellow",
+                            "index": 3,
+                            "text": "Medium"
                           }
-                        }
+                        },
+                        "type": "value"
                       }
                     ]
                   },
@@ -4559,8 +4534,7 @@
                       "mode": "absolute",
                       "steps": [
                         {
-                          "color": "text",
-                          "value": null
+                          "color": "text"
                         }
                       ]
                     }
@@ -4577,17 +4551,26 @@
                     "id": "mappings",
                     "value": [
                       {
-                        "type": "value",
                         "options": {
-                          "Done": {
-                            "color": "green",
-                            "index": 0,
-                            "text": "Done"
+                          "Backlog": {
+                            "color": "text",
+                            "index": 11,
+                            "text": "Backlog"
+                          },
+                          "Blocked": {
+                            "color": "red",
+                            "index": 7,
+                            "text": "Blocked"
                           },
                           "Closed": {
                             "color": "green",
                             "index": 1,
                             "text": "Closed"
+                          },
+                          "Done": {
+                            "color": "green",
+                            "index": 0,
+                            "text": "Done"
                           },
                           "In Progress": {
                             "color": "yellow",
@@ -4599,52 +4582,43 @@
                             "index": 3,
                             "text": "In Review"
                           },
-                          "Ready for testing": {
-                            "color": "blue",
-                            "index": 4,
-                            "text": "Ready for testing"
-                          },
-                          "Ready For Testing": {
-                            "color": "blue",
-                            "index": 5,
-                            "text": "Ready For Testing"
-                          },
-                          "Testing": {
-                            "color": "blue",
-                            "index": 6,
-                            "text": "Testing"
-                          },
-                          "Blocked": {
-                            "color": "red",
-                            "index": 7,
-                            "text": "Blocked"
-                          },
-                          "Reopened": {
-                            "color": "orange",
-                            "index": 8,
-                            "text": "Reopened"
+                          "Obsolete / Won't Do": {
+                            "color": "gray",
+                            "index": 12,
+                            "text": "Obsolete / Won't Do"
                           },
                           "Open": {
                             "color": "text",
                             "index": 9,
                             "text": "Open"
                           },
+                          "Ready For Testing": {
+                            "color": "blue",
+                            "index": 5,
+                            "text": "Ready For Testing"
+                          },
+                          "Ready for testing": {
+                            "color": "blue",
+                            "index": 4,
+                            "text": "Ready for testing"
+                          },
+                          "Reopened": {
+                            "color": "orange",
+                            "index": 8,
+                            "text": "Reopened"
+                          },
+                          "Testing": {
+                            "color": "blue",
+                            "index": 6,
+                            "text": "Testing"
+                          },
                           "To Do": {
                             "color": "text",
                             "index": 10,
                             "text": "To Do"
-                          },
-                          "Backlog": {
-                            "color": "text",
-                            "index": 11,
-                            "text": "Backlog"
-                          },
-                          "Obsolete / Won't Do": {
-                            "color": "gray",
-                            "index": 12,
-                            "text": "Obsolete / Won't Do"
                           }
-                        }
+                        },
+                        "type": "value"
                       }
                     ]
                   },
@@ -4666,8 +4640,7 @@
                       "mode": "absolute",
                       "steps": [
                         {
-                          "color": "text",
-                          "value": null
+                          "color": "text"
                         }
                       ]
                     }
@@ -4865,17 +4838,26 @@
                     "id": "mappings",
                     "value": [
                       {
-                        "type": "value",
                         "options": {
-                          "Done": {
-                            "color": "green",
-                            "index": 0,
-                            "text": "Done"
+                          "Backlog": {
+                            "color": "text",
+                            "index": 11,
+                            "text": "Backlog"
+                          },
+                          "Blocked": {
+                            "color": "red",
+                            "index": 7,
+                            "text": "Blocked"
                           },
                           "Closed": {
                             "color": "green",
                             "index": 1,
                             "text": "Closed"
+                          },
+                          "Done": {
+                            "color": "green",
+                            "index": 0,
+                            "text": "Done"
                           },
                           "In Progress": {
                             "color": "yellow",
@@ -4887,52 +4869,43 @@
                             "index": 3,
                             "text": "In Review"
                           },
-                          "Ready for testing": {
-                            "color": "blue",
-                            "index": 4,
-                            "text": "Ready for testing"
-                          },
-                          "Ready For Testing": {
-                            "color": "blue",
-                            "index": 5,
-                            "text": "Ready For Testing"
-                          },
-                          "Testing": {
-                            "color": "blue",
-                            "index": 6,
-                            "text": "Testing"
-                          },
-                          "Blocked": {
-                            "color": "red",
-                            "index": 7,
-                            "text": "Blocked"
-                          },
-                          "Reopened": {
-                            "color": "orange",
-                            "index": 8,
-                            "text": "Reopened"
+                          "Obsolete / Won't Do": {
+                            "color": "gray",
+                            "index": 12,
+                            "text": "Obsolete / Won't Do"
                           },
                           "Open": {
                             "color": "text",
                             "index": 9,
                             "text": "Open"
                           },
+                          "Ready For Testing": {
+                            "color": "blue",
+                            "index": 5,
+                            "text": "Ready For Testing"
+                          },
+                          "Ready for testing": {
+                            "color": "blue",
+                            "index": 4,
+                            "text": "Ready for testing"
+                          },
+                          "Reopened": {
+                            "color": "orange",
+                            "index": 8,
+                            "text": "Reopened"
+                          },
+                          "Testing": {
+                            "color": "blue",
+                            "index": 6,
+                            "text": "Testing"
+                          },
                           "To Do": {
                             "color": "text",
                             "index": 10,
                             "text": "To Do"
-                          },
-                          "Backlog": {
-                            "color": "text",
-                            "index": 11,
-                            "text": "Backlog"
-                          },
-                          "Obsolete / Won't Do": {
-                            "color": "gray",
-                            "index": 12,
-                            "text": "Obsolete / Won't Do"
                           }
-                        }
+                        },
+                        "type": "value"
                       }
                     ]
                   },
@@ -4954,8 +4927,7 @@
                       "mode": "absolute",
                       "steps": [
                         {
-                          "color": "text",
-                          "value": null
+                          "color": "text"
                         }
                       ]
                     }
@@ -5073,10 +5045,10 @@
         "current": {
           "selected": false,
           "text": [
-            "AATWO"
+            "CONNECT"
           ],
           "value": [
-            "AATWO"
+            "CONNECT"
           ]
         },
         "datasource": {
@@ -5100,8 +5072,8 @@
       {
         "current": {
           "selected": false,
-          "text": "Q1-26 AudioApp 2 Sprint 6 \u2605",
-          "value": "3076"
+          "text": "CONNECT 26-Q1-6",
+          "value": "3905"
         },
         "datasource": {
           "type": "postgres",
@@ -5131,6 +5103,6 @@
   "timezone": "browser",
   "title": "Sprint Detail",
   "uid": "cfih5an4hj7y8e",
-  "version": 21,
+  "version": 22,
   "weekStart": ""
 }
