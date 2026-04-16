@@ -1108,7 +1108,7 @@
             "uid": "jira-metrics-pg"
           },
           "format": "table",
-          "rawSql": "SELECT COUNT(*) AS value\nFROM sprint_issues si JOIN issues i ON i.key=si.issue_key\nWHERE si.sprint_id=$sprint::bigint AND si.removed_at IS NULL AND i.issue_type NOT IN ('Epic','Sub-task')\n  AND (i.story_points IS NOT NULL AND i.story_points > 0)\n  AND i.epic_key IS NOT NULL\n  AND i.has_acceptance_criteria = TRUE",
+          "rawSql": "SELECT COUNT(*) AS value\nFROM sprint_issues si JOIN issues i ON i.key=si.issue_key\nWHERE si.sprint_id=$sprint::bigint AND si.removed_at IS NULL AND i.issue_type NOT IN ('Epic','Sub-task')\n  AND (i.story_points IS NOT NULL AND i.story_points > 0)\n  AND i.epic_key IS NOT NULL\n  AND i.has_acceptance_criteria = TRUE\n  AND cardinality(i.components) > 0",
           "refId": "A"
         }
       ],
@@ -1468,7 +1468,7 @@
             "uid": "jira-metrics-pg"
           },
           "format": "table",
-          "rawSql": "SELECT CASE WHEN total=0 THEN 0\n  ELSE ROUND(100.0 * ready / total, 1)\nEND AS value\nFROM (\n  SELECT\n    COUNT(*) FILTER (WHERE (i.story_points IS NOT NULL AND i.story_points>0) AND i.epic_key IS NOT NULL\n    AND i.has_acceptance_criteria = TRUE) AS ready,\n    COUNT(*) AS total\n  FROM sprint_issues si JOIN issues i ON i.key=si.issue_key\n  WHERE si.sprint_id=$sprint::bigint AND si.removed_at IS NULL AND i.issue_type NOT IN ('Epic','Sub-task')\n) t",
+          "rawSql": "SELECT CASE WHEN total=0 THEN 0\n  ELSE ROUND(100.0 * ready / total, 1)\nEND AS value\nFROM (\n  SELECT\n    COUNT(*) FILTER (WHERE (i.story_points IS NOT NULL AND i.story_points>0) AND i.epic_key IS NOT NULL\n    AND i.has_acceptance_criteria = TRUE\n    AND cardinality(i.components) > 0) AS ready,\n    COUNT(*) AS total\n  FROM sprint_issues si JOIN issues i ON i.key=si.issue_key\n  WHERE si.sprint_id=$sprint::bigint AND si.removed_at IS NULL AND i.issue_type NOT IN ('Epic','Sub-task')\n) t",
           "refId": "A"
         }
       ],
@@ -1795,7 +1795,7 @@
             "uid": "jira-metrics-pg"
           },
           "format": "table",
-          "rawSql": "SELECT i.key AS \"Key\", i.summary AS \"Summary\", i.issue_type AS \"Type\",\n  CASE WHEN i.story_points IS NULL OR i.story_points=0 THEN '\u274c' ELSE '\u2705' END AS \"SP\",\n  CASE WHEN i.epic_key IS NOT NULL THEN '\u2705' ELSE '\u274c' END AS \"Epic\",\n  CASE WHEN i.issue_type = 'Bug' THEN 'N/A'\n       WHEN i.has_acceptance_criteria = TRUE THEN '\u2705' ELSE '\u274c' END AS \"AC\",\n  COALESCE(i.assignee, '\u2014') AS \"Assignee\",\n  i.priority AS \"Priority\"\nFROM sprint_issues si JOIN issues i ON i.key=si.issue_key\nWHERE si.sprint_id=$sprint::bigint AND si.removed_at IS NULL\n  AND i.issue_type NOT IN ('Epic','Sub-task')\n  AND i.status != 'Obsolete / Won''t Do'\n  AND (\n    (i.story_points IS NULL OR i.story_points = 0)\n    OR i.epic_key IS NULL\n    OR i.assignee IS NULL\n    OR (i.issue_type != 'Bug' AND i.has_acceptance_criteria IS NOT TRUE)\n  )\nORDER BY\n  CASE i.priority WHEN 'Blocker' THEN 1 WHEN 'Critical' THEN 2 WHEN 'High' THEN 3 WHEN 'Medium' THEN 4 ELSE 5 END",
+          "rawSql": "SELECT i.key AS \"Key\", i.summary AS \"Summary\", i.issue_type AS \"Type\",\n  CASE WHEN i.story_points IS NULL OR i.story_points=0 THEN '\u274c' ELSE '\u2705' END AS \"SP\",\n  CASE WHEN i.epic_key IS NOT NULL THEN '\u2705' ELSE '\u274c' END AS \"Epic\",\n  CASE WHEN i.issue_type = 'Bug' THEN 'N/A'\n       WHEN i.has_acceptance_criteria = TRUE THEN '\u2705' ELSE '\u274c' END AS \"AC\",\n  CASE WHEN cardinality(i.components) > 0 THEN '\u2705' ELSE '\u274c' END AS \"Component\",\n  COALESCE(i.assignee, '\u2014') AS \"Assignee\",\n  i.priority AS \"Priority\"\nFROM sprint_issues si JOIN issues i ON i.key=si.issue_key\nWHERE si.sprint_id=$sprint::bigint AND si.removed_at IS NULL\n  AND i.issue_type NOT IN ('Epic','Sub-task')\n  AND i.status != 'Obsolete / Won''t Do'\n  AND (\n    (i.story_points IS NULL OR i.story_points = 0)\n    OR i.epic_key IS NULL\n    OR i.assignee IS NULL\n    OR (i.issue_type != 'Bug' AND i.has_acceptance_criteria IS NOT TRUE)\n    OR COALESCE(cardinality(i.components), 0) = 0\n  )\nORDER BY\n  CASE i.priority WHEN 'Blocker' THEN 1 WHEN 'Critical' THEN 2 WHEN 'High' THEN 3 WHEN 'Medium' THEN 4 ELSE 5 END",
           "refId": "A"
         }
       ],
@@ -4990,6 +4990,6 @@
   "timezone": "browser",
   "title": "Sprint Detail",
   "uid": "cfih5an4hj7y8e",
-  "version": 17,
+  "version": 18,
   "weekStart": ""
 }

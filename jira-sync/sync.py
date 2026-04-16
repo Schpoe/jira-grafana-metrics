@@ -316,7 +316,7 @@ def sync_issues(conn, sync_id, since=None, last_sync_duration=None, resume_token
     fields = [
         "summary", "issuetype", "status", "priority", STORY_POINTS_FIELD,
         "assignee", "reporter", "created", "updated", "resolutiondate",
-        "fixVersions", "labels", "project", "parent", "issuelinks",
+        "fixVersions", "labels", "components", "project", "parent", "issuelinks",
         ACCEPTANCE_CRITERIA_FIELD, CUSTOMER_PROJECT_FIELD, QA_FIELD,
     ]
 
@@ -358,6 +358,9 @@ def sync_issues(conn, sync_id, since=None, last_sync_duration=None, resume_token
             qa_raw = f.get(QA_FIELD)
             qa_assignee = qa_raw.get("displayName") if isinstance(qa_raw, dict) else None
 
+            # Components: array of component objects
+            components = [c["name"] for c in f.get("components", []) if c.get("name")]
+
             # Customer-Project: cascading select — parent=customer, child=project
             cp_raw = f.get(CUSTOMER_PROJECT_FIELD)
             if isinstance(cp_raw, dict):
@@ -389,6 +392,7 @@ def sync_issues(conn, sync_id, since=None, last_sync_duration=None, resume_token
                 customer,
                 project_name,
                 qa_assignee,
+                components,
             ))
 
             # Extract all issue links (both directions)
@@ -424,7 +428,7 @@ def sync_issues(conn, sync_id, since=None, last_sync_duration=None, resume_token
                     priority, story_points, assignee, reporter,
                     created_at, updated_at, resolved_at,
                     fix_versions, labels, epic_key, has_acceptance_criteria,
-                    customer_project, customer, project_name, qa_assignee
+                    customer_project, customer, project_name, qa_assignee, components
                 ) VALUES %s
                 ON CONFLICT (key) DO UPDATE SET
                     summary                  = EXCLUDED.summary,
@@ -444,6 +448,7 @@ def sync_issues(conn, sync_id, since=None, last_sync_duration=None, resume_token
                     customer                 = EXCLUDED.customer,
                     project_name             = EXCLUDED.project_name,
                     qa_assignee              = EXCLUDED.qa_assignee,
+                    components               = EXCLUDED.components,
                     synced_at                = NOW()
                 """,
                 issue_rows,
