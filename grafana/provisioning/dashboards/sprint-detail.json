@@ -1051,7 +1051,7 @@
         "type": "postgres",
         "uid": "jira-metrics-pg"
       },
-      "description": "Issues with SP estimated, Epic linked, AND acceptance criteria documented. All three conditions must be met.",
+      "description": "Issues with SP \u2265 1, Epic linked, Acceptance Criteria documented, AND at least one Component assigned. All four conditions must be met. Excludes Epics, Sub-tasks, and removed issues.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1408,7 +1408,7 @@
         "type": "postgres",
         "uid": "jira-metrics-pg"
       },
-      "description": "% of active issues (excl. Epics/Sub-tasks) that have SP + Epic link + acceptance criteria. Target \u2265 90%.",
+      "description": "% of active issues (excl. Epics/Sub-tasks) that have SP \u2265 1 + Epic link + Acceptance Criteria + Component set. Target \u2265 90%.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1618,7 +1618,7 @@
         "type": "postgres",
         "uid": "jira-metrics-pg"
       },
-      "description": "Stories/Tasks missing SP estimate or Epic link.",
+      "description": "Issues failing any readiness criterion: SP missing, Epic missing, Acceptance Criteria missing (N/A for Bugs), Assignee missing, or Component missing. Sorted by priority.",
       "fieldConfig": {
         "defaults": {
           "custom": {
@@ -2482,7 +2482,7 @@
         "type": "postgres",
         "uid": "jira-metrics-pg"
       },
-      "description": "Sprint issues that are blocking issues in other projects.",
+      "description": "Number of cross-team blocking relationships \u2014 sprint issues that block issues in other projects. One issue blocking two external tickets counts as 2.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -2554,7 +2554,7 @@
         "type": "postgres",
         "uid": "jira-metrics-pg"
       },
-      "description": "Sprint issues that are blocked by issues from other projects.",
+      "description": "Number of cross-team blocking relationships \u2014 sprint issues blocked by issues from other projects. One issue blocked by two external tickets counts as 2.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -4990,6 +4990,6 @@
   "timezone": "browser",
   "title": "Sprint Detail",
   "uid": "cfih5an4hj7y8e",
-  "version": 18,
+  "version": 19,
   "weekStart": ""
 }

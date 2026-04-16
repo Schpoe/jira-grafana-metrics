@@ -4,6 +4,7 @@ This document explains how every metric across all dashboards is calculated, whi
 
 **Data source:** PostgreSQL (`jira-metrics-pg`).  
 **Key tables:** `sprint_issues`, `issues`, `sprints`, `issue_transitions`, `issue_links`, `releases`, `issue_fix_version_history`.  
+**Key columns added:** `issues.qa_assignee TEXT` (Jira field `customfield_10132` — QA person assigned), `issues.components TEXT[]` (standard Jira components array).  
 **Key views:** `v_planning_deviation`, `v_cycle_time_rft_to_done`, `v_cycle_time_in_progress_to_rft`, `v_lead_time`, `v_time_in_status`, `v_prod_epic_progress`, `v_prod_item_progress`.
 
 ---
@@ -104,7 +105,7 @@ Per-sprint drill-down for Scrum Masters and Release Managers.
 
 **Planned** — `COUNT(*)` where `was_in_initial_scope = TRUE AND issue_type NOT IN ('Epic','Sub-task')`. No `removed_at` filter. Bugs included.
 
-**Ready Issues** — Issues with SP > 0 AND epic_key IS NOT NULL AND `has_acceptance_criteria = TRUE`. All three must be met. Excl. Epics, Sub-tasks, removed.
+**Ready Issues** — Issues with SP ≥ 1 AND epic_key IS NOT NULL AND `has_acceptance_criteria = TRUE` AND `cardinality(components) > 0`. All four must be met. Excl. Epics, Sub-tasks, removed.
 
 **Missing Assignee** — `COUNT(*)` where `removed_at IS NULL AND assignee IS NULL AND status != 'Obsolete / Won''t Do'`. All issue types including Epics and Sub-tasks.
 
@@ -114,13 +115,13 @@ Per-sprint drill-down for Scrum Masters and Release Managers.
 
 **Missing Epic Link** — Issues where `epic_key IS NULL`, excl. Epics, Sub-tasks.
 
-**Readiness %** — `ROUND(100.0 * ready / total, 1)` where ready = SP>0 AND epic IS NOT NULL AND has_ac = TRUE, total = all active non-Epic/Sub-task issues. Bugs count in denominator even without AC requirement. Target ≥ 90%.
+**Readiness %** — `ROUND(100.0 * ready / total, 1)` where ready = SP≥1 AND epic IS NOT NULL AND has_ac = TRUE AND cardinality(components) > 0, total = all active non-Epic/Sub-task issues. Bugs count in denominator even without AC requirement. Target ≥ 90%.
 
 **Completed Issues** — `COUNT(*)` with same `resolved_at` sprint window as Completed SP. Excl. Epics, Sub-tasks, Obsolete.
 
 **Open Issues** — `COUNT(*)` where `removed_at IS NULL AND status_category != 'Done'`, excl. Epics, Sub-tasks, Obsolete.
 
-**Issues Not Ready (table)** — Issues failing any of: SP missing, Epic missing, AC missing (N/A for Bugs), Assignee missing. Bugs only appear for SP/Epic/Assignee — not AC. Sorted by priority.
+**Issues Not Ready (table)** — Issues failing any of: SP missing, Epic missing, AC missing (N/A for Bugs), Assignee missing, Component missing. Bugs only appear for SP/Epic/Assignee/Component — not AC. Sorted by priority. Includes a Component ✅/❌ column.
 
 ### Scope Change
 
@@ -134,7 +135,7 @@ Per-sprint drill-down for Scrum Masters and Release Managers.
 
 Uses `issue_links` table with `link_label = 'blocks'` / `'is blocked by'`. Only cross-project links (`i2.project_key != i.project_key`).
 
-**Blocking Other Teams** / **Blocked by Other Teams** — Stat counts. Thresholds: green = 0, yellow ≥ 1, red ≥ 3.
+**Blocking Other Teams** / **Blocked by Other Teams** — Count of cross-team blocking *relationships* (not distinct issues). One sprint issue blocking two external tickets counts as 2. Thresholds: green = 0, yellow ≥ 1, red ≥ 3.
 
 **Detail tables** — Key, Summary, Status, Priority, Assignee, linked issue key (Jira link), Other Team, linked issue summary. Sorted by priority. Priority and Status columns have color-background cell formatting.
 
@@ -196,7 +197,11 @@ Quarterly KPIs for Product Owners: planning quality, delivery accuracy, re-work,
 
 **Sprint filter:** Project-majority filter (`was_in_initial_scope = TRUE`, >50% committed issues from selected projects). More accurate than simple join for multi-team boards.
 
-### Planning & Delivery
+### Data Age
+
+**Data Age** — Hours since the last successful or partial Jira sync. Queries `sync_log` for the most recent finished entry. Color-coded: green ≤ 12 h · yellow 12–24 h · red > 24 h (syncs run at 07:00 and 19:00 UTC).
+
+### KPI Summary Row 1 — Planning & Quality
 
 **Avg Scope Change %** — `AVG((added_sp + removed_sp) / committed_sp × 100)` across closed sprints in quarter. Target ≤ 10%.
 
@@ -206,11 +211,21 @@ Quarterly KPIs for Product Owners: planning quality, delivery accuracy, re-work,
 
 **Avg Blocker Resolution Time** — `AVG(EXTRACT(EPOCH FROM (resolved_at - created_at))/3600.0)` in hours for Blocker issues where `resolved_at IS NOT NULL` and `date_trunc('quarter', created_at) = '$quarter'::date`. Uses `created_at` for quarter assignment so it measures blockers that originated in the quarter, regardless of when resolved.
 
+### KPI Summary Row 2 — Process Quality
+
+**Avg Bug Closure Rate** — `COUNT(Done bugs) / COUNT(all bugs raised) × 100` for the selected project and quarter. Bug's quarter is determined by `created_at`. Target ≥ 80%.
+
+**Avg Tickets DOD Rate** — Average per sprint of `(Done Stories/Tasks with all DOD criteria) / (all Done Stories/Tasks) × 100`. Denominator = committed tickets with `status = 'Done'` only. DOD criteria: `assignee IS NOT NULL`, `qa_assignee IS NOT NULL`, `SP ≥ 1`, `has_acceptance_criteria = TRUE`, `epic_key IS NOT NULL`. Excludes Epics, Sub-tasks, Bugs. Target ≥ 80%.
+
+**Avg Tickets DOR Rate** — Average per sprint of `(committed Stories/Tasks with all DOR criteria) / (all committed Stories/Tasks) × 100`. DOR criteria: `assignee IS NOT NULL`, `qa_assignee IS NOT NULL`, `SP ≥ 1`, `has_acceptance_criteria = TRUE`, `epic_key IS NOT NULL`, `cardinality(components) > 0`. Excludes Epics, Sub-tasks, Bugs. Target ≥ 80%.
+
+**Avg Release Quality Score** — `SUM(bug_count × weight) / COUNT(distinct releases)` for released versions in the quarter. Weights: Blocker=5, Critical=4, High=3, Medium=2, Low=1. Lower = better. Thresholds: green < 10, yellow 10–25, red ≥ 25.
+
+### Planning & Delivery Charts
+
 **Scope Change % per Sprint** — Per-sprint bar chart of `(added_sp + removed_sp) / committed_sp`. Ordered by `start_date ASC`.
 
 **Planning Accuracy % per Sprint** — Shows Committed SP, Delivered SP, and Delivery % per sprint from `v_planning_deviation`. Ordered oldest to newest.
-
-**Sprint Velocity — Committed vs Delivered** — Bar chart from `v_planning_deviation`.
 
 **Blocker Resolution Time per Sprint** — `AVG((resolved_at - created_at) / 3600)` per sprint for Blocker issues. Uses `was_in_initial_scope = TRUE` to avoid carry-over double-counting.
 
