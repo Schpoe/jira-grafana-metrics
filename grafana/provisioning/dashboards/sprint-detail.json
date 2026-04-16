@@ -1552,6 +1552,75 @@
         "type": "postgres",
         "uid": "jira-metrics-pg"
       },
+      "description": "All currently active tickets in the sprint (removed_at IS NULL). Excludes Epics and Sub-tasks. Includes unplanned additions and Bugs.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "blue",
+            "mode": "fixed"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 2,
+        "x": 16,
+        "y": 14
+      },
+      "id": 118,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.1.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT COUNT(*) AS value\nFROM sprint_issues si JOIN issues i ON i.key=si.issue_key\nWHERE si.sprint_id=$sprint::bigint\n  AND si.removed_at IS NULL\n  AND i.issue_type NOT IN ('Epic','Sub-task')",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "title": "Total in Sprint",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
       "description": "Issues resolved within this sprint's time window (resolved_at between sprint start and complete date). Excludes Epics, Sub-tasks, Obsolete.",
       "fieldConfig": {
         "defaults": {
@@ -5062,6 +5131,6 @@
   "timezone": "browser",
   "title": "Sprint Detail",
   "uid": "cfih5an4hj7y8e",
-  "version": 20,
+  "version": 21,
   "weekStart": ""
 }
