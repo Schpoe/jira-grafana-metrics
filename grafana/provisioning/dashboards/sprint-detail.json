@@ -2542,7 +2542,7 @@
             "uid": "jira-metrics-pg"
           },
           "format": "table",
-          "rawSql": "SELECT COUNT(DISTINCT il.from_key) AS value\nFROM sprint_issues si\nJOIN issues i ON i.key = si.issue_key\nJOIN issue_links il ON il.from_key = si.issue_key\nJOIN issues i2 ON i2.key = il.to_key\nWHERE si.sprint_id = $sprint::bigint\n  AND si.removed_at IS NULL\n  AND il.link_label = 'blocks'\n  AND i2.project_key != i.project_key",
+          "rawSql": "SELECT COUNT(*) AS value\nFROM sprint_issues si\nJOIN issues i ON i.key = si.issue_key\nJOIN issue_links il ON il.from_key = si.issue_key\nJOIN issues i2 ON i2.key = il.to_key\nWHERE si.sprint_id = $sprint::bigint\n  AND si.removed_at IS NULL\n  AND il.link_label = 'blocks'\n  AND i2.project_key != i.project_key",
           "refId": "A"
         }
       ],
@@ -2614,7 +2614,7 @@
             "uid": "jira-metrics-pg"
           },
           "format": "table",
-          "rawSql": "SELECT COUNT(DISTINCT il.from_key) AS value\nFROM sprint_issues si\nJOIN issues i ON i.key = si.issue_key\nJOIN issue_links il ON il.from_key = si.issue_key\nJOIN issues i2 ON i2.key = il.to_key\nWHERE si.sprint_id = $sprint::bigint\n  AND si.removed_at IS NULL\n  AND il.link_label = 'is blocked by'\n  AND i2.project_key != i.project_key",
+          "rawSql": "SELECT COUNT(*) AS value\nFROM sprint_issues si\nJOIN issues i ON i.key = si.issue_key\nJOIN issue_links il ON il.from_key = si.issue_key\nJOIN issues i2 ON i2.key = il.to_key\nWHERE si.sprint_id = $sprint::bigint\n  AND si.removed_at IS NULL\n  AND il.link_label = 'is blocked by'\n  AND i2.project_key != i.project_key",
           "refId": "A"
         }
       ],
@@ -4990,6 +4990,6 @@
   "timezone": "browser",
   "title": "Sprint Detail",
   "uid": "cfih5an4hj7y8e",
-  "version": 16,
+  "version": 17,
   "weekStart": ""
 }
