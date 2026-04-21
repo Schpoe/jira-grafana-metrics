@@ -49,12 +49,43 @@ ACCEPTANCE_CRITERIA_FIELD = os.environ.get("JIRA_ACCEPTANCE_CRITERIA_FIELD", "cu
 CUSTOMER_PROJECT_FIELD = os.environ.get("JIRA_CUSTOMER_PROJECT_FIELD", "customfield_10662")
 QA_FIELD = os.environ.get("JIRA_QA_FIELD", "customfield_10132")
 
+# Optional webhook for failure notifications (Slack/Teams/make.com/etc.)
+NOTIFY_WEBHOOK_URL = os.environ.get("NOTIFY_WEBHOOK_URL", "")
+
 PG_DSN = (
     f"host={os.environ['POSTGRES_HOST']} "
     f"dbname={os.environ['POSTGRES_DB']} "
     f"user={os.environ['POSTGRES_USER']} "
     f"password={os.environ['POSTGRES_PASSWORD']}"
 )
+
+
+# ─── Failure notification ────────────────────────────────────────────────────
+
+def _notify_failure(errors: list[str]) -> None:
+    """POST a failure alert to NOTIFY_WEBHOOK_URL if configured.
+    Payload is compatible with Slack incoming webhooks and most HTTP-trigger
+    services (Teams, make.com, n8n, etc.).
+    """
+    if not NOTIFY_WEBHOOK_URL:
+        return
+    import json as _json
+    from datetime import datetime, timezone
+    msg = (
+        f":rotating_light: *Jira sync FAILED* at "
+        f"{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}\n"
+        f"Errors: {'; '.join(errors)}"
+    )
+    try:
+        resp = requests.post(
+            NOTIFY_WEBHOOK_URL,
+            json={"text": msg},
+            timeout=10,
+        )
+        resp.raise_for_status()
+        log.info("Failure notification sent to webhook")
+    except Exception as exc:
+        log.warning("Could not send failure notification: %s", exc)
 
 
 # ─── Read-only Jira HTTP session ─────────────────────────────────────────────
@@ -1208,6 +1239,7 @@ def main():
             )
         conn.commit()
         log.error("=== Sync failed ===")
+        _notify_failure(errors)
         conn.close()
         sys.exit(1)
 

@@ -97,7 +97,7 @@
         "type": "postgres",
         "uid": "jira-metrics-pg"
       },
-      "description": "Hours since the last successful Jira sync. Green \u2264 12 h \u2022 Yellow 12\u201324 h \u2022 Red > 24 h.",
+      "description": "Hours since the last Jira sync attempt and its status. Green \u2264 12 h \u2022 Yellow 12\u201324 h \u2022 Red > 24 h or ERROR status. Queries most recent run regardless of success.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -157,7 +157,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT ROUND(EXTRACT(EPOCH FROM (NOW() - finished_at)) / 3600.0, 1) AS \"Data Age (h)\"\nFROM sync_log\nWHERE status IN ('success', 'partial') AND finished_at IS NOT NULL\nORDER BY finished_at DESC LIMIT 1",
+          "rawSql": "SELECT\n  ROUND(EXTRACT(EPOCH FROM (NOW() - finished_at)) / 3600.0, 1) AS \"Age (h)\",\n  UPPER(status) AS \"Status\"\nFROM sync_log\nWHERE finished_at IS NOT NULL\nORDER BY finished_at DESC LIMIT 1",
           "format": "table",
           "refId": "A"
         }
@@ -2346,6 +2346,6 @@
   "timezone": "browser",
   "title": "PO KPIs",
   "uid": "jira-po-kpis",
-  "version": 34,
+  "version": 35,
   "weekStart": ""
 }
