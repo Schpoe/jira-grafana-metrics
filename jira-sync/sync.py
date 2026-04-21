@@ -1113,7 +1113,8 @@ def _cleanup_carry_over_issues(conn):
                 FROM sprint_issues
                 WHERE removed_at IS NULL
                 GROUP BY issue_key
-                HAVING COUNT(*) > 1
+                HAVING COUNT(*) > 2   -- only fix genuine multi-sprint ghosts (3+),
+                                      -- leave normal single carry-overs (2 sprints) intact
             )
             UPDATE sprint_issues si
                SET removed_at = COALESCE(s.complete_date, s.end_date, NOW())
