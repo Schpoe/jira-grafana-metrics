@@ -2080,7 +2080,7 @@
             "uid": "jira-metrics-pg"
           },
           "format": "table",
-          "rawSql": "SELECT COALESCE(SUM(COALESCE(si.story_points_at_add, i.story_points, 0)), 0) AS value FROM sprint_issues si JOIN issues i ON i.key = si.issue_key WHERE si.sprint_id = $sprint::bigint AND si.was_in_initial_scope = FALSE AND si.removed_at IS NULL",
+          "rawSql": "SELECT COALESCE(SUM(COALESCE(si.story_points_at_add, i.story_points, 0)), 0) AS value\nFROM sprint_issues si JOIN issues i ON i.key = si.issue_key\nWHERE si.sprint_id = $sprint::bigint\n  AND si.was_in_initial_scope = FALSE AND si.removed_at IS NULL\n  AND i.issue_type NOT IN ('Epic', 'Sub-task')\n  AND i.status != 'Obsolete / Won''t Do'",
           "refId": "A"
         }
       ],
@@ -2212,7 +2212,7 @@
             "uid": "jira-metrics-pg"
           },
           "format": "table",
-          "rawSql": "SELECT COALESCE(SUM(COALESCE(si.story_points_at_add, i.story_points, 0)), 0) AS value FROM sprint_issues si JOIN issues i ON i.key = si.issue_key WHERE si.sprint_id = $sprint::bigint AND si.removed_at IS NOT NULL",
+          "rawSql": "SELECT COALESCE(SUM(COALESCE(si.story_points_at_add, i.story_points, 0)), 0) AS value\nFROM sprint_issues si JOIN issues i ON i.key = si.issue_key\nWHERE si.sprint_id = $sprint::bigint\n  AND si.removed_at IS NOT NULL\n  AND i.issue_type NOT IN ('Epic', 'Sub-task')\n  AND i.status != 'Obsolete / Won''t Do'",
           "refId": "A"
         }
       ],
@@ -2285,7 +2285,7 @@
             "uid": "jira-metrics-pg"
           },
           "format": "table",
-          "rawSql": "SELECT ROUND(100.0 * (\n  COALESCE((\n    SELECT SUM(COALESCE(si2.story_points_at_add, i2.story_points, 0))\n    FROM sprint_issues si2 JOIN issues i2 ON i2.key = si2.issue_key\n    WHERE si2.sprint_id = $sprint::bigint\n      AND si2.was_in_initial_scope = FALSE AND si2.removed_at IS NULL\n      AND i.issue_type NOT IN ('Epic', 'Sub-task') AND i.status != 'Obsolete / Won''t Do'\n  ), 0)\n  + COALESCE((\n    SELECT SUM(COALESCE(si3.story_points_at_add, i3.story_points, 0))\n    FROM sprint_issues si3 JOIN issues i3 ON i3.key = si3.issue_key\n    WHERE si3.sprint_id = $sprint::bigint\n      AND si3.removed_at IS NOT NULL\n      AND i.issue_type NOT IN ('Epic', 'Sub-task') AND i.status != 'Obsolete / Won''t Do'\n  ), 0)\n) / NULLIF((\n  SELECT SUM(COALESCE(si4.story_points_at_add, i4.story_points, 0))\n  FROM sprint_issues si4 JOIN issues i4 ON i4.key = si4.issue_key\n  WHERE si4.sprint_id = $sprint::bigint\n    AND si4.was_in_initial_scope = TRUE\n    AND i.issue_type NOT IN ('Epic', 'Sub-task') AND i.status != 'Obsolete / Won''t Do'\n), 0), 1) AS value",
+          "rawSql": "SELECT ROUND(100.0 * (\n  COALESCE((\n    SELECT SUM(COALESCE(si2.story_points_at_add, i2.story_points, 0))\n    FROM sprint_issues si2 JOIN issues i2 ON i2.key = si2.issue_key\n    WHERE si2.sprint_id = $sprint::bigint\n      AND si2.was_in_initial_scope = FALSE AND si2.removed_at IS NULL\n      AND i2.issue_type NOT IN ('Epic', 'Sub-task')\n      AND i2.status != 'Obsolete / Won''t Do'\n  ), 0)\n  + COALESCE((\n    SELECT SUM(COALESCE(si3.story_points_at_add, i3.story_points, 0))\n    FROM sprint_issues si3 JOIN issues i3 ON i3.key = si3.issue_key\n    WHERE si3.sprint_id = $sprint::bigint\n      AND si3.removed_at IS NOT NULL\n      AND i3.issue_type NOT IN ('Epic', 'Sub-task')\n      AND i3.status != 'Obsolete / Won''t Do'\n  ), 0)\n) / NULLIF((\n  SELECT SUM(COALESCE(si4.story_points_at_add, i4.story_points, 0))\n  FROM sprint_issues si4 JOIN issues i4 ON i4.key = si4.issue_key\n  WHERE si4.sprint_id = $sprint::bigint\n    AND si4.was_in_initial_scope = TRUE\n    AND i4.issue_type NOT IN ('Epic', 'Sub-task')\n    AND i4.status != 'Obsolete / Won''t Do'\n), 0), 1) AS value",
           "refId": "A"
         }
       ],
@@ -5103,6 +5103,6 @@
   "timezone": "browser",
   "title": "Sprint Detail",
   "uid": "cfih5an4hj7y8e",
-  "version": 24,
+  "version": 25,
   "weekStart": ""
 }
