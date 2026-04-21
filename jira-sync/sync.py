@@ -1003,20 +1003,18 @@ def sync_sprint_reports(conn):
             )
             if isinstance(i, dict)
         ]
-        if incomplete_keys:
-            log.debug("Sprint %d: %d incomplete issues from sprint report", sprint_id, len(incomplete_keys))
-        else:
-            log.debug("Sprint %d: incompletedIssues not found in sprint report contents (keys: %s)",
-                      sprint_id, list(contents.keys())[:10])
+        log.info("Sprint %d (%s): added=%d punted=%d incomplete=%d (contents keys: %s)",
+                 sprint_id, state, len(added_keys), len(punted_keys), len(incomplete_keys),
+                 list(contents.keys()))
 
         removed_ts = complete_date or datetime.now(timezone.utc)
 
         with conn.cursor() as cur:
-            # For active sprints reset all to TRUE first — this corrects cases
-            # where the container was down during sprint start and all issues
-            # were inserted as was_in_initial_scope=FALSE on the first sync.
-            if state == 'active':
-                cur.execute(
+            # Reset ALL issues to was_in_initial_scope=TRUE before applying corrections.
+            # This makes Jira's issueKeysAddedDuringSprint the single source of truth —
+            # any issues incorrectly inserted as FALSE due to sync timing get corrected.
+            # Applies to both active and closed sprints.
+            cur.execute(
                     "UPDATE sprint_issues SET was_in_initial_scope = TRUE WHERE sprint_id = %s",
                     (sprint_id,),
                 )
