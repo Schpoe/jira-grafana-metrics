@@ -289,23 +289,25 @@ WITH committed AS (
     GROUP BY si.sprint_id
 ),
 delivered AS (
-    -- Count committed issues (was_in_initial_scope=TRUE) that are Done.
-    -- No resolved_at window needed: was_in_initial_scope=TRUE is unique per sprint
-    -- (Jira only sets this for issues explicitly planned at sprint start), so there
-    -- is no carry-over double-counting risk. The resolved_at window was excluding
-    -- issues resolved slightly outside the sprint window (e.g. after close date),
-    -- causing severely understated delivery percentages.
+    -- Count committed issues (was_in_initial_scope=TRUE) that were resolved within
+    -- the sprint window (with a 7-day buffer after close for late-resolved issues).
+    -- The resolved_at window prevents carry-over issues from being double-counted
+    -- as delivered in multiple sprints when they appear with was_in_initial_scope=TRUE
+    -- in both sprint N (where committed) and sprint N+1 (where eventually done).
     SELECT
         si.sprint_id                                                            AS sprint_id,
         COUNT(*)                                                                AS delivered_issues,
         COALESCE(SUM(COALESCE(si.story_points_at_add, i.story_points, 0)), 0)  AS delivered_points
     FROM sprint_issues si
     JOIN issues i ON i.key = si.issue_key
+    JOIN sprints s ON s.id = si.sprint_id
     WHERE si.was_in_initial_scope = TRUE
       AND si.removed_at IS NULL
       AND i.status_category = 'Done'
       AND i.status != 'Obsolete / Won''t Do'
       AND i.issue_type NOT IN ('Epic', 'Sub-task')
+      AND i.resolved_at IS NOT NULL
+      AND i.resolved_at <= COALESCE(s.complete_date, s.end_date, NOW()) + INTERVAL '7 days'
     GROUP BY si.sprint_id
 )
 SELECT
