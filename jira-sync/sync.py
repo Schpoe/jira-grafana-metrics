@@ -992,10 +992,22 @@ def sync_sprint_reports(conn):
         # Issues removed/punted mid-sprint: list of issue objects
         punted_keys = [i["key"] for i in contents.get("puntedIssues", [])]
 
-        # Issues not completed when sprint closed — these were moved to the
-        # backlog or next sprint. They must be marked removed_at in this sprint
-        # so they don't inflate committed/total SP for this closed sprint.
-        incomplete_keys = [i["key"] for i in contents.get("incompletedIssues", [])]
+        # Issues not completed when sprint closed — try multiple field names since
+        # the Greenhopper API field name varies across Jira Cloud versions.
+        incomplete_keys = [
+            i["key"] for i in (
+                contents.get("incompletedIssues")
+                or contents.get("issuesNotCompletedInCurrentSprint")
+                or contents.get("issuesNotCompletedInitialEstimateSum", {}).get("issueKeys", [])
+                or []
+            )
+            if isinstance(i, dict)
+        ]
+        if incomplete_keys:
+            log.debug("Sprint %d: %d incomplete issues from sprint report", sprint_id, len(incomplete_keys))
+        else:
+            log.debug("Sprint %d: incompletedIssues not found in sprint report contents (keys: %s)",
+                      sprint_id, list(contents.keys())[:10])
 
         removed_ts = complete_date or datetime.now(timezone.utc)
 
@@ -1075,6 +1087,48 @@ def sync_sprint_reports(conn):
 
     log.info("Sprint reports synced: %d total", synced)
     return synced
+
+
+def _cleanup_carry_over_issues(conn):
+    """Remove ghost sprint_issues rows caused by carry-over tickets.
+
+    When a ticket carries over from sprint N to sprint N+1 without being
+    completed, it ends up with removed_at IS NULL in BOTH sprints, inflating
+    every sprint's committed/total SP count.
+
+    Rule: a ticket may only be active (removed_at IS NULL) in ONE sprint at a
+    time — the most recent sprint it belongs to. All earlier closed-sprint rows
+    get removed_at set to that sprint's complete_date.
+
+    This is a safety net that runs after sync_sprint_reports regardless of
+    whether the Jira sprint report API returned incomplete issue keys.
+    """
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            WITH latest AS (
+                SELECT issue_key, MAX(sprint_id) AS max_sprint_id
+                FROM sprint_issues
+                WHERE removed_at IS NULL
+                GROUP BY issue_key
+                HAVING COUNT(*) > 1
+            )
+            UPDATE sprint_issues si
+               SET removed_at = COALESCE(s.complete_date, s.end_date, NOW())
+              FROM latest l
+              JOIN sprints s ON s.id = si.sprint_id
+             WHERE si.issue_key = l.issue_key
+               AND si.sprint_id < l.max_sprint_id
+               AND si.removed_at IS NULL
+               AND s.state = 'closed'
+            """
+        )
+        rows = cur.rowcount
+    conn.commit()
+    if rows:
+        log.info("Carry-over cleanup: set removed_at on %d ghost sprint_issues rows", rows)
+    else:
+        log.info("Carry-over cleanup: no ghost rows found")
 
 
 # ─── QASE link sync ──────────────────────────────────────────────────────────
@@ -1224,6 +1278,12 @@ def main():
     except Exception as exc:
         log.error("Sprint reports sync failed: %s", exc, exc_info=True)
         errors.append(f"sprint_reports: {exc}")
+
+    try:
+        _cleanup_carry_over_issues(conn)
+    except Exception as exc:
+        log.error("Carry-over cleanup failed: %s", exc, exc_info=True)
+        errors.append(f"carry_over_cleanup: {exc}")
 
     try:
         backfill_resolved_at(conn)
