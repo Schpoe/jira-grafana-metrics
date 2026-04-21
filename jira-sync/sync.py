@@ -1010,17 +1010,21 @@ def sync_sprint_reports(conn):
         removed_ts = complete_date or datetime.now(timezone.utc)
 
         with conn.cursor() as cur:
-            # Reset ALL issues to was_in_initial_scope=TRUE before applying corrections.
-            # This makes Jira's issueKeysAddedDuringSprint the single source of truth —
-            # any issues incorrectly inserted as FALSE due to sync timing get corrected.
-            # Applies to both active and closed sprints.
+            # Reset ALL issues to was_in_initial_scope=TRUE.
+            # For active sprints: corrects timing errors from container downtime.
+            # For closed sprints: Jira's Greenhopper issueKeysAddedDuringSprint API
+            # counts carry-overs from the previous sprint as "added during sprint",
+            # which conflicts with what Jira's own Sprint Report UI shows as committed.
+            # We therefore apply issueKeysAddedDuringSprint corrections only for
+            # active sprints where the data is fresh and reliable.
             cur.execute(
-                    "UPDATE sprint_issues SET was_in_initial_scope = TRUE WHERE sprint_id = %s",
-                    (sprint_id,),
-                )
+                "UPDATE sprint_issues SET was_in_initial_scope = TRUE WHERE sprint_id = %s",
+                (sprint_id,),
+            )
 
-            # Mark added-during-sprint issues as unplanned (not initial scope)
-            if added_keys:
+            # For active sprints only: apply issueKeysAddedDuringSprint corrections.
+            # Closed sprints: leave everything as TRUE to match Jira's Sprint Report UI.
+            if added_keys and state == 'active':
                 cur.execute(
                     """
                     UPDATE sprint_issues
