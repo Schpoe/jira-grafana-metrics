@@ -992,6 +992,11 @@ def sync_sprint_reports(conn):
         # Issues removed/punted mid-sprint: list of issue objects
         punted_keys = [i["key"] for i in contents.get("puntedIssues", [])]
 
+        # Issues not completed when sprint closed — these were moved to the
+        # backlog or next sprint. They must be marked removed_at in this sprint
+        # so they don't inflate committed/total SP for this closed sprint.
+        incomplete_keys = [i["key"] for i in contents.get("incompletedIssues", [])]
+
         removed_ts = complete_date or datetime.now(timezone.utc)
 
         with conn.cursor() as cur:
@@ -1040,6 +1045,20 @@ def sync_sprint_reports(conn):
                     ON CONFLICT DO NOTHING
                     """,
                     (sprint_id, removed_ts, punted_keys, sprint_id),
+                )
+
+            # Mark incomplete (carry-over) issues as removed from this closed sprint.
+            # These were not Done when the sprint closed and were moved to the backlog
+            # or next sprint. Without this, carry-over issues accumulate across every
+            # sprint they touched, inflating committed/total SP counts.
+            if incomplete_keys and state == 'closed':
+                cur.execute(
+                    """
+                    UPDATE sprint_issues
+                       SET removed_at = COALESCE(removed_at, %s)
+                     WHERE sprint_id = %s AND issue_key = ANY(%s)
+                    """,
+                    (removed_ts, sprint_id, incomplete_keys),
                 )
 
             # Only mark closed sprints as done — active sprints re-run every sync
