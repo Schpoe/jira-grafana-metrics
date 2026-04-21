@@ -1120,6 +1120,7 @@ def _cleanup_carry_over_issues(conn):
                AND si.sprint_id < l.max_sprint_id
                AND si.removed_at IS NULL
                AND s.id = si.sprint_id
+               AND s.state = 'closed'
             """
         )
         rows = cur.rowcount
