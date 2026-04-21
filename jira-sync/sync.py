@@ -1115,11 +1115,11 @@ def _cleanup_carry_over_issues(conn):
             )
             UPDATE sprint_issues si
                SET removed_at = COALESCE(s.complete_date, s.end_date, NOW())
-              FROM latest l
-              JOIN sprints s ON s.id = si.sprint_id
+              FROM latest l, sprints s
              WHERE si.issue_key = l.issue_key
                AND si.sprint_id < l.max_sprint_id
                AND si.removed_at IS NULL
+               AND s.id = si.sprint_id
                AND s.state = 'closed'
             """
         )
