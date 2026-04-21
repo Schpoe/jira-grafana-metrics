@@ -934,33 +934,40 @@ def sync_releases(conn):
 
 
 def sync_sprint_reports(conn):
-    """Fetch Jira sprint reports for closed sprints and update scope change data.
+    """Fetch Jira sprint reports and update scope change data.
 
     Jira's sprint report exposes which issues were added after sprint start
     (issueKeysAddedDuringSprint) and which were removed mid-sprint (puntedIssues).
-    This data is not available from the regular sprint/issue APIs.
 
-    Already-processed sprints are skipped via report_synced_at on the sprints table.
+    - Closed sprints: processed once; report_synced_at guards against reprocessing.
+    - Active sprints: processed on every sync run (no report_synced_at set) so that
+      was_in_initial_scope stays correct even when the container missed sprint start.
+      All active-sprint issues are reset to TRUE first, then added-during-sprint keys
+      are corrected to FALSE from the authoritative Jira sprint report.
     """
     log.info("Syncing sprint reports")
 
     with conn.cursor() as cur:
         cur.execute(
             """
-            SELECT id, board_id, complete_date
+            SELECT id, board_id, complete_date, state
             FROM sprints
-            WHERE state = 'closed'
-              AND report_synced_at IS NULL
-              AND board_id IS NOT NULL
-            ORDER BY complete_date DESC NULLS LAST
+            WHERE board_id IS NOT NULL
+              AND (
+                (state = 'closed' AND report_synced_at IS NULL)
+                OR state = 'active'
+              )
+            ORDER BY state DESC, complete_date DESC NULLS LAST
             """
         )
         pending = cur.fetchall()
 
-    log.info("Found %d closed sprints without report data", len(pending))
+    n_closed  = sum(1 for _, _, _, s in pending if s == 'closed')
+    n_active  = sum(1 for _, _, _, s in pending if s == 'active')
+    log.info("Found %d closed sprints without report data, %d active sprints", n_closed, n_active)
     synced = 0
 
-    for sprint_id, board_id, complete_date in pending:
+    for sprint_id, board_id, complete_date, state in pending:
         try:
             data = jira_get(
                 f"greenhopper/1.0/rapid/charts/sprintreport",
@@ -988,6 +995,15 @@ def sync_sprint_reports(conn):
         removed_ts = complete_date or datetime.now(timezone.utc)
 
         with conn.cursor() as cur:
+            # For active sprints reset all to TRUE first — this corrects cases
+            # where the container was down during sprint start and all issues
+            # were inserted as was_in_initial_scope=FALSE on the first sync.
+            if state == 'active':
+                cur.execute(
+                    "UPDATE sprint_issues SET was_in_initial_scope = TRUE WHERE sprint_id = %s",
+                    (sprint_id,),
+                )
+
             # Mark added-during-sprint issues as unplanned (not initial scope)
             if added_keys:
                 cur.execute(
@@ -1026,10 +1042,12 @@ def sync_sprint_reports(conn):
                     (sprint_id, removed_ts, punted_keys, sprint_id),
                 )
 
-            cur.execute(
-                "UPDATE sprints SET report_synced_at = NOW() WHERE id = %s",
-                (sprint_id,),
-            )
+            # Only mark closed sprints as done — active sprints re-run every sync
+            if state == 'closed':
+                cur.execute(
+                    "UPDATE sprints SET report_synced_at = NOW() WHERE id = %s",
+                    (sprint_id,),
+                )
 
         conn.commit()
         synced += 1
