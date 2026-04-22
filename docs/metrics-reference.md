@@ -3,7 +3,7 @@
 This document explains how every metric across all dashboards is calculated, which filters are applied, and known differences between dashboards.
 
 **Data source:** PostgreSQL (`jira-metrics-pg`).  
-**Key tables:** `sprint_issues`, `issues`, `sprints`, `issue_transitions`, `issue_links`, `releases`, `issue_fix_version_history`.  
+**Key tables:** `sprint_issues`, `issues`, `sprints`, `issue_transitions`, `issue_links`, `releases`, `issue_fix_version_history`, `issue_sprint_history`, `sprint_scope_initial`, `sprint_scope_final`, `sprint_scope_changes`.  
 **Key columns added:** `issues.qa_assignee TEXT` (Jira field `customfield_10132` — QA person assigned), `issues.components TEXT[]` (standard Jira components array).  
 **Key views:** `v_planning_deviation`, `v_cycle_time_rft_to_done`, `v_cycle_time_in_progress_to_rft`, `v_lead_time`, `v_time_in_status`, `v_prod_epic_progress`, `v_prod_item_progress`.
 
@@ -29,7 +29,39 @@ These are intentional differences worth understanding when comparing numbers:
 
 Used by: Sprint Detail (Delivery %, Avg Velocity, Velocity Booked %), Sprint Overview Quarter, PO KPIs.
 
-### `committed` CTE
+The view uses two different data sources depending on whether a sprint has been processed into the scope tables:
+
+**For closed sprints** (where `sprint_scope_final` rows exist):
+
+### `committed` CTE (closed sprints)
+
+```sql
+FROM sprint_scope_final ssf
+WHERE ssf.was_punted = FALSE
+  AND issue_type NOT IN ('Epic', 'Sub-task')
+  AND status != 'Obsolete / Won''t Do'
+```
+
+- `committed_points`: `SUM(COALESCE(ssf.story_points, 0))`
+- `committed_issues`: `COUNT(*)`
+
+### `delivered` CTE (closed sprints)
+
+```sql
+FROM sprint_scope_final ssf
+WHERE ssf.was_completed = TRUE
+  AND issue_type NOT IN ('Epic', 'Sub-task')
+  AND status != 'Obsolete / Won''t Do'
+```
+
+- `delivered_points`: `SUM(COALESCE(ssf.story_points, 0))`
+- `delivered_issues`: `COUNT(*)`
+
+**Why no `resolved_at` window for closed sprints:** `was_completed` is derived from each issue's resolved state at sprint close, stored in `sprint_scope_final`. It is unique per sprint — no carry-over double-counting risk.
+
+**For active/future sprints** (falling back to `sprint_issues`):
+
+### `committed` CTE (active sprints)
 
 ```sql
 WHERE was_in_initial_scope = TRUE
@@ -39,24 +71,16 @@ WHERE was_in_initial_scope = TRUE
 ```
 
 - `committed_points`: `SUM(COALESCE(story_points_at_add, story_points, 0))`
-- `committed_issues`: `COUNT(*)`
 
-### `delivered` CTE
+### `delivered` CTE (active sprints)
 
-```sql
-WHERE was_in_initial_scope = TRUE
-  AND removed_at IS NULL
-  AND status_category = 'Done'
-  AND status != 'Obsolete / Won''t Do'
-  AND issue_type NOT IN ('Epic', 'Sub-task')
-```
+Same filter plus `status_category = 'Done'` and `resolved_at <= COALESCE(complete_date, end_date, NOW()) + INTERVAL '7 days'`. The `resolved_at` window prevents carry-over double-counting for active sprints where `sprint_scope_final` is not yet available.
 
-- `delivered_points`: `SUM(COALESCE(story_points_at_add, story_points, 0))`
-- `delivered_issues`: `COUNT(*)`
-
-**Why no `resolved_at` window:** `was_in_initial_scope = TRUE` is set by the Jira sprint report API at sprint start only — unique per sprint. There is no carry-over double-counting risk. A `resolved_at` window would incorrectly exclude issues resolved slightly outside the sprint window (e.g. a few hours after close).
+---
 
 **`delivery_pct`:** `ROUND(100.0 * delivered_points / committed_points, 1)` — NULL when committed = 0. Cannot exceed 100% because only committed issues are in the numerator.
+
+**How `was_in_initial_scope` and `was_completed` are set:** `sync_sprint_scope()` reads `issue_sprint_history` (changelog-derived sprint field changes) and compares event timestamps to `sprint.start_date`. Issues with a first `'added'` event ≤ `start_date + 2h` are initial scope. `was_completed` is set from `issues.status_category` and `resolved_at` at sprint close time.
 
 **Note:** The Sprint Detail **Completed SP** stat panel uses a different formula — it counts *all* Done issues (including unplanned) and does use a `resolved_at` sprint window (`>= start_date AND <= COALESCE(complete_date, end_date, NOW())`) to prevent carry-over double-counting.
 

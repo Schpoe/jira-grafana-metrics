@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS sprints (
     end_date       TIMESTAMPTZ,
     complete_date  TIMESTAMPTZ,
     goal             TEXT,
-    report_synced_at TIMESTAMPTZ,   -- set after sprint report is fetched from Jira
+    report_synced_at TIMESTAMPTZ,   -- deprecated: was used by the removed Greenhopper sync
     synced_at        TIMESTAMPTZ DEFAULT NOW()
 );
 ALTER TABLE sprints ADD COLUMN IF NOT EXISTS report_synced_at TIMESTAMPTZ;
@@ -169,9 +169,9 @@ CREATE INDEX IF NOT EXISTS idx_link_history_from ON issue_link_history(from_key)
 CREATE INDEX IF NOT EXISTS idx_link_history_to   ON issue_link_history(to_key);
 CREATE INDEX IF NOT EXISTS idx_link_history_at   ON issue_link_history(occurred_at);
 
--- Sprint initial scope: issues committed at sprint start (SP from estimateStatistic)
--- For closed sprints: populated from Jira sprint report (all issues including punted).
--- For active sprints: populated each sync run, excluding issueKeysAddedDuringSprint.
+-- Sprint initial scope: issues committed at sprint start.
+-- Derived from issue_sprint_history: first 'added' event <= sprint.start_date + 2h.
+-- Rebuilt each sync for active sprints; written once when a sprint closes (scope_synced_at).
 CREATE TABLE IF NOT EXISTS sprint_scope_initial (
     sprint_id    INTEGER REFERENCES sprints(id),
     issue_key    TEXT REFERENCES issues(key),
@@ -179,8 +179,9 @@ CREATE TABLE IF NOT EXISTS sprint_scope_initial (
     PRIMARY KEY (sprint_id, issue_key)
 );
 
--- Sprint final scope: issue state when sprint closed (closed sprints only).
--- was_completed / was_punted / was_added_mid_sprint sourced directly from sprint report.
+-- Sprint final scope: per-issue state when sprint closed (closed sprints only).
+-- was_completed / was_punted / was_added_mid_sprint derived from issue_sprint_history
+-- and issues.resolved_at — no external API call required.
 CREATE TABLE IF NOT EXISTS sprint_scope_final (
     sprint_id            INTEGER REFERENCES sprints(id),
     issue_key            TEXT REFERENCES issues(key),
