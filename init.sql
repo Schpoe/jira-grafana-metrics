@@ -169,6 +169,48 @@ CREATE INDEX IF NOT EXISTS idx_link_history_from ON issue_link_history(from_key)
 CREATE INDEX IF NOT EXISTS idx_link_history_to   ON issue_link_history(to_key);
 CREATE INDEX IF NOT EXISTS idx_link_history_at   ON issue_link_history(occurred_at);
 
+-- Sprint initial scope: issues committed at sprint start (SP from estimateStatistic)
+-- For closed sprints: populated from Jira sprint report (all issues including punted).
+-- For active sprints: populated each sync run, excluding issueKeysAddedDuringSprint.
+CREATE TABLE IF NOT EXISTS sprint_scope_initial (
+    sprint_id    INTEGER REFERENCES sprints(id),
+    issue_key    TEXT REFERENCES issues(key),
+    story_points NUMERIC,
+    PRIMARY KEY (sprint_id, issue_key)
+);
+
+-- Sprint final scope: issue state when sprint closed (closed sprints only).
+-- was_completed / was_punted / was_added_mid_sprint sourced directly from sprint report.
+CREATE TABLE IF NOT EXISTS sprint_scope_final (
+    sprint_id            INTEGER REFERENCES sprints(id),
+    issue_key            TEXT REFERENCES issues(key),
+    story_points         NUMERIC,              -- SP at sprint close (currentEstimateStatistic)
+    was_completed        BOOLEAN NOT NULL,
+    was_punted           BOOLEAN NOT NULL DEFAULT FALSE,
+    was_added_mid_sprint BOOLEAN NOT NULL DEFAULT FALSE,
+    PRIMARY KEY (sprint_id, issue_key)
+);
+
+-- Mid-sprint change log: additions and removals detected between sync runs.
+-- Precision is ±12 hours (sync cadence). Only populated for active sprints.
+CREATE TABLE IF NOT EXISTS sprint_scope_changes (
+    id           SERIAL PRIMARY KEY,
+    sprint_id    INTEGER REFERENCES sprints(id),
+    issue_key    TEXT REFERENCES issues(key),
+    change_type  TEXT    NOT NULL CHECK (change_type IN ('added', 'removed')),
+    story_points NUMERIC,
+    detected_at  TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_sprint_scope_initial_sprint ON sprint_scope_initial(sprint_id);
+CREATE INDEX IF NOT EXISTS idx_sprint_scope_final_sprint   ON sprint_scope_final(sprint_id);
+CREATE INDEX IF NOT EXISTS idx_sprint_scope_changes_sprint ON sprint_scope_changes(sprint_id);
+CREATE INDEX IF NOT EXISTS idx_sprint_scope_changes_issue  ON sprint_scope_changes(issue_key);
+CREATE INDEX IF NOT EXISTS idx_sprint_scope_changes_at     ON sprint_scope_changes(detected_at);
+
+-- Migration: track whether scope tables have been populated per sprint
+ALTER TABLE sprints ADD COLUMN IF NOT EXISTS scope_synced_at TIMESTAMPTZ;
+
 -- ─── Useful Views ────────────────────────────────────────────────────────────
 
 -- Cycle time: time in each status per issue
@@ -267,15 +309,31 @@ FROM sprint_issues si
 JOIN sprints s  ON s.id  = si.sprint_id
 JOIN issues  i  ON i.key = si.issue_key;
 
--- Planning deviation per sprint (committed vs delivered story points/issues)
--- Both committed and delivered are computed directly from sprint_issues + issues,
--- removing dependency on sprint_snapshots which may be missing for many sprints.
--- Committed = was_in_initial_scope=TRUE (from Jira sprint report API).
--- Delivered = issues resolved (resolved_at) within the sprint window.
---   Using resolved_at prevents double-counting carry-over issues that accumulate
---   in sprint_issues across many sprints with removed_at IS NULL.
+-- Planning deviation per sprint (committed vs delivered story points/issues).
+-- For closed sprints with scope tables populated: uses sprint_scope_final which
+-- is sourced directly from the Jira sprint report — no resolved_at heuristics needed.
+-- For active sprints and not-yet-backfilled closed sprints: falls back to sprint_issues.
 CREATE OR REPLACE VIEW v_planning_deviation AS
-WITH committed AS (
+WITH scope_sprints AS (
+    -- Sprint IDs that have authoritative scope data from the sprint report
+    SELECT DISTINCT sprint_id FROM sprint_scope_final
+),
+committed AS (
+    -- Closed sprints with scope tables: use sprint_scope_final (excludes punted issues)
+    SELECT
+        ssf.sprint_id,
+        COUNT(*)                                                                AS committed_issues,
+        COALESCE(SUM(COALESCE(ssf.story_points, 0)), 0)                        AS committed_points
+    FROM sprint_scope_final ssf
+    JOIN issues i ON i.key = ssf.issue_key
+    WHERE ssf.was_punted = FALSE
+      AND i.issue_type NOT IN ('Epic', 'Sub-task')
+      AND i.status != 'Obsolete / Won''t Do'
+    GROUP BY ssf.sprint_id
+
+    UNION ALL
+
+    -- Active/future or not-yet-backfilled: fall back to sprint_issues
     SELECT
         si.sprint_id,
         COUNT(*)                                                                AS committed_issues,
@@ -286,16 +344,27 @@ WITH committed AS (
       AND si.removed_at IS NULL
       AND i.issue_type NOT IN ('Epic', 'Sub-task')
       AND i.status != 'Obsolete / Won''t Do'
+      AND si.sprint_id NOT IN (SELECT sprint_id FROM scope_sprints)
     GROUP BY si.sprint_id
 ),
 delivered AS (
-    -- Count committed issues (was_in_initial_scope=TRUE) that were resolved within
-    -- the sprint window (with a 7-day buffer after close for late-resolved issues).
-    -- The resolved_at window prevents carry-over issues from being double-counted
-    -- as delivered in multiple sprints when they appear with was_in_initial_scope=TRUE
-    -- in both sprint N (where committed) and sprint N+1 (where eventually done).
+    -- Closed sprints with scope tables: was_completed is authoritative from sprint report
     SELECT
-        si.sprint_id                                                            AS sprint_id,
+        ssf.sprint_id,
+        COUNT(*)                                                                AS delivered_issues,
+        COALESCE(SUM(COALESCE(ssf.story_points, 0)), 0)                        AS delivered_points
+    FROM sprint_scope_final ssf
+    JOIN issues i ON i.key = ssf.issue_key
+    WHERE ssf.was_completed = TRUE
+      AND i.issue_type NOT IN ('Epic', 'Sub-task')
+      AND i.status != 'Obsolete / Won''t Do'
+    GROUP BY ssf.sprint_id
+
+    UNION ALL
+
+    -- Active/future or not-yet-backfilled: resolved_at window (carry-over guard)
+    SELECT
+        si.sprint_id,
         COUNT(*)                                                                AS delivered_issues,
         COALESCE(SUM(COALESCE(si.story_points_at_add, i.story_points, 0)), 0)  AS delivered_points
     FROM sprint_issues si
@@ -308,6 +377,7 @@ delivered AS (
       AND i.issue_type NOT IN ('Epic', 'Sub-task')
       AND i.resolved_at IS NOT NULL
       AND i.resolved_at <= COALESCE(s.complete_date, s.end_date, NOW()) + INTERVAL '7 days'
+      AND si.sprint_id NOT IN (SELECT sprint_id FROM scope_sprints)
     GROUP BY si.sprint_id
 )
 SELECT

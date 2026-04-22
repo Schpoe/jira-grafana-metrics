@@ -664,14 +664,17 @@ def _sync_sprint_members(conn, sprint_id, sprint_state):
         # - active sprint, first sync (no existing rows): TRUE — all current members
         #   were there when the sprint started as far as we can tell
         # - active sprint, subsequent sync: FALSE for new rows — they were added mid-sprint
+        existing_members: dict = {}
         if sprint_state in ("closed", "future"):
             initial_scope = True
         else:
             cur.execute(
-                "SELECT COUNT(*) FROM sprint_issues WHERE sprint_id = %s", (sprint_id,)
+                "SELECT issue_key, story_points_at_add FROM sprint_issues"
+                " WHERE sprint_id = %s AND removed_at IS NULL",
+                (sprint_id,),
             )
-            existing_count = cur.fetchone()[0]
-            initial_scope = existing_count == 0  # True only on first sync of this sprint
+            existing_members = {r[0]: r[1] for r in cur.fetchall()}
+            initial_scope = len(existing_members) == 0  # True only on first sync
 
         execute_values(
             cur,
@@ -695,6 +698,27 @@ def _sync_sprint_members(conn, sprint_id, sprint_state):
                 """,
                 (sprint_id, list(current_keys)),
             )
+
+        # Log mid-sprint scope changes detected between sync runs (active sprints only,
+        # after the first sync when existing_members is already populated).
+        if sprint_state == "active" and existing_members:
+            sp_by_key = {r[1]: r[2] for r in rows}
+            added_this_sync   = current_keys - set(existing_members)
+            removed_this_sync = set(existing_members) - current_keys
+            change_rows = [
+                (sprint_id, key, "added",   sp_by_key.get(key))
+                for key in added_this_sync
+            ] + [
+                (sprint_id, key, "removed", existing_members[key])
+                for key in removed_this_sync
+            ]
+            if change_rows:
+                execute_values(
+                    cur,
+                    "INSERT INTO sprint_scope_changes"
+                    " (sprint_id, issue_key, change_type, story_points) VALUES %s",
+                    change_rows,
+                )
 
     conn.commit()
 
@@ -933,6 +957,31 @@ def sync_releases(conn):
     log.info("Releases synced: %d", len(rows))
 
 
+def _sprint_report_sp(issue_obj, prefer_current=False):
+    """Extract story points from a Greenhopper sprint report issue object.
+
+    Each issue object carries two SP fields:
+      estimateStatistic        — original estimate (SP at sprint start)
+      currentEstimateStatistic — estimate at sprint close
+
+    Pass prefer_current=True when extracting the final/closing value.
+    Falls back to the other field if the preferred one is absent.
+    """
+    fields = (
+        ("currentEstimateStatistic", "estimateStatistic")
+        if prefer_current
+        else ("estimateStatistic", "currentEstimateStatistic")
+    )
+    for field in fields:
+        try:
+            val = issue_obj[field]["statFieldValue"]["value"]
+            if val is not None:
+                return float(val)
+        except (KeyError, TypeError, ValueError):
+            pass
+    return None
+
+
 def sync_sprint_reports(conn):
     """Fetch Jira sprint reports and update scope change data.
 
@@ -954,7 +1003,7 @@ def sync_sprint_reports(conn):
             FROM sprints
             WHERE board_id IS NOT NULL
               AND (
-                (state = 'closed' AND report_synced_at IS NULL)
+                (state = 'closed' AND (report_synced_at IS NULL OR scope_synced_at IS NULL))
                 OR state = 'active'
               )
             ORDER BY state DESC, complete_date DESC NULLS LAST
@@ -978,7 +1027,7 @@ def sync_sprint_reports(conn):
             # Mark as synced anyway so we don't retry a permanently broken sprint
             with conn.cursor() as cur:
                 cur.execute(
-                    "UPDATE sprints SET report_synced_at = NOW() WHERE id = %s",
+                    "UPDATE sprints SET report_synced_at = NOW(), scope_synced_at = NOW() WHERE id = %s",
                     (sprint_id,),
                 )
             conn.commit()
@@ -988,24 +1037,31 @@ def sync_sprint_reports(conn):
 
         # Issues added after sprint start: dict {issue_key: True}
         added_keys = list(contents.get("issueKeysAddedDuringSprint", {}).keys())
+        added_key_set = set(added_keys)
 
         # Issues removed/punted mid-sprint: list of issue objects
-        punted_keys = [i["key"] for i in contents.get("puntedIssues", [])]
+        punted_issues = [i for i in contents.get("puntedIssues", []) if isinstance(i, dict) and i.get("key")]
+        punted_keys = [i["key"] for i in punted_issues]
 
-        # Issues not completed when sprint closed — try multiple field names since
-        # the Greenhopper API field name varies across Jira Cloud versions.
-        incomplete_keys = [
-            i["key"] for i in (
-                contents.get("incompletedIssues")
-                or contents.get("issuesNotCompletedInCurrentSprint")
-                or contents.get("issuesNotCompletedInitialEstimateSum", {}).get("issueKeys", [])
-                or []
-            )
-            if isinstance(i, dict)
-        ]
-        log.info("Sprint %d (%s): added=%d punted=%d incomplete=%d (contents keys: %s)",
-                 sprint_id, state, len(added_keys), len(punted_keys), len(incomplete_keys),
-                 list(contents.keys()))
+        # Issues completed when sprint closed (full objects with SP data)
+        completed_issues = [i for i in contents.get("completedIssues", []) if isinstance(i, dict) and i.get("key")]
+
+        # Issues not completed when sprint closed — field name varies across Jira Cloud versions
+        incompleted_issues: list = []
+        for _field in ("incompletedIssues", "issuesNotCompletedInCurrentSprint"):
+            _raw = contents.get(_field)
+            if _raw:
+                incompleted_issues = [i for i in _raw if isinstance(i, dict) and i.get("key")]
+                break
+        if not incompleted_issues:
+            # Last-resort fallback: keys-only format, no SP data available
+            _key_list = contents.get("issuesNotCompletedInitialEstimateSum", {}).get("issueKeys", [])
+            incompleted_issues = [{"key": k} for k in _key_list if isinstance(k, str)]
+        incomplete_keys = [i["key"] for i in incompleted_issues]
+
+        log.info("Sprint %d (%s): added=%d punted=%d completed=%d incomplete=%d (contents keys: %s)",
+                 sprint_id, state, len(added_keys), len(punted_keys),
+                 len(completed_issues), len(incomplete_keys), list(contents.keys()))
 
         removed_ts = complete_date or datetime.now(timezone.utc)
 
@@ -1075,10 +1131,117 @@ def sync_sprint_reports(conn):
                     (removed_ts, sprint_id, incomplete_keys),
                 )
 
+            # ── Populate scope tables ────────────────────────────────────────
+            # Closed sprints: build authoritative snapshots from sprint report.
+            # Active sprints: refresh sprint_scope_initial each run.
+            if state == 'closed':
+                all_issues_data: dict = {}
+                for issue in completed_issues:
+                    all_issues_data[issue["key"]] = {
+                        "sp_initial": _sprint_report_sp(issue, prefer_current=False),
+                        "sp_final":   _sprint_report_sp(issue, prefer_current=True),
+                        "was_completed": True,
+                        "was_punted":    False,
+                        "was_added":     issue["key"] in added_key_set,
+                    }
+                for issue in incompleted_issues:
+                    key = issue.get("key")
+                    if key:
+                        all_issues_data[key] = {
+                            "sp_initial": _sprint_report_sp(issue, prefer_current=False),
+                            "sp_final":   _sprint_report_sp(issue, prefer_current=True),
+                            "was_completed": False,
+                            "was_punted":    False,
+                            "was_added":     key in added_key_set,
+                        }
+                for issue in punted_issues:
+                    all_issues_data[issue["key"]] = {
+                        "sp_initial": _sprint_report_sp(issue, prefer_current=False),
+                        "sp_final":   _sprint_report_sp(issue, prefer_current=True),
+                        "was_completed": False,
+                        "was_punted":    True,
+                        "was_added":     issue["key"] in added_key_set,
+                    }
+
+                if all_issues_data:
+                    cur.execute(
+                        "SELECT key FROM issues WHERE key = ANY(%s)",
+                        (list(all_issues_data.keys()),),
+                    )
+                    known_scope_keys = {r[0] for r in cur.fetchall()}
+
+                    scope_initial_rows = [
+                        (sprint_id, key, d["sp_initial"])
+                        for key, d in all_issues_data.items() if key in known_scope_keys
+                    ]
+                    scope_final_rows = [
+                        (sprint_id, key, d["sp_final"],
+                         d["was_completed"], d["was_punted"], d["was_added"])
+                        for key, d in all_issues_data.items() if key in known_scope_keys
+                    ]
+
+                    if scope_initial_rows:
+                        execute_values(
+                            cur,
+                            """
+                            INSERT INTO sprint_scope_initial (sprint_id, issue_key, story_points)
+                            VALUES %s
+                            ON CONFLICT (sprint_id, issue_key) DO UPDATE
+                                SET story_points = EXCLUDED.story_points
+                            """,
+                            scope_initial_rows,
+                        )
+                    if scope_final_rows:
+                        execute_values(
+                            cur,
+                            """
+                            INSERT INTO sprint_scope_final
+                                (sprint_id, issue_key, story_points,
+                                 was_completed, was_punted, was_added_mid_sprint)
+                            VALUES %s
+                            ON CONFLICT (sprint_id, issue_key) DO UPDATE
+                                SET story_points         = EXCLUDED.story_points,
+                                    was_completed        = EXCLUDED.was_completed,
+                                    was_punted           = EXCLUDED.was_punted,
+                                    was_added_mid_sprint = EXCLUDED.was_added_mid_sprint
+                            """,
+                            scope_final_rows,
+                        )
+                    log.debug("Sprint %d: upserted %d initial + %d final scope rows",
+                              sprint_id, len(scope_initial_rows), len(scope_final_rows))
+
+            elif state == 'active':
+                # Rebuild sprint_scope_initial from current sprint_issues,
+                # excluding issues Jira reports as added after sprint start.
+                cur.execute(
+                    """
+                    SELECT si.issue_key, COALESCE(si.story_points_at_add, i.story_points) AS sp
+                    FROM sprint_issues si
+                    JOIN issues i ON i.key = si.issue_key
+                    WHERE si.sprint_id = %s AND si.removed_at IS NULL
+                    """,
+                    (sprint_id,),
+                )
+                current_members = {r[0]: r[1] for r in cur.fetchall()}
+                initial_keys = {k for k in current_members if k not in added_key_set}
+
+                cur.execute(
+                    "DELETE FROM sprint_scope_initial WHERE sprint_id = %s",
+                    (sprint_id,),
+                )
+                if initial_keys:
+                    execute_values(
+                        cur,
+                        "INSERT INTO sprint_scope_initial (sprint_id, issue_key, story_points)"
+                        " VALUES %s",
+                        [(sprint_id, k, current_members[k]) for k in initial_keys],
+                    )
+
             # Only mark closed sprints as done — active sprints re-run every sync
             if state == 'closed':
                 cur.execute(
-                    "UPDATE sprints SET report_synced_at = NOW() WHERE id = %s",
+                    "UPDATE sprints SET report_synced_at = NOW(), scope_synced_at = NOW()"
+                    " WHERE id = %s",
                     (sprint_id,),
                 )
 
