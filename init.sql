@@ -208,6 +208,22 @@ CREATE INDEX IF NOT EXISTS idx_sprint_scope_changes_sprint ON sprint_scope_chang
 CREATE INDEX IF NOT EXISTS idx_sprint_scope_changes_issue  ON sprint_scope_changes(issue_key);
 CREATE INDEX IF NOT EXISTS idx_sprint_scope_changes_at     ON sprint_scope_changes(detected_at);
 
+-- Sprint field change log derived from issue changelogs (replaces Greenhopper sprint report).
+-- Each row records when a sprint ID was added to or removed from an issue's Sprint field.
+-- Used to determine initial scope, mid-sprint additions, and punted issues without the
+-- deprecated Greenhopper API.
+CREATE TABLE IF NOT EXISTS issue_sprint_history (
+    id          SERIAL PRIMARY KEY,
+    issue_key   TEXT        NOT NULL,
+    sprint_id   INTEGER     NOT NULL,   -- no FK: may reference sprints on other boards
+    event       TEXT        NOT NULL CHECK (event IN ('added', 'removed')),
+    occurred_at TIMESTAMPTZ NOT NULL,
+    UNIQUE (issue_key, sprint_id, event, occurred_at)
+);
+CREATE INDEX IF NOT EXISTS idx_ish_sprint  ON issue_sprint_history(sprint_id);
+CREATE INDEX IF NOT EXISTS idx_ish_issue   ON issue_sprint_history(issue_key);
+CREATE INDEX IF NOT EXISTS idx_ish_at      ON issue_sprint_history(occurred_at);
+
 -- Migration: track whether scope tables have been populated per sprint
 ALTER TABLE sprints ADD COLUMN IF NOT EXISTS scope_synced_at TIMESTAMPTZ;
 

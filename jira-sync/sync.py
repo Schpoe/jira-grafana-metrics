@@ -222,8 +222,24 @@ def sync_projects(conn):
     log.info("Synced %d project(s)", len(rows))
 
 
+def _parse_sprint_ids(value) -> set:
+    """Parse comma-separated sprint IDs from a Jira changelog sprint field value.
+
+    The Sprint field stores numeric sprint IDs in 'from'/'to' changelog items,
+    e.g. "12345" or "12345,67890". Returns a set of ints.
+    """
+    if not value:
+        return set()
+    result = set()
+    for part in str(value).split(","):
+        part = part.strip()
+        if part.isdigit():
+            result.add(int(part))
+    return result
+
+
 def _fetch_changelog(issue_key):
-    """Fetch status transitions and fix-version history for a single issue.
+    """Fetch status transitions, fix-version history, and sprint history for one issue.
 
     Jira Cloud deprecated expand=changelog on the bulk search endpoint (410).
     This calls the dedicated per-issue changelog API instead.
@@ -231,11 +247,15 @@ def _fetch_changelog(issue_key):
     Some issues are corrupt on Jira's side (internal PSQLException returned as
     a 400) — these are logged and skipped rather than failing the entire sync.
 
-    Returns (transition_rows, fix_version_events) where fix_version_events is a
-    list of (issue_key, fix_version, added_at, removed_at) tuples.
+    Returns (transition_rows, fix_version_events, sprint_events):
+      transition_rows    — (issue_key, from_status, to_status, occurred_at, author)
+      fix_version_events — (issue_key, fix_version, added_at, removed_at)
+      sprint_events      — (issue_key, sprint_id, event, occurred_at)
+                           where event is 'added' or 'removed'
     """
     transition_rows = []
-    fix_version_events = []  # (issue_key, fix_version, added_at, removed_at)
+    fix_version_events = []
+    sprint_events = []
     start = 0
     while True:
         try:
@@ -245,7 +265,7 @@ def _fetch_changelog(issue_key):
             )
         except requests.exceptions.HTTPError as exc:
             log.warning("Skipping changelog for %s — Jira returned %s", issue_key, exc)
-            return [], []
+            return [], [], []
         for history in data.get("values", []):
             occurred_at = parse_dt(history.get("created"))
             for item in history.get("items", []):
@@ -258,8 +278,6 @@ def _fetch_changelog(issue_key):
                         history.get("author", {}).get("displayName"),
                     ))
                 elif item["field"] == "Fix Version":
-                    # Jira reports added/removed fix versions as separate items.
-                    # Use epoch sentinel for added_at when unknown (matches column DEFAULT).
                     EPOCH = "1970-01-01T00:00:00+00:00"
                     added   = item.get("toString")
                     removed = item.get("fromString")
@@ -267,10 +285,17 @@ def _fetch_changelog(issue_key):
                         fix_version_events.append((issue_key, added, occurred_at or EPOCH, None))
                     if removed:
                         fix_version_events.append((issue_key, removed, EPOCH, occurred_at))
+                elif item["field"] == "Sprint":
+                    from_ids = _parse_sprint_ids(item.get("from"))
+                    to_ids   = _parse_sprint_ids(item.get("to"))
+                    for sid in to_ids - from_ids:
+                        sprint_events.append((issue_key, sid, "added", occurred_at))
+                    for sid in from_ids - to_ids:
+                        sprint_events.append((issue_key, sid, "removed", occurred_at))
         if data.get("isLast", True):
             break
         start += data.get("maxResults", 100)
-    return transition_rows, fix_version_events
+    return transition_rows, fix_version_events, sprint_events
 
 
 def _last_successful_sync(conn):
@@ -361,6 +386,7 @@ def sync_issues(conn, sync_id, since=None, last_sync_duration=None, resume_token
         issue_rows = []
         transition_rows = []
         fix_version_events = []
+        sprint_events = []
         link_rows = []
 
         for issue in issues:
@@ -443,9 +469,10 @@ def sync_issues(conn, sync_id, since=None, last_sync_duration=None, resume_token
                         direction,
                     ))
 
-            t_rows, fv_events = _fetch_changelog(key)
+            t_rows, fv_events, sp_events = _fetch_changelog(key)
             transition_rows.extend(t_rows)
             fix_version_events.extend(fv_events)
+            sprint_events.extend(sp_events)
 
         is_last = data.get("isLast", True)
         next_page_token = None if is_last else data.get("nextPageToken")
@@ -507,6 +534,17 @@ def sync_issues(conn, sync_id, since=None, last_sync_duration=None, resume_token
                     ON CONFLICT (issue_key, fix_version, added_at) DO NOTHING
                     """,
                     fix_version_events,
+                )
+
+            if sprint_events:
+                execute_values(
+                    cur,
+                    """
+                    INSERT INTO issue_sprint_history (issue_key, sprint_id, event, occurred_at)
+                    VALUES %s
+                    ON CONFLICT (issue_key, sprint_id, event, occurred_at) DO NOTHING
+                    """,
+                    sprint_events,
                 )
 
             # Diff issue links against DB state: record added/removed in history,
@@ -756,7 +794,7 @@ def backfill_fix_version_history(conn):
     log.info("fix_version_history backfill: fetching changelogs for %d issues", len(keys))
     rows = []
     for i, key in enumerate(keys, 1):
-        _, fv_events = _fetch_changelog(key)
+        _, fv_events, _ = _fetch_changelog(key)
         rows.extend(fv_events)
         if i % 100 == 0:
             log.info("fix_version_history backfill: %d/%d issues scanned", i, len(keys))
@@ -790,6 +828,65 @@ def backfill_fix_version_history(conn):
         conn.commit()
 
     log.info("fix_version_history backfill: complete (%d issues scanned)", len(keys))
+
+
+def backfill_sprint_history(conn):
+    """Backfill issue_sprint_history for issues in tracked sprints not yet scanned.
+
+    Fetches the changelog for each issue that has sprint_issues rows but no
+    entry in issue_sprint_history. Runs incrementally — already-scanned issues
+    are skipped. Safe to run repeatedly.
+    """
+    with conn.cursor() as cur:
+        cur.execute("""
+            SELECT DISTINCT si.issue_key
+            FROM sprint_issues si
+            WHERE NOT EXISTS (
+                SELECT 1 FROM issue_sprint_history ish WHERE ish.issue_key = si.issue_key
+            )
+            ORDER BY si.issue_key
+        """)
+        keys = [r[0] for r in cur.fetchall()]
+
+    if not keys:
+        log.info("sprint_history backfill: nothing to do")
+        return
+
+    log.info("sprint_history backfill: fetching changelogs for %d issues", len(keys))
+    rows = []
+    for i, key in enumerate(keys, 1):
+        _, _, sp_events = _fetch_changelog(key)
+        rows.extend(sp_events)
+        if i % 100 == 0:
+            log.info("sprint_history backfill: %d/%d issues scanned", i, len(keys))
+        if len(rows) >= 500:
+            with conn.cursor() as cur:
+                execute_values(
+                    cur,
+                    """
+                    INSERT INTO issue_sprint_history (issue_key, sprint_id, event, occurred_at)
+                    VALUES %s
+                    ON CONFLICT (issue_key, sprint_id, event, occurred_at) DO NOTHING
+                    """,
+                    rows,
+                )
+            conn.commit()
+            rows = []
+
+    if rows:
+        with conn.cursor() as cur:
+            execute_values(
+                cur,
+                """
+                INSERT INTO issue_sprint_history (issue_key, sprint_id, event, occurred_at)
+                VALUES %s
+                ON CONFLICT (issue_key, sprint_id, event, occurred_at) DO NOTHING
+                """,
+                rows,
+            )
+        conn.commit()
+
+    log.info("sprint_history backfill: complete (%d issues scanned)", len(keys))
 
 
 def backfill_resolved_at(conn):
@@ -957,344 +1054,219 @@ def sync_releases(conn):
     log.info("Releases synced: %d", len(rows))
 
 
-def _sprint_report_sp(issue_obj, prefer_current=False):
-    """Extract story points from a Greenhopper sprint report issue object.
 
-    Each issue object carries two SP fields:
-      estimateStatistic        — original estimate (SP at sprint start)
-      currentEstimateStatistic — estimate at sprint close
 
-    Pass prefer_current=True when extracting the final/closing value.
-    Falls back to the other field if the preferred one is absent.
+def sync_sprint_scope(conn):
+    """Derive sprint scope from issue changelog history (issue_sprint_history).
+
+    Replaces the deprecated Greenhopper sprint report API. For each sprint:
+    - was_in_initial_scope: first 'added' event in issue_sprint_history <= start_date
+    - was_punted:           'removed' event exists for this sprint
+    - was_added_mid_sprint: first 'added' event > start_date + buffer
+    - was_completed:        issue status_category='Done' with resolved_at within sprint window
+
+    Closed sprints without scope_synced_at are processed once and marked done.
+    Active sprints are refreshed on every run.
     """
-    fields = (
-        ("currentEstimateStatistic", "estimateStatistic")
-        if prefer_current
-        else ("estimateStatistic", "currentEstimateStatistic")
-    )
-    for field in fields:
-        try:
-            val = issue_obj[field]["statFieldValue"]["value"]
-            if val is not None:
-                return float(val)
-        except (KeyError, TypeError, ValueError):
-            pass
-    return None
+    START_BUFFER = timedelta(hours=2)  # timing slack for sprint-start changelog entries
 
-
-def sync_sprint_reports(conn):
-    """Fetch Jira sprint reports and update scope change data.
-
-    Jira's sprint report exposes which issues were added after sprint start
-    (issueKeysAddedDuringSprint) and which were removed mid-sprint (puntedIssues).
-
-    - Closed sprints: processed once; report_synced_at guards against reprocessing.
-    - Active sprints: processed on every sync run (no report_synced_at set) so that
-      was_in_initial_scope stays correct even when the container missed sprint start.
-      All active-sprint issues are reset to TRUE first, then added-during-sprint keys
-      are corrected to FALSE from the authoritative Jira sprint report.
-    """
-    log.info("Syncing sprint reports")
+    log.info("Syncing sprint scope from changelog history")
 
     with conn.cursor() as cur:
         cur.execute(
             """
-            SELECT id, board_id, complete_date, state
+            SELECT id, start_date, end_date, complete_date, state
             FROM sprints
-            WHERE board_id IS NOT NULL
-              AND (
-                (state = 'closed' AND (report_synced_at IS NULL OR scope_synced_at IS NULL))
-                OR state = 'active'
-              )
+            WHERE (state = 'closed' AND scope_synced_at IS NULL)
+               OR state = 'active'
             ORDER BY state DESC, complete_date DESC NULLS LAST
             """
         )
         pending = cur.fetchall()
 
-    n_closed  = sum(1 for _, _, _, s in pending if s == 'closed')
-    n_active  = sum(1 for _, _, _, s in pending if s == 'active')
-    log.info("Found %d closed sprints without report data, %d active sprints", n_closed, n_active)
+    n_closed = sum(1 for *_, s in pending if s == 'closed')
+    n_active = sum(1 for *_, s in pending if s == 'active')
+    log.info("Sprint scope: %d closed to backfill, %d active to refresh", n_closed, n_active)
     synced = 0
 
-    for sprint_id, board_id, complete_date, state in pending:
-        try:
-            data = jira_get(
-                f"greenhopper/1.0/rapid/charts/sprintreport",
-                params={"rapidViewId": board_id, "sprintId": sprint_id},
-            )
-        except Exception as exc:
-            log.warning("Sprint %d report unavailable (board %d): %s", sprint_id, board_id, exc)
-            # Mark as synced anyway so we don't retry a permanently broken sprint
-            with conn.cursor() as cur:
-                cur.execute(
-                    "UPDATE sprints SET report_synced_at = NOW(), scope_synced_at = NOW() WHERE id = %s",
-                    (sprint_id,),
-                )
-            conn.commit()
-            continue
-
-        contents = data.get("contents", {})
-
-        # Issues added after sprint start: dict {issue_key: True}
-        added_keys = list(contents.get("issueKeysAddedDuringSprint", {}).keys())
-        added_key_set = set(added_keys)
-
-        # Issues removed/punted mid-sprint: list of issue objects
-        punted_issues = [i for i in contents.get("puntedIssues", []) if isinstance(i, dict) and i.get("key")]
-        punted_keys = [i["key"] for i in punted_issues]
-
-        # Issues completed when sprint closed (full objects with SP data)
-        completed_issues = [i for i in contents.get("completedIssues", []) if isinstance(i, dict) and i.get("key")]
-
-        # Issues not completed when sprint closed — field name varies across Jira Cloud versions
-        incompleted_issues: list = []
-        for _field in ("incompletedIssues", "issuesNotCompletedInCurrentSprint"):
-            _raw = contents.get(_field)
-            if _raw:
-                incompleted_issues = [i for i in _raw if isinstance(i, dict) and i.get("key")]
-                break
-        if not incompleted_issues:
-            # Last-resort fallback: keys-only format, no SP data available
-            _key_list = contents.get("issuesNotCompletedInitialEstimateSum", {}).get("issueKeys", [])
-            incompleted_issues = [{"key": k} for k in _key_list if isinstance(k, str)]
-        incomplete_keys = [i["key"] for i in incompleted_issues]
-
-        log.info("Sprint %d (%s): added=%d punted=%d completed=%d incomplete=%d (contents keys: %s)",
-                 sprint_id, state, len(added_keys), len(punted_keys),
-                 len(completed_issues), len(incomplete_keys), list(contents.keys()))
-
-        removed_ts = complete_date or datetime.now(timezone.utc)
+    for sprint_id, start_date, end_date, complete_date, state in pending:
+        cutoff = (start_date + START_BUFFER) if start_date else None
+        close_ts = complete_date or end_date
 
         with conn.cursor() as cur:
-            # Reset ALL issues to was_in_initial_scope=TRUE.
-            # For active sprints: corrects timing errors from container downtime.
-            # For closed sprints: Jira's Greenhopper issueKeysAddedDuringSprint API
-            # counts carry-overs from the previous sprint as "added during sprint",
-            # which conflicts with what Jira's own Sprint Report UI shows as committed.
-            # We therefore apply issueKeysAddedDuringSprint corrections only for
-            # active sprints where the data is fresh and reliable.
+            # ── Derive scope categories from issue_sprint_history ────────────
+
+            # Initial scope: first 'added' event at or before sprint start
+            if cutoff:
+                cur.execute(
+                    """
+                    SELECT issue_key FROM issue_sprint_history
+                    WHERE sprint_id = %s AND event = 'added'
+                    GROUP BY issue_key HAVING MIN(occurred_at) <= %s
+                    """,
+                    (sprint_id, cutoff),
+                )
+            else:
+                cur.execute(
+                    "SELECT issue_key FROM issue_sprint_history"
+                    " WHERE sprint_id = %s AND event = 'added'",
+                    (sprint_id,),
+                )
+            initial_scope_keys = {r[0] for r in cur.fetchall()}
+
+            # Mid-sprint additions: first 'added' event after sprint start
+            if cutoff:
+                cur.execute(
+                    """
+                    SELECT issue_key FROM issue_sprint_history
+                    WHERE sprint_id = %s AND event = 'added'
+                    GROUP BY issue_key HAVING MIN(occurred_at) > %s
+                    """,
+                    (sprint_id, cutoff),
+                )
+                added_mid_keys = {r[0] for r in cur.fetchall()}
+            else:
+                added_mid_keys = set()
+
+            # Punted: any 'removed' event recorded for this sprint
             cur.execute(
-                "UPDATE sprint_issues SET was_in_initial_scope = TRUE WHERE sprint_id = %s",
+                """
+                SELECT issue_key, MAX(occurred_at) AS removed_at
+                FROM issue_sprint_history
+                WHERE sprint_id = %s AND event = 'removed'
+                GROUP BY issue_key
+                """,
                 (sprint_id,),
             )
+            punted = {r[0]: r[1] for r in cur.fetchall()}
 
-            # For active sprints only: apply issueKeysAddedDuringSprint corrections.
-            # Closed sprints: leave everything as TRUE to match Jira's Sprint Report UI.
-            if added_keys and state == 'active':
+            has_history = bool(initial_scope_keys or added_mid_keys or punted)
+
+            # ── Update sprint_issues ─────────────────────────────────────────
+
+            if has_history:
+                all_history_keys = initial_scope_keys | added_mid_keys | set(punted)
+                # Set was_in_initial_scope based on changelog timing
                 cur.execute(
                     """
                     UPDATE sprint_issues
-                       SET was_in_initial_scope = FALSE
+                       SET was_in_initial_scope = (issue_key = ANY(%s))
                      WHERE sprint_id = %s AND issue_key = ANY(%s)
                     """,
-                    (sprint_id, added_keys),
+                    (list(initial_scope_keys), sprint_id, list(all_history_keys)),
                 )
 
-            # Mark punted issues as removed; insert if missing but only when
-            # the issue key already exists in our issues table (FK constraint).
-            if punted_keys:
+            # Set removed_at for punted issues; insert missing rows for issues
+            # that were removed before we ever synced sprint membership
+            for key, removed_ts in punted.items():
                 cur.execute(
-                    """
-                    UPDATE sprint_issues
-                       SET removed_at = COALESCE(removed_at, %s)
-                     WHERE sprint_id = %s AND issue_key = ANY(%s)
-                    """,
-                    (removed_ts, sprint_id, punted_keys),
+                    "UPDATE sprint_issues SET removed_at = COALESCE(removed_at, %s)"
+                    " WHERE sprint_id = %s AND issue_key = %s",
+                    (removed_ts, sprint_id, key),
                 )
                 cur.execute(
                     """
-                    INSERT INTO sprint_issues
-                        (sprint_id, issue_key, was_in_initial_scope, removed_at)
-                    SELECT %s, i.key, TRUE, %s
-                    FROM issues i
-                    WHERE i.key = ANY(%s)
-                      AND NOT EXISTS (
-                          SELECT 1 FROM sprint_issues si2
-                          WHERE si2.sprint_id = %s AND si2.issue_key = i.key
-                      )
+                    INSERT INTO sprint_issues (sprint_id, issue_key, was_in_initial_scope, removed_at)
+                    SELECT %s, key, %s, %s FROM issues WHERE key = %s
                     ON CONFLICT DO NOTHING
                     """,
-                    (sprint_id, removed_ts, punted_keys, sprint_id),
+                    (sprint_id, key in initial_scope_keys, removed_ts, key),
                 )
 
-            # Mark incomplete (carry-over) issues as removed from this closed sprint.
-            # These were not Done when the sprint closed and were moved to the backlog
-            # or next sprint. Without this, carry-over issues accumulate across every
-            # sprint they touched, inflating committed/total SP counts.
-            if incomplete_keys and state == 'closed':
-                cur.execute(
-                    """
-                    UPDATE sprint_issues
-                       SET removed_at = COALESCE(removed_at, %s)
-                     WHERE sprint_id = %s AND issue_key = ANY(%s)
-                    """,
-                    (removed_ts, sprint_id, incomplete_keys),
+            # ── Populate sprint_scope_initial ────────────────────────────────
+
+            cur.execute(
+                """
+                SELECT si.issue_key, COALESCE(si.story_points_at_add, i.story_points)
+                FROM sprint_issues si JOIN issues i ON i.key = si.issue_key
+                WHERE si.sprint_id = %s
+                """,
+                (sprint_id,),
+            )
+            sp_map = {r[0]: r[1] for r in cur.fetchall()}
+
+            # Fall back to all current members when history is missing (e.g. backfill
+            # not yet run for this sprint's issues) so dashboards stay populated
+            scope_keys = initial_scope_keys if has_history else set(sp_map)
+
+            scope_initial_rows = [
+                (sprint_id, key, sp_map.get(key))
+                for key in scope_keys if key in sp_map
+            ]
+
+            cur.execute("DELETE FROM sprint_scope_initial WHERE sprint_id = %s", (sprint_id,))
+            if scope_initial_rows:
+                execute_values(
+                    cur,
+                    "INSERT INTO sprint_scope_initial (sprint_id, issue_key, story_points)"
+                    " VALUES %s ON CONFLICT DO NOTHING",
+                    scope_initial_rows,
                 )
 
-            # ── Populate scope tables ────────────────────────────────────────
-            # Closed sprints: build authoritative snapshots from sprint report.
-            # Active sprints: refresh sprint_scope_initial each run.
+            # ── Populate sprint_scope_final (closed sprints only) ────────────
+
             if state == 'closed':
-                all_issues_data: dict = {}
-                for issue in completed_issues:
-                    all_issues_data[issue["key"]] = {
-                        "sp_initial": _sprint_report_sp(issue, prefer_current=False),
-                        "sp_final":   _sprint_report_sp(issue, prefer_current=True),
-                        "was_completed": True,
-                        "was_punted":    False,
-                        "was_added":     issue["key"] in added_key_set,
-                    }
-                for issue in incompleted_issues:
-                    key = issue.get("key")
-                    if key:
-                        all_issues_data[key] = {
-                            "sp_initial": _sprint_report_sp(issue, prefer_current=False),
-                            "sp_final":   _sprint_report_sp(issue, prefer_current=True),
-                            "was_completed": False,
-                            "was_punted":    False,
-                            "was_added":     key in added_key_set,
-                        }
-                for issue in punted_issues:
-                    all_issues_data[issue["key"]] = {
-                        "sp_initial": _sprint_report_sp(issue, prefer_current=False),
-                        "sp_final":   _sprint_report_sp(issue, prefer_current=True),
-                        "was_completed": False,
-                        "was_punted":    True,
-                        "was_added":     issue["key"] in added_key_set,
-                    }
-
-                if all_issues_data:
-                    cur.execute(
-                        "SELECT key FROM issues WHERE key = ANY(%s)",
-                        (list(all_issues_data.keys()),),
-                    )
-                    known_scope_keys = {r[0] for r in cur.fetchall()}
-
-                    scope_initial_rows = [
-                        (sprint_id, key, d["sp_initial"])
-                        for key, d in all_issues_data.items() if key in known_scope_keys
-                    ]
-                    scope_final_rows = [
-                        (sprint_id, key, d["sp_final"],
-                         d["was_completed"], d["was_punted"], d["was_added"])
-                        for key, d in all_issues_data.items() if key in known_scope_keys
-                    ]
-
-                    if scope_initial_rows:
-                        execute_values(
-                            cur,
-                            """
-                            INSERT INTO sprint_scope_initial (sprint_id, issue_key, story_points)
-                            VALUES %s
-                            ON CONFLICT (sprint_id, issue_key) DO UPDATE
-                                SET story_points = EXCLUDED.story_points
-                            """,
-                            scope_initial_rows,
-                        )
-                    if scope_final_rows:
-                        execute_values(
-                            cur,
-                            """
-                            INSERT INTO sprint_scope_final
-                                (sprint_id, issue_key, story_points,
-                                 was_completed, was_punted, was_added_mid_sprint)
-                            VALUES %s
-                            ON CONFLICT (sprint_id, issue_key) DO UPDATE
-                                SET story_points         = EXCLUDED.story_points,
-                                    was_completed        = EXCLUDED.was_completed,
-                                    was_punted           = EXCLUDED.was_punted,
-                                    was_added_mid_sprint = EXCLUDED.was_added_mid_sprint
-                            """,
-                            scope_final_rows,
-                        )
-                    log.debug("Sprint %d: upserted %d initial + %d final scope rows",
-                              sprint_id, len(scope_initial_rows), len(scope_final_rows))
-
-            elif state == 'active':
-                # Rebuild sprint_scope_initial from current sprint_issues,
-                # excluding issues Jira reports as added after sprint start.
                 cur.execute(
                     """
-                    SELECT si.issue_key, COALESCE(si.story_points_at_add, i.story_points) AS sp
-                    FROM sprint_issues si
-                    JOIN issues i ON i.key = si.issue_key
-                    WHERE si.sprint_id = %s AND si.removed_at IS NULL
+                    SELECT si.issue_key,
+                           COALESCE(si.story_points_at_add, i.story_points),
+                           i.status_category,
+                           i.resolved_at
+                    FROM sprint_issues si JOIN issues i ON i.key = si.issue_key
+                    WHERE si.sprint_id = %s
                     """,
                     (sprint_id,),
                 )
-                current_members = {r[0]: r[1] for r in cur.fetchall()}
-                initial_keys = {k for k in current_members if k not in added_key_set}
+                scope_final_rows = []
+                for key, sp, status_cat, resolved_at in cur.fetchall():
+                    is_punted = key in punted
+                    is_added_mid = key in added_mid_keys
+                    if is_punted:
+                        was_completed = False
+                    elif close_ts:
+                        was_completed = (
+                            status_cat == "Done"
+                            and resolved_at is not None
+                            and resolved_at <= close_ts + timedelta(days=7)
+                        )
+                    else:
+                        was_completed = status_cat == "Done"
+                    scope_final_rows.append(
+                        (sprint_id, key, sp, was_completed, is_punted, is_added_mid)
+                    )
 
-                cur.execute(
-                    "DELETE FROM sprint_scope_initial WHERE sprint_id = %s",
-                    (sprint_id,),
-                )
-                if initial_keys:
+                if scope_final_rows:
                     execute_values(
                         cur,
-                        "INSERT INTO sprint_scope_initial (sprint_id, issue_key, story_points)"
-                        " VALUES %s",
-                        [(sprint_id, k, current_members[k]) for k in initial_keys],
+                        """
+                        INSERT INTO sprint_scope_final
+                            (sprint_id, issue_key, story_points,
+                             was_completed, was_punted, was_added_mid_sprint)
+                        VALUES %s
+                        ON CONFLICT (sprint_id, issue_key) DO UPDATE
+                            SET story_points         = EXCLUDED.story_points,
+                                was_completed        = EXCLUDED.was_completed,
+                                was_punted           = EXCLUDED.was_punted,
+                                was_added_mid_sprint = EXCLUDED.was_added_mid_sprint
+                        """,
+                        scope_final_rows,
                     )
-
-            # Only mark closed sprints as done — active sprints re-run every sync
-            if state == 'closed':
+                log.debug(
+                    "Sprint %d: %d initial, %d final, %d punted, %d added_mid",
+                    sprint_id, len(scope_initial_rows), len(scope_final_rows),
+                    len(punted), len(added_mid_keys),
+                )
                 cur.execute(
-                    "UPDATE sprints SET report_synced_at = NOW(), scope_synced_at = NOW()"
-                    " WHERE id = %s",
+                    "UPDATE sprints SET scope_synced_at = NOW() WHERE id = %s",
                     (sprint_id,),
                 )
 
         conn.commit()
         synced += 1
         if synced % 50 == 0:
-            log.info("Sprint reports synced: %d / %d", synced, len(pending))
+            log.info("Sprint scope synced: %d / %d", synced, len(pending))
 
-    log.info("Sprint reports synced: %d total", synced)
-    return synced
-
-
-def _cleanup_carry_over_issues(conn):
-    """Remove ghost sprint_issues rows caused by carry-over tickets.
-
-    When a ticket carries over from sprint N to sprint N+1 without being
-    completed, it ends up with removed_at IS NULL in BOTH sprints, inflating
-    every sprint's committed/total SP count.
-
-    Rule: a ticket may only be active (removed_at IS NULL) in ONE sprint at a
-    time — the most recent sprint it belongs to. All earlier closed-sprint rows
-    get removed_at set to that sprint's complete_date.
-
-    This is a safety net that runs after sync_sprint_reports regardless of
-    whether the Jira sprint report API returned incomplete issue keys.
-    """
-    with conn.cursor() as cur:
-        cur.execute(
-            """
-            WITH latest AS (
-                SELECT issue_key, MAX(sprint_id) AS max_sprint_id
-                FROM sprint_issues
-                WHERE removed_at IS NULL
-                GROUP BY issue_key
-                HAVING COUNT(*) > 2   -- only fix genuine multi-sprint ghosts (3+),
-                                      -- leave normal single carry-overs (2 sprints) intact
-            )
-            UPDATE sprint_issues si
-               SET removed_at = COALESCE(s.complete_date, s.end_date, NOW())
-              FROM latest l, sprints s
-             WHERE si.issue_key = l.issue_key
-               AND si.sprint_id < l.max_sprint_id
-               AND si.removed_at IS NULL
-               AND s.id = si.sprint_id
-               AND s.state = 'closed'
-            """
-        )
-        rows = cur.rowcount
-    conn.commit()
-    if rows:
-        log.info("Carry-over cleanup: set removed_at on %d ghost sprint_issues rows", rows)
-    else:
-        log.info("Carry-over cleanup: no ghost rows found")
+    log.info("Sprint scope synced: %d total", synced)
 
 
 # ─── QASE link sync ──────────────────────────────────────────────────────────
@@ -1440,16 +1412,16 @@ def main():
         errors.append(f"sprints: {exc}")
 
     try:
-        sync_sprint_reports(conn)
+        backfill_sprint_history(conn)
     except Exception as exc:
-        log.error("Sprint reports sync failed: %s", exc, exc_info=True)
-        errors.append(f"sprint_reports: {exc}")
+        log.error("Sprint history backfill failed: %s", exc, exc_info=True)
+        errors.append(f"sprint_history_backfill: {exc}")
 
     try:
-        _cleanup_carry_over_issues(conn)
+        sync_sprint_scope(conn)
     except Exception as exc:
-        log.error("Carry-over cleanup failed: %s", exc, exc_info=True)
-        errors.append(f"carry_over_cleanup: {exc}")
+        log.error("Sprint scope sync failed: %s", exc, exc_info=True)
+        errors.append(f"sprint_scope: {exc}")
 
     try:
         backfill_resolved_at(conn)
