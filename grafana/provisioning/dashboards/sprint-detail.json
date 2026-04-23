@@ -466,7 +466,7 @@
             "uid": "jira-metrics-pg"
           },
           "format": "table",
-          "rawSql": "SELECT COALESCE(SUM(COALESCE(si.story_points_at_add, i.story_points, 0)), 0) AS value FROM sprint_issues si JOIN issues i ON i.key = si.issue_key WHERE si.sprint_id = $sprint::bigint AND si.was_in_initial_scope = TRUE AND si.removed_at IS NULL AND i.issue_type NOT IN ('Epic','Sub-task') AND i.status != 'Obsolete / Won''t Do'",
+          "rawSql": "SELECT COALESCE(SUM(COALESCE(si.story_points_at_add, i.story_points, 0)), 0) AS value FROM sprint_issues si JOIN issues i ON i.key = si.issue_key WHERE si.sprint_id = $sprint::bigint AND si.was_in_initial_scope = TRUE AND si.removed_at IS NULL AND i.issue_type != 'Epic'",
           "refId": "A"
         }
       ],
@@ -538,7 +538,7 @@
             "uid": "jira-metrics-pg"
           },
           "format": "table",
-          "rawSql": "SELECT COALESCE(SUM(COALESCE(si.story_points_at_add,i.story_points,0)),0) AS value FROM sprint_issues si JOIN issues i ON i.key=si.issue_key WHERE si.sprint_id=$sprint::bigint AND si.was_in_initial_scope=FALSE AND si.removed_at IS NULL AND i.issue_type NOT IN ('Epic','Sub-task') AND i.status != 'Obsolete / Won''t Do'",
+          "rawSql": "SELECT COALESCE(SUM(COALESCE(si.story_points_at_add,i.story_points,0)),0) AS value FROM sprint_issues si JOIN issues i ON i.key=si.issue_key WHERE si.sprint_id=$sprint::bigint AND si.was_in_initial_scope=FALSE AND si.removed_at IS NULL AND i.issue_type != 'Epic'",
           "refId": "A"
         }
       ],
@@ -607,7 +607,7 @@
             "uid": "jira-metrics-pg"
           },
           "format": "table",
-          "rawSql": "SELECT COALESCE(SUM(COALESCE(si.story_points_at_add,i.story_points,0)),0) AS value FROM sprint_issues si JOIN issues i ON i.key=si.issue_key WHERE si.sprint_id=$sprint::bigint AND si.removed_at IS NULL AND i.issue_type NOT IN ('Epic','Sub-task') AND i.status != 'Obsolete / Won''t Do'",
+          "rawSql": "SELECT COALESCE(SUM(COALESCE(si.story_points_at_add,i.story_points,0)),0) AS value FROM sprint_issues si JOIN issues i ON i.key=si.issue_key WHERE si.sprint_id=$sprint::bigint AND si.removed_at IS NULL AND i.issue_type != 'Epic'",
           "refId": "A"
         }
       ],
@@ -745,7 +745,7 @@
             "uid": "jira-metrics-pg"
           },
           "format": "table",
-          "rawSql": "SELECT COALESCE(SUM(COALESCE(si.story_points_at_add,i.story_points,0)),0) AS value FROM sprint_issues si JOIN issues i ON i.key=si.issue_key JOIN sprints s ON s.id=si.sprint_id WHERE si.sprint_id=$sprint::bigint AND i.status_category='Done' AND i.issue_type NOT IN ('Epic','Sub-task') AND i.status != 'Obsolete / Won''t Do' AND i.resolved_at IS NOT NULL AND i.resolved_at >= s.start_date AND i.resolved_at <= COALESCE(s.complete_date, s.end_date, NOW())",
+          "rawSql": "SELECT COALESCE(SUM(COALESCE(si.story_points_at_add,i.story_points,0)),0) AS value FROM sprint_issues si JOIN issues i ON i.key=si.issue_key JOIN sprints s ON s.id=si.sprint_id WHERE si.sprint_id=$sprint::bigint AND i.status_category='Done' AND i.issue_type != 'Epic' AND i.resolved_at IS NOT NULL AND i.resolved_at >= s.start_date AND i.resolved_at <= COALESCE(s.complete_date, s.end_date, NOW())",
           "refId": "A"
         }
       ],
@@ -958,7 +958,7 @@
             "uid": "jira-metrics-pg"
           },
           "format": "table",
-          "rawSql": "WITH committed AS (\n  SELECT COALESCE(SUM(COALESCE(si.story_points_at_add, i.story_points, 0)), 0) AS sp\n  FROM sprint_issues si\n  JOIN issues i ON i.key = si.issue_key\n  WHERE si.sprint_id = $sprint::bigint\n    AND si.was_in_initial_scope = TRUE\n    AND si.removed_at IS NULL\n    AND i.issue_type NOT IN ('Epic', 'Sub-task')\n    AND i.status != 'Obsolete / Won''t Do'\n),\navg_vel AS (\n  SELECT ROUND(AVG(delivered_points)::numeric, 1) AS avg_sp\n  FROM (\n    SELECT pd.delivered_points\n    FROM v_planning_deviation pd\n    JOIN sprints s ON s.id = pd.sprint_id\n    WHERE pd.state = 'closed'\n      AND s.complete_date < (SELECT start_date FROM sprints WHERE id = $sprint::bigint)\n      AND (SELECT COUNT(*) FROM sprint_issues si JOIN issues i ON i.key = si.issue_key\n           WHERE si.sprint_id = pd.sprint_id AND si.was_in_initial_scope = TRUE\n             AND i.project_key IN (SELECT DISTINCT i2.project_key FROM sprint_issues si2\n               JOIN issues i2 ON i2.key = si2.issue_key WHERE si2.sprint_id = $sprint::bigint AND si2.was_in_initial_scope = TRUE)\n          ) * 2 > (SELECT COUNT(*) FROM sprint_issues si WHERE si.sprint_id = pd.sprint_id AND si.was_in_initial_scope = TRUE)\n    ORDER BY s.complete_date DESC NULLS LAST\n    LIMIT 6\n  ) last6\n)\nSELECT ROUND(100.0 * c.sp / NULLIF(a.avg_sp, 0), 1) AS value\nFROM committed c CROSS JOIN avg_vel a",
+          "rawSql": "WITH committed AS (\n  SELECT COALESCE(SUM(COALESCE(si.story_points_at_add, i.story_points, 0)), 0) AS sp\n  FROM sprint_issues si\n  JOIN issues i ON i.key = si.issue_key\n  WHERE si.sprint_id = $sprint::bigint\n    AND si.was_in_initial_scope = TRUE\n    AND si.removed_at IS NULL\n    AND i.issue_type != 'Epic'\n),\navg_vel AS (\n  SELECT ROUND(AVG(delivered_points)::numeric, 1) AS avg_sp\n  FROM (\n    SELECT pd.delivered_points\n    FROM v_planning_deviation pd\n    JOIN sprints s ON s.id = pd.sprint_id\n    WHERE pd.state = 'closed'\n      AND s.complete_date < (SELECT start_date FROM sprints WHERE id = $sprint::bigint)\n      AND (SELECT COUNT(*) FROM sprint_issues si JOIN issues i ON i.key = si.issue_key\n           WHERE si.sprint_id = pd.sprint_id AND si.was_in_initial_scope = TRUE\n             AND i.project_key IN (SELECT DISTINCT i2.project_key FROM sprint_issues si2\n               JOIN issues i2 ON i2.key = si2.issue_key WHERE si2.sprint_id = $sprint::bigint AND si2.was_in_initial_scope = TRUE)\n          ) * 2 > (SELECT COUNT(*) FROM sprint_issues si WHERE si.sprint_id = pd.sprint_id AND si.was_in_initial_scope = TRUE)\n    ORDER BY s.complete_date DESC NULLS LAST\n    LIMIT 6\n  ) last6\n)\nSELECT ROUND(100.0 * c.sp / NULLIF(a.avg_sp, 0), 1) AS value\nFROM committed c CROSS JOIN avg_vel a",
           "refId": "A"
         }
       ],
@@ -1039,7 +1039,7 @@
             "uid": "jira-metrics-pg"
           },
           "format": "table",
-          "rawSql": "SELECT COUNT(*) AS value\nFROM sprint_issues si JOIN issues i ON i.key=si.issue_key\nWHERE si.sprint_id=$sprint::bigint\n  AND si.was_in_initial_scope = TRUE\n  AND i.issue_type NOT IN ('Epic','Sub-task')",
+          "rawSql": "SELECT COUNT(*) AS value\nFROM sprint_issues si JOIN issues i ON i.key=si.issue_key\nWHERE si.sprint_id=$sprint::bigint\n  AND si.was_in_initial_scope = TRUE\n  AND i.issue_type != 'Epic'",
           "refId": "A"
         }
       ],
@@ -1107,7 +1107,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT COUNT(*) AS value\nFROM sprint_issues si JOIN issues i ON i.key=si.issue_key\nWHERE si.sprint_id=$sprint::bigint\n  AND si.removed_at IS NULL\n  AND i.issue_type NOT IN ('Epic','Sub-task')",
+          "rawSql": "SELECT COUNT(*) AS value\nFROM sprint_issues si JOIN issues i ON i.key=si.issue_key\nWHERE si.sprint_id=$sprint::bigint\n  AND si.removed_at IS NULL\n  AND i.issue_type != 'Epic'",
           "format": "table",
           "refId": "A"
         }
@@ -1120,7 +1120,76 @@
         "type": "postgres",
         "uid": "jira-metrics-pg"
       },
-      "description": "Issues with SP \u2265 1, Epic linked, Acceptance Criteria documented, AND at least one Component assigned. All four conditions must be met. Excludes Epics, Sub-tasks, and removed issues.",
+      "description": "Stories currently in sprint (not removed). DOR criteria apply only to these issues.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "blue",
+            "mode": "fixed"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 2,
+        "x": 4,
+        "y": 14
+      },
+      "id": 119,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.1.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "format": "table",
+          "rawSql": "SELECT COUNT(*) AS value\nFROM sprint_issues si JOIN issues i ON i.key=si.issue_key\nWHERE si.sprint_id=$sprint::bigint AND si.removed_at IS NULL AND i.issue_type = 'Story'",
+          "refId": "A"
+        }
+      ],
+      "title": "DOR Applicable",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "description": "Stories meeting all DOR criteria: SP \u2265 1, Epic linked, Acceptance Criteria documented, Component assigned.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1148,7 +1217,7 @@
       "gridPos": {
         "h": 4,
         "w": 2,
-        "x": 4,
+        "x": 6,
         "y": 14
       },
       "id": 10,
@@ -1177,7 +1246,7 @@
             "uid": "jira-metrics-pg"
           },
           "format": "table",
-          "rawSql": "SELECT COUNT(*) AS value\nFROM sprint_issues si JOIN issues i ON i.key=si.issue_key\nWHERE si.sprint_id=$sprint::bigint AND si.removed_at IS NULL AND i.issue_type NOT IN ('Epic','Sub-task')\n  AND (i.story_points IS NOT NULL AND i.story_points > 0)\n  AND i.epic_key IS NOT NULL\n  AND i.has_acceptance_criteria = TRUE\n  AND cardinality(i.components) > 0",
+          "rawSql": "SELECT COUNT(*) AS value\nFROM sprint_issues si JOIN issues i ON i.key=si.issue_key\nWHERE si.sprint_id=$sprint::bigint AND si.removed_at IS NULL AND i.issue_type = 'Story'\n  AND (i.story_points IS NOT NULL AND i.story_points > 0)\n  AND i.epic_key IS NOT NULL\n  AND i.has_acceptance_criteria = TRUE\n  AND cardinality(i.components) > 0",
           "refId": "A"
         }
       ],
@@ -1220,7 +1289,7 @@
       "gridPos": {
         "h": 4,
         "w": 2,
-        "x": 6,
+        "x": 8,
         "y": 14
       },
       "id": 104,
@@ -1249,7 +1318,7 @@
             "uid": "jira-metrics-pg"
           },
           "format": "table",
-          "rawSql": "SELECT COUNT(*) AS value\nFROM sprint_issues si\nJOIN issues i ON i.key = si.issue_key\nWHERE si.sprint_id = $sprint::bigint\n  AND si.removed_at IS NULL\n  AND i.status != 'Obsolete / Won''t Do'\n  AND i.assignee IS NULL",
+          "rawSql": "SELECT COUNT(*) AS value\nFROM sprint_issues si\nJOIN issues i ON i.key = si.issue_key\nWHERE si.sprint_id = $sprint::bigint\n  AND si.removed_at IS NULL\n  AND i.issue_type = 'Story'\n  AND i.status != 'Obsolete / Won''t Do'\n  AND i.assignee IS NULL",
           "refId": "A"
         }
       ],
@@ -1292,7 +1361,7 @@
       "gridPos": {
         "h": 4,
         "w": 2,
-        "x": 8,
+        "x": 10,
         "y": 14
       },
       "id": 52,
@@ -1321,7 +1390,7 @@
             "uid": "jira-metrics-pg"
           },
           "format": "table",
-          "rawSql": "SELECT COUNT(*) AS value\nFROM sprint_issues si JOIN issues i ON i.key=si.issue_key\nWHERE si.sprint_id=$sprint::bigint AND si.removed_at IS NULL\n  AND i.status != 'Obsolete / Won''t Do'\n  AND i.issue_type NOT IN ('Epic','Sub-task','Bug')\n  AND (i.has_acceptance_criteria IS NULL OR i.has_acceptance_criteria = FALSE)",
+          "rawSql": "SELECT COUNT(*) AS value\nFROM sprint_issues si JOIN issues i ON i.key=si.issue_key\nWHERE si.sprint_id=$sprint::bigint AND si.removed_at IS NULL\n  AND i.issue_type = 'Story'\n  AND i.status != 'Obsolete / Won''t Do'\n  AND (i.has_acceptance_criteria IS NULL OR i.has_acceptance_criteria = FALSE)",
           "refId": "A"
         }
       ],
@@ -1364,7 +1433,7 @@
       "gridPos": {
         "h": 4,
         "w": 2,
-        "x": 10,
+        "x": 12,
         "y": 14
       },
       "id": 11,
@@ -1393,7 +1462,7 @@
             "uid": "jira-metrics-pg"
           },
           "format": "table",
-          "rawSql": "SELECT COUNT(*) AS value\nFROM sprint_issues si JOIN issues i ON i.key=si.issue_key\nWHERE si.sprint_id=$sprint::bigint AND si.removed_at IS NULL AND i.issue_type NOT IN ('Epic','Sub-task') AND (i.story_points IS NULL OR i.story_points = 0)",
+          "rawSql": "SELECT COUNT(*) AS value\nFROM sprint_issues si JOIN issues i ON i.key=si.issue_key\nWHERE si.sprint_id=$sprint::bigint AND si.removed_at IS NULL\n  AND i.issue_type = 'Story'\n  AND (i.story_points IS NULL OR i.story_points = 0)",
           "refId": "A"
         }
       ],
@@ -1436,7 +1505,7 @@
       "gridPos": {
         "h": 4,
         "w": 2,
-        "x": 12,
+        "x": 14,
         "y": 14
       },
       "id": 12,
@@ -1465,7 +1534,7 @@
             "uid": "jira-metrics-pg"
           },
           "format": "table",
-          "rawSql": "SELECT COUNT(*) AS value\nFROM sprint_issues si JOIN issues i ON i.key=si.issue_key\nWHERE si.sprint_id=$sprint::bigint AND si.removed_at IS NULL AND i.issue_type NOT IN ('Epic','Sub-task') AND i.epic_key IS NULL",
+          "rawSql": "SELECT COUNT(*) AS value\nFROM sprint_issues si JOIN issues i ON i.key=si.issue_key\nWHERE si.sprint_id=$sprint::bigint AND si.removed_at IS NULL\n  AND i.issue_type = 'Story'\n  AND i.epic_key IS NULL",
           "refId": "A"
         }
       ],
@@ -1508,7 +1577,7 @@
       "gridPos": {
         "h": 4,
         "w": 2,
-        "x": 14,
+        "x": 16,
         "y": 14
       },
       "id": 117,
@@ -1537,7 +1606,7 @@
             "uid": "jira-metrics-pg"
           },
           "format": "table",
-          "rawSql": "SELECT COUNT(*) AS value\nFROM sprint_issues si JOIN issues i ON i.key=si.issue_key\nWHERE si.sprint_id=$sprint::bigint AND si.removed_at IS NULL\n  AND i.issue_type NOT IN ('Epic','Sub-task')\n  AND i.status != 'Obsolete / Won''t Do'\n  AND COALESCE(cardinality(i.components), 0) = 0",
+          "rawSql": "SELECT COUNT(*) AS value\nFROM sprint_issues si JOIN issues i ON i.key=si.issue_key\nWHERE si.sprint_id=$sprint::bigint AND si.removed_at IS NULL\n  AND i.issue_type = 'Story'\n  AND i.status != 'Obsolete / Won''t Do'\n  AND COALESCE(cardinality(i.components), 0) = 0",
           "refId": "A"
         }
       ],
@@ -1549,7 +1618,7 @@
         "type": "postgres",
         "uid": "jira-metrics-pg"
       },
-      "description": "% of active issues (excl. Epics/Sub-tasks) that have SP \u2265 1 + Epic link + Acceptance Criteria + Component set. Target \u2265 90%.",
+      "description": "DOR compliance rate for Stories: (Stories meeting all criteria) / (total Stories in sprint).",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1582,7 +1651,7 @@
       "gridPos": {
         "h": 4,
         "w": 2,
-        "x": 16,
+        "x": 18,
         "y": 14
       },
       "id": 13,
@@ -1609,7 +1678,7 @@
             "uid": "jira-metrics-pg"
           },
           "format": "table",
-          "rawSql": "SELECT CASE WHEN total=0 THEN 0\n  ELSE ROUND(100.0 * ready / total, 1)\nEND AS value\nFROM (\n  SELECT\n    COUNT(*) FILTER (WHERE (i.story_points IS NOT NULL AND i.story_points>0) AND i.epic_key IS NOT NULL\n    AND i.has_acceptance_criteria = TRUE\n    AND cardinality(i.components) > 0) AS ready,\n    COUNT(*) AS total\n  FROM sprint_issues si JOIN issues i ON i.key=si.issue_key\n  WHERE si.sprint_id=$sprint::bigint AND si.removed_at IS NULL AND i.issue_type NOT IN ('Epic','Sub-task')\n) t",
+          "rawSql": "SELECT CASE WHEN total=0 THEN 0\n  ELSE ROUND(100.0 * ready / total, 1)\nEND AS value\nFROM (\n  SELECT\n    COUNT(*) FILTER (WHERE (i.story_points IS NOT NULL AND i.story_points>0)\n      AND i.epic_key IS NOT NULL\n      AND i.has_acceptance_criteria = TRUE\n      AND cardinality(i.components) > 0) AS ready,\n    COUNT(*) AS total\n  FROM sprint_issues si JOIN issues i ON i.key=si.issue_key\n  WHERE si.sprint_id=$sprint::bigint AND si.removed_at IS NULL AND i.issue_type = 'Story'\n) t",
           "refId": "A"
         }
       ],
@@ -1648,8 +1717,8 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 3,
-        "x": 18,
+        "w": 2,
+        "x": 20,
         "y": 14
       },
       "id": 102,
@@ -1678,7 +1747,7 @@
             "uid": "jira-metrics-pg"
           },
           "format": "table",
-          "rawSql": "SELECT COUNT(*) AS value\nFROM sprint_issues si\nJOIN issues i ON i.key = si.issue_key\nJOIN sprints s ON s.id = si.sprint_id\nWHERE si.sprint_id = $sprint::bigint\n  AND si.removed_at IS NULL\n  AND i.issue_type NOT IN ('Epic','Sub-task')\n  AND i.status != 'Obsolete / Won''t Do'\n  AND i.status_category = 'Done'\n  AND i.resolved_at IS NOT NULL\n  AND i.resolved_at >= s.start_date\n  AND i.resolved_at <= COALESCE(s.complete_date, s.end_date, NOW())",
+          "rawSql": "SELECT COUNT(*) AS value\nFROM sprint_issues si\nJOIN issues i ON i.key = si.issue_key\nJOIN sprints s ON s.id = si.sprint_id\nWHERE si.sprint_id = $sprint::bigint\n  AND si.removed_at IS NULL\n  AND i.issue_type != 'Epic'\n  AND i.status != 'Obsolete / Won''t Do'\n  AND i.status_category = 'Done'\n  AND i.resolved_at IS NOT NULL\n  AND i.resolved_at >= s.start_date\n  AND i.resolved_at <= COALESCE(s.complete_date, s.end_date, NOW())",
           "refId": "A"
         }
       ],
@@ -1717,8 +1786,8 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 3,
-        "x": 21,
+        "w": 2,
+        "x": 22,
         "y": 14
       },
       "id": 103,
@@ -1747,7 +1816,7 @@
             "uid": "jira-metrics-pg"
           },
           "format": "table",
-          "rawSql": "SELECT COUNT(*) AS value\nFROM sprint_issues si\nJOIN issues i ON i.key = si.issue_key\nWHERE si.sprint_id = $sprint::bigint\n  AND si.removed_at IS NULL\n  AND i.issue_type NOT IN ('Epic','Sub-task')\n  AND i.status != 'Obsolete / Won''t Do'\n  AND i.status_category != 'Done'",
+          "rawSql": "SELECT COUNT(*) AS value\nFROM sprint_issues si\nJOIN issues i ON i.key = si.issue_key\nWHERE si.sprint_id = $sprint::bigint\n  AND si.removed_at IS NULL\n  AND i.issue_type != 'Epic'\n  AND i.status != 'Obsolete / Won''t Do'\n  AND i.status_category != 'Done'",
           "refId": "A"
         }
       ],
@@ -1936,7 +2005,7 @@
             "uid": "jira-metrics-pg"
           },
           "format": "table",
-          "rawSql": "SELECT i.key AS \"Key\", i.summary AS \"Summary\", i.issue_type AS \"Type\",\n  CASE WHEN i.story_points IS NULL OR i.story_points=0 THEN '\u274c' ELSE '\u2705' END AS \"SP\",\n  CASE WHEN i.epic_key IS NOT NULL THEN '\u2705' ELSE '\u274c' END AS \"Epic\",\n  CASE WHEN i.issue_type = 'Bug' THEN 'N/A'\n       WHEN i.has_acceptance_criteria = TRUE THEN '\u2705' ELSE '\u274c' END AS \"AC\",\n  CASE WHEN cardinality(i.components) > 0 THEN '\u2705' ELSE '\u274c' END AS \"Component\",\n  COALESCE(i.assignee, '\u2014') AS \"Assignee\",\n  i.priority AS \"Priority\"\nFROM sprint_issues si JOIN issues i ON i.key=si.issue_key\nWHERE si.sprint_id=$sprint::bigint AND si.removed_at IS NULL\n  AND i.issue_type NOT IN ('Epic','Sub-task')\n  AND i.status != 'Obsolete / Won''t Do'\n  AND (\n    (i.story_points IS NULL OR i.story_points = 0)\n    OR i.epic_key IS NULL\n    OR i.assignee IS NULL\n    OR (i.issue_type != 'Bug' AND i.has_acceptance_criteria IS NOT TRUE)\n    OR COALESCE(cardinality(i.components), 0) = 0\n  )\nORDER BY\n  CASE i.priority WHEN 'Blocker' THEN 1 WHEN 'Critical' THEN 2 WHEN 'High' THEN 3 WHEN 'Medium' THEN 4 ELSE 5 END",
+          "rawSql": "SELECT i.key AS \"Key\", i.summary AS \"Summary\", i.issue_type AS \"Type\",\n  CASE WHEN i.story_points IS NULL OR i.story_points=0 THEN '\u274c' ELSE '\u2705' END AS \"SP\",\n  CASE WHEN i.epic_key IS NOT NULL THEN '\u2705' ELSE '\u274c' END AS \"Epic\",\n  CASE WHEN i.has_acceptance_criteria = TRUE THEN '\u2705' ELSE '\u274c' END AS \"AC\",\n  CASE WHEN cardinality(i.components) > 0 THEN '\u2705' ELSE '\u274c' END AS \"Component\",\n  COALESCE(i.assignee, '\u2014') AS \"Assignee\",\n  i.priority AS \"Priority\"\nFROM sprint_issues si JOIN issues i ON i.key=si.issue_key\nWHERE si.sprint_id=$sprint::bigint AND si.removed_at IS NULL\n  AND i.issue_type = 'Story'\n  AND i.status != 'Obsolete / Won''t Do'\n  AND (\n    (i.story_points IS NULL OR i.story_points = 0)\n    OR i.epic_key IS NULL\n    OR i.assignee IS NULL\n    OR i.has_acceptance_criteria IS NOT TRUE\n    OR COALESCE(cardinality(i.components), 0) = 0\n  )\nORDER BY\n  CASE i.priority WHEN 'Blocker' THEN 1 WHEN 'Critical' THEN 2 WHEN 'High' THEN 3 WHEN 'Medium' THEN 4 ELSE 5 END",
           "refId": "A"
         }
       ],
@@ -2080,7 +2149,7 @@
             "uid": "jira-metrics-pg"
           },
           "format": "table",
-          "rawSql": "SELECT COALESCE(SUM(COALESCE(si.story_points_at_add, i.story_points, 0)), 0) AS value\nFROM sprint_issues si JOIN issues i ON i.key = si.issue_key\nWHERE si.sprint_id = $sprint::bigint\n  AND si.was_in_initial_scope = FALSE AND si.removed_at IS NULL\n  AND i.issue_type NOT IN ('Epic', 'Sub-task')\n  AND i.status != 'Obsolete / Won''t Do'",
+          "rawSql": "SELECT COALESCE(SUM(COALESCE(si.story_points_at_add, i.story_points, 0)), 0) AS value\nFROM sprint_issues si JOIN issues i ON i.key = si.issue_key\nWHERE si.sprint_id = $sprint::bigint\n  AND si.was_in_initial_scope = FALSE AND si.removed_at IS NULL\n  AND i.issue_type != 'Epic'",
           "refId": "A"
         }
       ],
@@ -2212,7 +2281,7 @@
             "uid": "jira-metrics-pg"
           },
           "format": "table",
-          "rawSql": "SELECT COALESCE(SUM(COALESCE(si.story_points_at_add, i.story_points, 0)), 0) AS value\nFROM sprint_issues si JOIN issues i ON i.key = si.issue_key\nWHERE si.sprint_id = $sprint::bigint\n  AND si.removed_at IS NOT NULL\n  AND i.issue_type NOT IN ('Epic', 'Sub-task')\n  AND i.status != 'Obsolete / Won''t Do'",
+          "rawSql": "SELECT COALESCE(SUM(COALESCE(si.story_points_at_add, i.story_points, 0)), 0) AS value\nFROM sprint_issues si JOIN issues i ON i.key = si.issue_key\nWHERE si.sprint_id = $sprint::bigint\n  AND si.removed_at IS NOT NULL\n  AND i.issue_type != 'Epic'",
           "refId": "A"
         }
       ],
@@ -2285,7 +2354,7 @@
             "uid": "jira-metrics-pg"
           },
           "format": "table",
-          "rawSql": "SELECT ROUND(100.0 * (\n  COALESCE((\n    SELECT SUM(COALESCE(si2.story_points_at_add, i2.story_points, 0))\n    FROM sprint_issues si2 JOIN issues i2 ON i2.key = si2.issue_key\n    WHERE si2.sprint_id = $sprint::bigint\n      AND si2.was_in_initial_scope = FALSE AND si2.removed_at IS NULL\n      AND i2.issue_type NOT IN ('Epic', 'Sub-task')\n      AND i2.status != 'Obsolete / Won''t Do'\n  ), 0)\n  + COALESCE((\n    SELECT SUM(COALESCE(si3.story_points_at_add, i3.story_points, 0))\n    FROM sprint_issues si3 JOIN issues i3 ON i3.key = si3.issue_key\n    WHERE si3.sprint_id = $sprint::bigint\n      AND si3.removed_at IS NOT NULL\n      AND i3.issue_type NOT IN ('Epic', 'Sub-task')\n      AND i3.status != 'Obsolete / Won''t Do'\n  ), 0)\n) / NULLIF((\n  SELECT SUM(COALESCE(si4.story_points_at_add, i4.story_points, 0))\n  FROM sprint_issues si4 JOIN issues i4 ON i4.key = si4.issue_key\n  WHERE si4.sprint_id = $sprint::bigint\n    AND si4.was_in_initial_scope = TRUE\n    AND i4.issue_type NOT IN ('Epic', 'Sub-task')\n    AND i4.status != 'Obsolete / Won''t Do'\n), 0), 1) AS value",
+          "rawSql": "SELECT ROUND(100.0 * (\n  COALESCE((\n    SELECT SUM(COALESCE(si2.story_points_at_add, i2.story_points, 0))\n    FROM sprint_issues si2 JOIN issues i2 ON i2.key = si2.issue_key\n    WHERE si2.sprint_id = $sprint::bigint\n      AND si2.was_in_initial_scope = FALSE AND si2.removed_at IS NULL\n      AND i2.issue_type != 'Epic'\n  ), 0)\n  + COALESCE((\n    SELECT SUM(COALESCE(si3.story_points_at_add, i3.story_points, 0))\n    FROM sprint_issues si3 JOIN issues i3 ON i3.key = si3.issue_key\n    WHERE si3.sprint_id = $sprint::bigint\n      AND si3.removed_at IS NOT NULL\n      AND i3.issue_type != 'Epic'\n  ), 0)\n) / NULLIF((\n  SELECT SUM(COALESCE(si4.story_points_at_add, i4.story_points, 0))\n  FROM sprint_issues si4 JOIN issues i4 ON i4.key = si4.issue_key\n  WHERE si4.sprint_id = $sprint::bigint\n    AND si4.was_in_initial_scope = TRUE\n    AND i4.issue_type != 'Epic'\n), 0), 1) AS value",
           "refId": "A"
         }
       ],
