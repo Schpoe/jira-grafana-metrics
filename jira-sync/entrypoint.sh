@@ -10,7 +10,7 @@ tail -F /var/log/jira-sync.log &
 
 # Run an initial sync immediately on container start
 echo "[entrypoint] Running initial sync..."
-python /app/sync.py
+/usr/local/bin/python /app/sync.py
 
 # Hand off to cron
 echo "[entrypoint] Starting cron scheduler (07:00 and 19:00 UTC)..."

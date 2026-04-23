@@ -17,7 +17,7 @@ COPY entrypoint.sh .
 RUN chmod +x entrypoint.sh
 
 # 08:00 and 20:00 UTC = 08:00 and 20:00 CET (UTC+1)
-RUN echo "0 7,19 * * * root . /etc/environment; cd /app && python sync.py >> /var/log/jira-sync.log 2>&1" \
+RUN echo "0 7,19 * * * root . /etc/environment; cd /app && /usr/local/bin/python sync.py >> /var/log/jira-sync.log 2>&1" \
     > /etc/cron.d/jira-sync \
  && chmod 0644 /etc/cron.d/jira-sync
 
