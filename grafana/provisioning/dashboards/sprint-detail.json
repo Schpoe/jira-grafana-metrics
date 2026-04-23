@@ -1120,7 +1120,7 @@
         "type": "postgres",
         "uid": "jira-metrics-pg"
       },
-      "description": "Stories currently in sprint (not removed). DOR criteria apply only to these issues.",
+      "description": "Stories currently in sprint (not removed, not Obsolete). DOR criteria apply only to these issues.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1177,7 +1177,7 @@
             "uid": "jira-metrics-pg"
           },
           "format": "table",
-          "rawSql": "SELECT COUNT(*) AS value\nFROM sprint_issues si JOIN issues i ON i.key=si.issue_key\nWHERE si.sprint_id=$sprint::bigint AND si.removed_at IS NULL AND i.issue_type = 'Story'",
+          "rawSql": "SELECT COUNT(*) AS value\nFROM sprint_issues si JOIN issues i ON i.key=si.issue_key\nWHERE si.sprint_id=$sprint::bigint AND si.removed_at IS NULL\n  AND i.issue_type = 'Story'\n  AND i.status != 'Obsolete / Won''t Do'",
           "refId": "A"
         }
       ],
