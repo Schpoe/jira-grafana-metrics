@@ -1462,7 +1462,7 @@
             "uid": "jira-metrics-pg"
           },
           "format": "table",
-          "rawSql": "SELECT COUNT(*) AS value\nFROM sprint_issues si JOIN issues i ON i.key=si.issue_key\nWHERE si.sprint_id=$sprint::bigint AND si.removed_at IS NULL\n  AND i.issue_type = 'Story'\n  AND (i.story_points IS NULL OR i.story_points = 0)",
+          "rawSql": "SELECT COUNT(*) AS value\nFROM sprint_issues si JOIN issues i ON i.key=si.issue_key\nWHERE si.sprint_id=$sprint::bigint AND si.removed_at IS NULL\n  AND i.issue_type = 'Story'\n  AND i.status != 'Obsolete / Won''t Do'\n  AND (i.story_points IS NULL OR i.story_points = 0)",
           "refId": "A"
         }
       ],
@@ -1534,7 +1534,7 @@
             "uid": "jira-metrics-pg"
           },
           "format": "table",
-          "rawSql": "SELECT COUNT(*) AS value\nFROM sprint_issues si JOIN issues i ON i.key=si.issue_key\nWHERE si.sprint_id=$sprint::bigint AND si.removed_at IS NULL\n  AND i.issue_type = 'Story'\n  AND i.epic_key IS NULL",
+          "rawSql": "SELECT COUNT(*) AS value\nFROM sprint_issues si JOIN issues i ON i.key=si.issue_key\nWHERE si.sprint_id=$sprint::bigint AND si.removed_at IS NULL\n  AND i.issue_type = 'Story'\n  AND i.status != 'Obsolete / Won''t Do'\n  AND i.epic_key IS NULL",
           "refId": "A"
         }
       ],
