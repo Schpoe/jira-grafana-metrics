@@ -161,7 +161,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT COUNT(*) AS value\nFROM issues\nWHERE issue_type = 'Epic'\n  AND customer_project LIKE 'Bose / WP-%'\n  AND status != 'Obsolete / Won''t Do'",
+          "rawSql": "SELECT COUNT(*) AS value\nFROM issues\nWHERE issue_type = 'Epic'\n  AND customer_project LIKE '% / WP-%'\n  AND status != 'Obsolete / Won''t Do'",
           "format": "table",
           "refId": "A"
         }
@@ -211,7 +211,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT COUNT(*) AS value\nFROM issues\nWHERE epic_key IN (\n  SELECT key FROM issues\n  WHERE issue_type = 'Epic'\n    AND customer_project LIKE 'Bose / WP-%'\n    AND status != 'Obsolete / Won''t Do'\n)\nAND issue_type NOT IN ('Epic', 'Sub-task')\nAND status_category != 'Done'\nAND status != 'Obsolete / Won''t Do'",
+          "rawSql": "SELECT COUNT(*) AS value\nFROM issues\nWHERE epic_key IN (\n  SELECT key FROM issues\n  WHERE issue_type = 'Epic'\n    AND customer_project LIKE '% / WP-%'\n    AND status != 'Obsolete / Won''t Do'\n)\nAND issue_type NOT IN ('Epic', 'Sub-task')\nAND status_category != 'Done'\nAND status != 'Obsolete / Won''t Do'",
           "format": "table",
           "refId": "A"
         }
@@ -261,7 +261,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT COUNT(*) AS value\nFROM issues\nWHERE epic_key IN (\n  SELECT key FROM issues\n  WHERE issue_type = 'Epic'\n    AND customer_project LIKE 'Bose / WP-%'\n    AND status != 'Obsolete / Won''t Do'\n)\nAND issue_type NOT IN ('Epic', 'Sub-task')\nAND status_category = 'Done'",
+          "rawSql": "SELECT COUNT(*) AS value\nFROM issues\nWHERE epic_key IN (\n  SELECT key FROM issues\n  WHERE issue_type = 'Epic'\n    AND customer_project LIKE '% / WP-%'\n    AND status != 'Obsolete / Won''t Do'\n)\nAND issue_type NOT IN ('Epic', 'Sub-task')\nAND status_category = 'Done'",
           "format": "table",
           "refId": "A"
         }
@@ -311,7 +311,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT COALESCE(SUM(story_points), 0) AS value\nFROM issues\nWHERE epic_key IN (\n  SELECT key FROM issues\n  WHERE issue_type = 'Epic'\n    AND customer_project LIKE 'Bose / WP-%'\n    AND status != 'Obsolete / Won''t Do'\n)\nAND issue_type NOT IN ('Epic', 'Sub-task')\nAND status != 'Obsolete / Won''t Do'",
+          "rawSql": "SELECT COALESCE(SUM(story_points), 0) AS value\nFROM issues\nWHERE epic_key IN (\n  SELECT key FROM issues\n  WHERE issue_type = 'Epic'\n    AND customer_project LIKE '% / WP-%'\n    AND status != 'Obsolete / Won''t Do'\n)\nAND issue_type NOT IN ('Epic', 'Sub-task')\nAND status != 'Obsolete / Won''t Do'",
           "format": "table",
           "refId": "A"
         }
@@ -361,7 +361,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT COALESCE(SUM(story_points), 0) AS value\nFROM issues\nWHERE epic_key IN (\n  SELECT key FROM issues\n  WHERE issue_type = 'Epic'\n    AND customer_project LIKE 'Bose / WP-%'\n    AND status != 'Obsolete / Won''t Do'\n)\nAND issue_type NOT IN ('Epic', 'Sub-task')\nAND status_category = 'Done'",
+          "rawSql": "SELECT COALESCE(SUM(story_points), 0) AS value\nFROM issues\nWHERE epic_key IN (\n  SELECT key FROM issues\n  WHERE issue_type = 'Epic'\n    AND customer_project LIKE '% / WP-%'\n    AND status != 'Obsolete / Won''t Do'\n)\nAND issue_type NOT IN ('Epic', 'Sub-task')\nAND status_category = 'Done'",
           "format": "table",
           "refId": "A"
         }
@@ -411,7 +411,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT ROUND(\n  100.0 * COALESCE(SUM(story_points) FILTER (WHERE status_category = 'Done'), 0)\n  / NULLIF(SUM(story_points), 0), 1\n) AS value\nFROM issues\nWHERE epic_key IN (\n  SELECT key FROM issues\n  WHERE issue_type = 'Epic'\n    AND customer_project LIKE 'Bose / WP-%'\n    AND status != 'Obsolete / Won''t Do'\n)\nAND issue_type NOT IN ('Epic', 'Sub-task')\nAND status != 'Obsolete / Won''t Do'",
+          "rawSql": "SELECT ROUND(\n  100.0 * COALESCE(SUM(story_points) FILTER (WHERE status_category = 'Done'), 0)\n  / NULLIF(SUM(story_points), 0), 1\n) AS value\nFROM issues\nWHERE epic_key IN (\n  SELECT key FROM issues\n  WHERE issue_type = 'Epic'\n    AND customer_project LIKE '% / WP-%'\n    AND status != 'Obsolete / Won''t Do'\n)\nAND issue_type NOT IN ('Epic', 'Sub-task')\nAND status != 'Obsolete / Won''t Do'",
           "format": "table",
           "refId": "A"
         }
@@ -710,7 +710,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT status AS \"Status\", COUNT(*) AS \"Issues\"\nFROM issues\nWHERE epic_key IN (\n  SELECT key FROM issues\n  WHERE issue_type = 'Epic'\n    AND customer_project LIKE 'Bose / WP-%'\n    AND status != 'Obsolete / Won''t Do'\n)\nAND issue_type NOT IN ('Epic', 'Sub-task')\nAND status != 'Obsolete / Won''t Do'\nGROUP BY status\nORDER BY COUNT(*) DESC",
+          "rawSql": "SELECT status AS \"Status\", COUNT(*) AS \"Issues\"\nFROM issues\nWHERE epic_key IN (\n  SELECT key FROM issues\n  WHERE issue_type = 'Epic'\n    AND customer_project LIKE '% / WP-%'\n    AND status != 'Obsolete / Won''t Do'\n)\nAND issue_type NOT IN ('Epic', 'Sub-task')\nAND status != 'Obsolete / Won''t Do'\nGROUP BY status\nORDER BY COUNT(*) DESC",
           "format": "table",
           "refId": "A"
         }
@@ -756,7 +756,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT\n  COALESCE(assignee, 'Unassigned') AS \"Assignee\",\n  COUNT(*) FILTER (WHERE status_category != 'Done') AS \"Open\",\n  COUNT(*) FILTER (WHERE status_category =  'Done') AS \"Done\"\nFROM issues\nWHERE epic_key IN (\n  SELECT key FROM issues\n  WHERE issue_type = 'Epic'\n    AND customer_project LIKE 'Bose / WP-%'\n    AND status != 'Obsolete / Won''t Do'\n)\nAND issue_type NOT IN ('Epic', 'Sub-task')\nAND status != 'Obsolete / Won''t Do'\nGROUP BY assignee\nORDER BY COUNT(*) FILTER (WHERE status_category != 'Done') DESC\nLIMIT 15",
+          "rawSql": "SELECT\n  COALESCE(assignee, 'Unassigned') AS \"Assignee\",\n  COUNT(*) FILTER (WHERE status_category != 'Done') AS \"Open\",\n  COUNT(*) FILTER (WHERE status_category =  'Done') AS \"Done\"\nFROM issues\nWHERE epic_key IN (\n  SELECT key FROM issues\n  WHERE issue_type = 'Epic'\n    AND customer_project LIKE '% / WP-%'\n    AND status != 'Obsolete / Won''t Do'\n)\nAND issue_type NOT IN ('Epic', 'Sub-task')\nAND status != 'Obsolete / Won''t Do'\nGROUP BY assignee\nORDER BY COUNT(*) FILTER (WHERE status_category != 'Done') DESC\nLIMIT 15",
           "format": "table",
           "refId": "A"
         }
@@ -845,7 +845,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT\n  i.key                              AS \"Key\",\n  i.summary                          AS \"Summary\",\n  i.issue_type                       AS \"Type\",\n  i.status                           AS \"Status\",\n  i.priority                         AS \"Priority\",\n  COALESCE(i.assignee, '\u2014')          AS \"Assignee\",\n  i.story_points                     AS \"SP\",\n  COALESCE(e.summary, '\u2014')           AS \"Epic\"\nFROM issues i\nLEFT JOIN issues e ON e.key = i.epic_key\nWHERE i.epic_key IN (\n  SELECT key FROM issues\n  WHERE issue_type = 'Epic'\n    AND customer_project LIKE 'Bose / WP-%'\n    AND status != 'Obsolete / Won''t Do'\n)\nAND i.issue_type NOT IN ('Epic', 'Sub-task')\nAND i.status     != 'Obsolete / Won''t Do'\nORDER BY i.epic_key, i.key",
+          "rawSql": "SELECT\n  i.key                              AS \"Key\",\n  i.summary                          AS \"Summary\",\n  i.issue_type                       AS \"Type\",\n  i.status                           AS \"Status\",\n  i.priority                         AS \"Priority\",\n  COALESCE(i.assignee, '\u2014')          AS \"Assignee\",\n  i.story_points                     AS \"SP\",\n  COALESCE(e.summary, '\u2014')           AS \"Epic\"\nFROM issues i\nLEFT JOIN issues e ON e.key = i.epic_key\nWHERE i.epic_key IN (\n  SELECT key FROM issues\n  WHERE issue_type = 'Epic'\n    AND customer_project LIKE '% / WP-%'\n    AND status != 'Obsolete / Won''t Do'\n)\nAND i.issue_type NOT IN ('Epic', 'Sub-task')\nAND i.status     != 'Obsolete / Won''t Do'\nORDER BY i.epic_key, i.key",
           "format": "table",
           "refId": "A"
         }
