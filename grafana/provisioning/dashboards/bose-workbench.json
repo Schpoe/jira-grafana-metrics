@@ -1399,7 +1399,7 @@
           "type": "postgres",
           "uid": "jira-metrics-pg"
         },
-        "query": "SELECT CONCAT('Q', EXTRACT(QUARTER FROM resolved_at)::int, ' ', EXTRACT(YEAR FROM resolved_at)::int) AS __text, TO_CHAR(date_trunc('quarter', resolved_at), 'YYYY-MM-DD') AS __value FROM issues WHERE resolved_at IS NOT NULL AND EXTRACT(YEAR FROM resolved_at) = 2026 GROUP BY 1, 2 ORDER BY 2 DESC",
+        "query": "SELECT DISTINCT CONCAT('Q', EXTRACT(QUARTER FROM transitioned_at)::int, ' ', EXTRACT(YEAR FROM transitioned_at)::int) AS __text, TO_CHAR(date_trunc('quarter', transitioned_at), 'YYYY-MM-DD') AS __value FROM issue_transitions WHERE UPPER(to_status) = 'DONE' ORDER BY 2 DESC",
         "refresh": 2,
         "includeAll": false,
         "multi": false,
