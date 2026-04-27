@@ -1399,7 +1399,7 @@
           "type": "postgres",
           "uid": "jira-metrics-pg"
         },
-        "query": "SELECT CONCAT('Q', EXTRACT(QUARTER FROM resolved_at)::int, ' ', EXTRACT(YEAR FROM resolved_at)::int) AS __text, TO_CHAR(date_trunc('quarter', resolved_at), 'YYYY-MM-DD') AS __value FROM issues WHERE resolved_at IS NOT NULL AND epic_key IN (SELECT key FROM issues WHERE issue_type = 'Epic' AND customer_project LIKE '% / WP-%' AND status != 'Obsolete / Won''t Do') GROUP BY 1, 2 ORDER BY 2 DESC",
+        "query": "SELECT CONCAT('Q', EXTRACT(QUARTER FROM resolved_at)::int, ' ', EXTRACT(YEAR FROM resolved_at)::int) AS __text, TO_CHAR(date_trunc('quarter', resolved_at), 'YYYY-MM-DD') AS __value FROM issues WHERE resolved_at IS NOT NULL GROUP BY 1, 2 ORDER BY 2 DESC",
         "refresh": 2,
         "includeAll": false,
         "multi": false,
