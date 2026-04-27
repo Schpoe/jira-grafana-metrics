@@ -293,7 +293,7 @@
     {
       "id": 5,
       "type": "stat",
-      "title": "Total SP",
+      "title": "Done SP (Total)",
       "description": "Total story points across all WP- epic child issues (all-time reference).",
       "gridPos": {
         "h": 4,
@@ -311,7 +311,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT COALESCE(SUM(i.story_points), 0) AS value\nFROM issues i\nJOIN issues e ON e.key = i.epic_key\nWHERE e.issue_type        = 'Epic'\n  AND e.customer_project LIKE '% / WP-%'\n  AND e.status           != 'Obsolete / Won''t Do'\n  AND i.issue_type NOT IN ('Epic', 'Sub-task')\n  AND i.status     != 'Obsolete / Won''t Do'",
+          "rawSql": "SELECT COALESCE(SUM(i.story_points), 0) AS value\nFROM issues i\nJOIN issues e ON e.key = i.epic_key\nWHERE e.issue_type        = 'Epic'\n  AND e.customer_project LIKE '% / WP-%'\n  AND e.status           != 'Obsolete / Won''t Do'\n  AND i.issue_type NOT IN ('Epic', 'Sub-task')\n  AND i.key IN (\n    SELECT DISTINCT issue_key FROM issue_transitions\n    WHERE UPPER(to_status) = 'DONE'\n      AND TO_CHAR(date_trunc('quarter', transitioned_at), 'YYYY-MM-DD') = '$quarter'\n      AND TO_CHAR(date_trunc('month', transitioned_at), 'YYYY-MM') IN (${month:sqlstring})\n  )\n  AND i.status_category = 'Done'",
           "format": "table",
           "refId": "A"
         }
@@ -976,7 +976,7 @@
     {
       "id": 23,
       "type": "barchart",
-      "title": "Issues by Workpackage",
+      "title": "Done by Workpackage",
       "description": "Open vs Done issues per WP- workpackage.",
       "gridPos": {
         "h": 9,
@@ -994,7 +994,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT\n  COALESCE(e.customer_project, '\u2014')                                    AS \"Workpackage\",\n  COUNT(i.key) FILTER (WHERE i.status_category != 'Done')              AS \"Open\",\n  COUNT(i.key) FILTER (WHERE i.status_category =  'Done')              AS \"Done\"\nFROM issues i\nJOIN issues e ON e.key = i.epic_key\nWHERE e.issue_type       = 'Epic'\n  AND e.customer_project LIKE '% / WP-%'\n  AND e.status           != 'Obsolete / Won''t Do'\n  AND i.issue_type NOT IN ('Epic', 'Sub-task')\n  AND i.status           != 'Obsolete / Won''t Do'\nGROUP BY e.customer_project\nORDER BY e.customer_project",
+          "rawSql": "SELECT\n  COALESCE(e.customer_project, '\u2014') AS \"Workpackage\",\n  COUNT(i.key)                      AS \"Done\",\n  COALESCE(SUM(i.story_points), 0)  AS \"Done SP\"\nFROM issues i\nJOIN issues e ON e.key = i.epic_key\nWHERE e.issue_type        = 'Epic'\n  AND e.customer_project LIKE '% / WP-%'\n  AND e.status           != 'Obsolete / Won''t Do'\n  AND i.issue_type NOT IN ('Epic', 'Sub-task')\n  AND i.key IN (\n    SELECT DISTINCT issue_key FROM issue_transitions\n    WHERE UPPER(to_status) = 'DONE'\n      AND TO_CHAR(date_trunc('quarter', transitioned_at), 'YYYY-MM-DD') = '$quarter'\n      AND TO_CHAR(date_trunc('month', transitioned_at), 'YYYY-MM') IN (${month:sqlstring})\n  )\n  AND i.status_category = 'Done'\nGROUP BY e.customer_project\nORDER BY SUM(i.story_points) DESC NULLS LAST",
           "format": "table",
           "refId": "A"
         }
@@ -1050,7 +1050,7 @@
     {
       "id": 24,
       "type": "barchart",
-      "title": "Issues by Team",
+      "title": "Done by Team",
       "description": "Open vs Done issues per Jira project (team).",
       "gridPos": {
         "h": 9,
@@ -1068,7 +1068,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT\n  i.project_key                                                         AS \"Team\",\n  COUNT(i.key) FILTER (WHERE i.status_category != 'Done')              AS \"Open\",\n  COUNT(i.key) FILTER (WHERE i.status_category =  'Done')              AS \"Done\"\nFROM issues i\nJOIN issues e ON e.key = i.epic_key\nWHERE e.issue_type       = 'Epic'\n  AND e.customer_project LIKE '% / WP-%'\n  AND e.status           != 'Obsolete / Won''t Do'\n  AND i.issue_type NOT IN ('Epic', 'Sub-task')\n  AND i.status           != 'Obsolete / Won''t Do'\nGROUP BY i.project_key\nORDER BY COUNT(i.key) DESC",
+          "rawSql": "SELECT\n  i.project_key                     AS \"Team\",\n  COUNT(i.key)                      AS \"Done\",\n  COALESCE(SUM(i.story_points), 0)  AS \"Done SP\"\nFROM issues i\nJOIN issues e ON e.key = i.epic_key\nWHERE e.issue_type        = 'Epic'\n  AND e.customer_project LIKE '% / WP-%'\n  AND e.status           != 'Obsolete / Won''t Do'\n  AND i.issue_type NOT IN ('Epic', 'Sub-task')\n  AND i.key IN (\n    SELECT DISTINCT issue_key FROM issue_transitions\n    WHERE UPPER(to_status) = 'DONE'\n      AND TO_CHAR(date_trunc('quarter', transitioned_at), 'YYYY-MM-DD') = '$quarter'\n      AND TO_CHAR(date_trunc('month', transitioned_at), 'YYYY-MM') IN (${month:sqlstring})\n  )\n  AND i.status_category = 'Done'\nGROUP BY i.project_key\nORDER BY SUM(i.story_points) DESC NULLS LAST",
           "format": "table",
           "refId": "A"
         }
