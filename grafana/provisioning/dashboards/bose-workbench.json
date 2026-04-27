@@ -143,8 +143,8 @@
     {
       "id": 2,
       "type": "stat",
-      "title": "Epics",
-      "description": "Bose WP- workpackage epics (excluding Obsolete).",
+      "title": "Epics with Completions",
+      "description": "WP- epics with at least one issue completed in selected quarter.",
       "gridPos": {
         "h": 4,
         "w": 4,
@@ -161,7 +161,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT COUNT(*) AS value\nFROM issues\nWHERE issue_type = 'Epic'\n  AND customer_project LIKE '% / WP-%'\n  AND status != 'Obsolete / Won''t Do'",
+          "rawSql": "SELECT COUNT(DISTINCT e.key) AS value\nFROM issues e\nJOIN issues ci ON ci.epic_key = e.key\nWHERE e.issue_type        = 'Epic'\n  AND e.customer_project LIKE '% / WP-%'\n  AND e.status           != 'Obsolete / Won''t Do'\n  AND ci.issue_type NOT IN ('Epic', 'Sub-task')\n  AND ci.key IN (\n    SELECT DISTINCT issue_key FROM issue_transitions\n    WHERE UPPER(to_status) = 'DONE'\n      AND TO_CHAR(date_trunc('quarter', transitioned_at), 'YYYY-MM-DD') = '$quarter'\n  )\n  AND ci.status_category = 'Done'",
           "format": "table",
           "refId": "A"
         }
@@ -193,8 +193,8 @@
     {
       "id": 3,
       "type": "stat",
-      "title": "Open Issues",
-      "description": "Non-done child issues under Bose WP- workpackage epics.",
+      "title": "Done Issues",
+      "description": "Issues completed in selected quarter under WP- epics.",
       "gridPos": {
         "h": 4,
         "w": 4,
@@ -211,7 +211,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT COUNT(*) AS value\nFROM issues\nWHERE epic_key IN (\n  SELECT key FROM issues\n  WHERE issue_type = 'Epic'\n    AND customer_project LIKE '% / WP-%'\n    AND status != 'Obsolete / Won''t Do'\n)\nAND issue_type NOT IN ('Epic', 'Sub-task')\nAND status_category != 'Done'\nAND status != 'Obsolete / Won''t Do'",
+          "rawSql": "SELECT COUNT(*) AS value\nFROM issues i\nJOIN issues e ON e.key = i.epic_key\nWHERE e.issue_type        = 'Epic'\n  AND e.customer_project LIKE '% / WP-%'\n  AND e.status           != 'Obsolete / Won''t Do'\n  AND i.issue_type NOT IN ('Epic', 'Sub-task')\n  AND i.key IN (\n    SELECT DISTINCT issue_key FROM issue_transitions\n    WHERE UPPER(to_status) = 'DONE'\n      AND TO_CHAR(date_trunc('quarter', transitioned_at), 'YYYY-MM-DD') = '$quarter'\n  )\n  AND i.status_category = 'Done'",
           "format": "table",
           "refId": "A"
         }
@@ -243,8 +243,8 @@
     {
       "id": 4,
       "type": "stat",
-      "title": "Done Issues",
-      "description": "Completed child issues under Bose WP- workpackage epics.",
+      "title": "Done SP",
+      "description": "Story points completed in selected quarter.",
       "gridPos": {
         "h": 4,
         "w": 4,
@@ -261,7 +261,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT COUNT(*) AS value\nFROM issues\nWHERE epic_key IN (\n  SELECT key FROM issues\n  WHERE issue_type = 'Epic'\n    AND customer_project LIKE '% / WP-%'\n    AND status != 'Obsolete / Won''t Do'\n)\nAND issue_type NOT IN ('Epic', 'Sub-task')\nAND status_category = 'Done'",
+          "rawSql": "SELECT COALESCE(SUM(i.story_points), 0) AS value\nFROM issues i\nJOIN issues e ON e.key = i.epic_key\nWHERE e.issue_type        = 'Epic'\n  AND e.customer_project LIKE '% / WP-%'\n  AND e.status           != 'Obsolete / Won''t Do'\n  AND i.issue_type NOT IN ('Epic', 'Sub-task')\n  AND i.key IN (\n    SELECT DISTINCT issue_key FROM issue_transitions\n    WHERE UPPER(to_status) = 'DONE'\n      AND TO_CHAR(date_trunc('quarter', transitioned_at), 'YYYY-MM-DD') = '$quarter'\n  )\n  AND i.status_category = 'Done'",
           "format": "table",
           "refId": "A"
         }
@@ -294,7 +294,7 @@
       "id": 5,
       "type": "stat",
       "title": "Total SP",
-      "description": "Story points across all child issues (excl. Obsolete).",
+      "description": "Total story points across all WP- epic child issues (all-time reference).",
       "gridPos": {
         "h": 4,
         "w": 4,
@@ -311,7 +311,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT COALESCE(SUM(story_points), 0) AS value\nFROM issues\nWHERE epic_key IN (\n  SELECT key FROM issues\n  WHERE issue_type = 'Epic'\n    AND customer_project LIKE '% / WP-%'\n    AND status != 'Obsolete / Won''t Do'\n)\nAND issue_type NOT IN ('Epic', 'Sub-task')\nAND status != 'Obsolete / Won''t Do'",
+          "rawSql": "SELECT COALESCE(SUM(i.story_points), 0) AS value\nFROM issues i\nJOIN issues e ON e.key = i.epic_key\nWHERE e.issue_type        = 'Epic'\n  AND e.customer_project LIKE '% / WP-%'\n  AND e.status           != 'Obsolete / Won''t Do'\n  AND i.issue_type NOT IN ('Epic', 'Sub-task')\n  AND i.status     != 'Obsolete / Won''t Do'",
           "format": "table",
           "refId": "A"
         }
@@ -344,7 +344,7 @@
       "id": 6,
       "type": "stat",
       "title": "Done SP",
-      "description": "Story points in completed child issues.",
+      "description": "Story points completed in selected quarter.",
       "gridPos": {
         "h": 4,
         "w": 4,
@@ -361,7 +361,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT COALESCE(SUM(story_points), 0) AS value\nFROM issues\nWHERE epic_key IN (\n  SELECT key FROM issues\n  WHERE issue_type = 'Epic'\n    AND customer_project LIKE '% / WP-%'\n    AND status != 'Obsolete / Won''t Do'\n)\nAND issue_type NOT IN ('Epic', 'Sub-task')\nAND status_category = 'Done'",
+          "rawSql": "SELECT COALESCE(SUM(i.story_points), 0) AS value\nFROM issues i\nJOIN issues e ON e.key = i.epic_key\nWHERE e.issue_type        = 'Epic'\n  AND e.customer_project LIKE '% / WP-%'\n  AND e.status           != 'Obsolete / Won''t Do'\n  AND i.issue_type NOT IN ('Epic', 'Sub-task')\n  AND i.key IN (\n    SELECT DISTINCT issue_key FROM issue_transitions\n    WHERE UPPER(to_status) = 'DONE'\n      AND TO_CHAR(date_trunc('quarter', transitioned_at), 'YYYY-MM-DD') = '$quarter'\n  )\n  AND i.status_category = 'Done'",
           "format": "table",
           "refId": "A"
         }
@@ -411,7 +411,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT ROUND(\n  100.0 * COALESCE(SUM(story_points) FILTER (WHERE status_category = 'Done'), 0)\n  / NULLIF(SUM(story_points), 0), 1\n) AS value\nFROM issues\nWHERE epic_key IN (\n  SELECT key FROM issues\n  WHERE issue_type = 'Epic'\n    AND customer_project LIKE '% / WP-%'\n    AND status != 'Obsolete / Won''t Do'\n)\nAND issue_type NOT IN ('Epic', 'Sub-task')\nAND status != 'Obsolete / Won''t Do'",
+          "rawSql": "SELECT ROUND(\n  100.0 * COALESCE(SUM(i.story_points) FILTER (WHERE i.key IN (\n    SELECT DISTINCT issue_key FROM issue_transitions\n    WHERE UPPER(to_status) = 'DONE'\n      AND TO_CHAR(date_trunc('quarter', transitioned_at), 'YYYY-MM-DD') = '$quarter'\n  ) AND i.status_category = 'Done'), 0)\n  / NULLIF(SUM(i.story_points) FILTER (WHERE i.status != 'Obsolete / Won''t Do'), 0), 1\n) AS value\nFROM issues i\nJOIN issues e ON e.key = i.epic_key\nWHERE e.issue_type        = 'Epic'\n  AND e.customer_project LIKE '% / WP-%'\n  AND e.status           != 'Obsolete / Won''t Do'\n  AND i.issue_type NOT IN ('Epic', 'Sub-task')",
           "format": "table",
           "refId": "A"
         }
@@ -489,7 +489,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT\n  e.key                                                                          AS \"Epic\",\n  e.customer_project                                                             AS \"Workpackage\",\n  e.summary                                                                      AS \"Summary\",\n  e.status                                                                       AS \"Status\",\n  COALESCE(e.assignee, '\u2014')                                                      AS \"Owner\",\n  COUNT(ci.key)                                                                  AS \"Issues\",\n  COUNT(ci.key) FILTER (WHERE ci.status_category = 'Done')                      AS \"Done\",\n  COALESCE(SUM(ci.story_points), 0)::int                                         AS \"Total SP\",\n  COALESCE(SUM(ci.story_points) FILTER (WHERE ci.status_category = 'Done'), 0)::int AS \"Done SP\",\n  ROUND(\n    100.0 * COUNT(ci.key) FILTER (WHERE ci.status_category = 'Done')\n    / NULLIF(COUNT(ci.key), 0), 1\n  )                                                                              AS \"% Done\"\nFROM issues e\nLEFT JOIN issues ci\n  ON  ci.epic_key    = e.key\n  AND ci.issue_type NOT IN ('Epic', 'Sub-task')\n  AND ci.status     != 'Obsolete / Won''t Do'\nWHERE e.issue_type      = 'Epic'\n  AND e.customer_project LIKE '% / WP-%'\n  AND e.status           != 'Obsolete / Won''t Do'\nGROUP BY e.key, e.customer_project, e.summary, e.status, e.assignee\nORDER BY e.customer_project, e.key",
+          "rawSql": "SELECT\n  e.key                                                                     AS \"Epic\",\n  e.customer_project                                                        AS \"Workpackage\",\n  e.summary                                                                 AS \"Summary\",\n  e.status                                                                  AS \"Status\",\n  COALESCE(e.assignee, '\u2014')                                                 AS \"Owner\",\n  COUNT(ci.key) FILTER (WHERE ci.key IN (\n    SELECT DISTINCT issue_key FROM issue_transitions\n    WHERE UPPER(to_status) = 'DONE'\n      AND TO_CHAR(date_trunc('quarter', transitioned_at), 'YYYY-MM-DD') = '$quarter'\n  ) AND ci.status_category = 'Done')                                        AS \"Done in Qtr\",\n  COALESCE(SUM(ci.story_points) FILTER (WHERE ci.key IN (\n    SELECT DISTINCT issue_key FROM issue_transitions\n    WHERE UPPER(to_status) = 'DONE'\n      AND TO_CHAR(date_trunc('quarter', transitioned_at), 'YYYY-MM-DD') = '$quarter'\n  ) AND ci.status_category = 'Done'), 0)::int                               AS \"SP Done Qtr\",\n  COALESCE(SUM(ci.story_points), 0)::int                                    AS \"Total SP\"\nFROM issues e\nLEFT JOIN issues ci\n  ON  ci.epic_key    = e.key\n  AND ci.issue_type NOT IN ('Epic', 'Sub-task')\n  AND ci.status     != 'Obsolete / Won''t Do'\nWHERE e.issue_type        = 'Epic'\n  AND e.customer_project LIKE '% / WP-%'\n  AND e.status           != 'Obsolete / Won''t Do'\nGROUP BY e.key, e.customer_project, e.summary, e.status, e.assignee\nHAVING COUNT(ci.key) FILTER (WHERE ci.key IN (\n    SELECT DISTINCT issue_key FROM issue_transitions\n    WHERE UPPER(to_status) = 'DONE'\n      AND TO_CHAR(date_trunc('quarter', transitioned_at), 'YYYY-MM-DD') = '$quarter'\n  ) AND ci.status_category = 'Done') > 0\nORDER BY e.customer_project, e.key",
           "format": "table",
           "refId": "A"
         }
@@ -704,7 +704,7 @@
     {
       "id": 21,
       "type": "barchart",
-      "title": "Issues by Status",
+      "title": "Done Issues by Type",
       "description": "Count of child issues grouped by status.",
       "gridPos": {
         "h": 8,
@@ -722,7 +722,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT status AS \"Status\", COUNT(*) AS \"Issues\"\nFROM issues\nWHERE epic_key IN (\n  SELECT key FROM issues\n  WHERE issue_type = 'Epic'\n    AND customer_project LIKE '% / WP-%'\n    AND status != 'Obsolete / Won''t Do'\n)\nAND issue_type NOT IN ('Epic', 'Sub-task')\nAND status != 'Obsolete / Won''t Do'\nGROUP BY status\nORDER BY COUNT(*) DESC",
+          "rawSql": "SELECT\n  i.issue_type                     AS \"Type\",\n  COUNT(*)                         AS \"Done\"\nFROM issues i\nJOIN issues e ON e.key = i.epic_key\nWHERE e.issue_type        = 'Epic'\n  AND e.customer_project LIKE '% / WP-%'\n  AND e.status           != 'Obsolete / Won''t Do'\n  AND i.issue_type NOT IN ('Epic', 'Sub-task')\n  AND i.key IN (\n    SELECT DISTINCT issue_key FROM issue_transitions\n    WHERE UPPER(to_status) = 'DONE'\n      AND TO_CHAR(date_trunc('quarter', transitioned_at), 'YYYY-MM-DD') = '$quarter'\n  )\n  AND i.status_category = 'Done'\nGROUP BY i.issue_type\nORDER BY COUNT(*) DESC",
           "format": "table",
           "refId": "A"
         }
@@ -750,7 +750,7 @@
     {
       "id": 22,
       "type": "barchart",
-      "title": "Open Issues by Assignee",
+      "title": "Done Issues by Assignee",
       "description": "Open child issues per assignee (top 15).",
       "gridPos": {
         "h": 8,
@@ -768,7 +768,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT\n  COALESCE(assignee, 'Unassigned') AS \"Assignee\",\n  COUNT(*) FILTER (WHERE status_category != 'Done') AS \"Open\",\n  COUNT(*) FILTER (WHERE status_category =  'Done') AS \"Done\"\nFROM issues\nWHERE epic_key IN (\n  SELECT key FROM issues\n  WHERE issue_type = 'Epic'\n    AND customer_project LIKE '% / WP-%'\n    AND status != 'Obsolete / Won''t Do'\n)\nAND issue_type NOT IN ('Epic', 'Sub-task')\nAND status != 'Obsolete / Won''t Do'\nGROUP BY assignee\nORDER BY COUNT(*) FILTER (WHERE status_category != 'Done') DESC\nLIMIT 15",
+          "rawSql": "SELECT\n  COALESCE(i.assignee, 'Unassigned') AS \"Assignee\",\n  COUNT(*)                           AS \"Done\",\n  COALESCE(SUM(i.story_points), 0)   AS \"Done SP\"\nFROM issues i\nJOIN issues e ON e.key = i.epic_key\nWHERE e.issue_type        = 'Epic'\n  AND e.customer_project LIKE '% / WP-%'\n  AND e.status           != 'Obsolete / Won''t Do'\n  AND i.issue_type NOT IN ('Epic', 'Sub-task')\n  AND i.key IN (\n    SELECT DISTINCT issue_key FROM issue_transitions\n    WHERE UPPER(to_status) = 'DONE'\n      AND TO_CHAR(date_trunc('quarter', transitioned_at), 'YYYY-MM-DD') = '$quarter'\n  )\n  AND i.status_category = 'Done'\nGROUP BY i.assignee\nORDER BY COUNT(*) DESC\nLIMIT 15",
           "format": "table",
           "refId": "A"
         }
@@ -839,7 +839,7 @@
     {
       "id": 31,
       "type": "table",
-      "title": "All Issues",
+      "title": "Issues Completed",
       "description": "Every child issue under Bose WP- workpackage epics (excluding Obsolete and Sub-tasks).",
       "gridPos": {
         "h": 14,
@@ -857,7 +857,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT\n  i.key                              AS \"Key\",\n  i.summary                          AS \"Summary\",\n  i.issue_type                       AS \"Type\",\n  i.status                           AS \"Status\",\n  i.priority                         AS \"Priority\",\n  COALESCE(i.assignee, '\u2014')          AS \"Assignee\",\n  i.story_points                     AS \"SP\",\n  COALESCE(e.summary, '\u2014')           AS \"Epic\"\nFROM issues i\nLEFT JOIN issues e ON e.key = i.epic_key\nWHERE i.epic_key IN (\n  SELECT key FROM issues\n  WHERE issue_type = 'Epic'\n    AND customer_project LIKE '% / WP-%'\n    AND status != 'Obsolete / Won''t Do'\n)\nAND i.issue_type NOT IN ('Epic', 'Sub-task')\nAND i.status     != 'Obsolete / Won''t Do'\nORDER BY i.epic_key, i.key",
+          "rawSql": "SELECT\n  i.key                     AS \"Key\",\n  i.summary                 AS \"Summary\",\n  i.issue_type              AS \"Type\",\n  i.priority                AS \"Priority\",\n  COALESCE(i.assignee, '\u2014') AS \"Assignee\",\n  i.story_points            AS \"SP\",\n  e.customer_project        AS \"Workpackage\"\nFROM issues i\nJOIN issues e ON e.key = i.epic_key\nWHERE e.issue_type        = 'Epic'\n  AND e.customer_project LIKE '% / WP-%'\n  AND e.status           != 'Obsolete / Won''t Do'\n  AND i.issue_type NOT IN ('Epic', 'Sub-task')\n  AND i.key IN (\n    SELECT DISTINCT issue_key FROM issue_transitions\n    WHERE UPPER(to_status) = 'DONE'\n      AND TO_CHAR(date_trunc('quarter', transitioned_at), 'YYYY-MM-DD') = '$quarter'\n  )\n  AND i.status_category = 'Done'\nORDER BY e.customer_project, i.key",
           "format": "table",
           "refId": "A"
         }
@@ -1119,257 +1119,6 @@
             ]
           }
         ]
-      }
-    },
-    {
-      "id": 40,
-      "type": "row",
-      "title": "Quarterly Breakdown",
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 27
-      },
-      "collapsed": false
-    },
-    {
-      "id": 41,
-      "type": "stat",
-      "title": "Done Issues \u2014 Selected Quarter",
-      "description": "Issues resolved in the selected quarter under WP- epics.",
-      "gridPos": {
-        "h": 4,
-        "w": 6,
-        "x": 0,
-        "y": 28
-      },
-      "datasource": {
-        "type": "postgres",
-        "uid": "jira-metrics-pg"
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "postgres",
-            "uid": "jira-metrics-pg"
-          },
-          "rawSql": "SELECT COUNT(*) AS value\nFROM issues i\nJOIN issues e ON e.key = i.epic_key\nWHERE e.issue_type        = 'Epic'\n  AND e.customer_project  LIKE '% / WP-%'\n  AND e.status            != 'Obsolete / Won''t Do'\n  AND i.issue_type NOT IN ('Epic', 'Sub-task')\n  AND i.key IN (\n    SELECT DISTINCT issue_key FROM issue_transitions\n    WHERE UPPER(to_status) = 'DONE'\n      AND TO_CHAR(date_trunc('quarter', transitioned_at), 'YYYY-MM-DD') = '$quarter'\n  )\n  AND i.status_category = 'Done'",
-          "format": "table",
-          "refId": "A"
-        }
-      ],
-      "options": {
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "colorMode": "value",
-        "graphMode": "none",
-        "orientation": "auto",
-        "textMode": "auto"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "fixed",
-            "fixedColor": "green"
-          },
-          "unit": "short"
-        },
-        "overrides": []
-      }
-    },
-    {
-      "id": 42,
-      "type": "stat",
-      "title": "Done SP \u2014 Selected Quarter",
-      "description": "Story points resolved in the selected quarter under WP- epics.",
-      "gridPos": {
-        "h": 4,
-        "w": 6,
-        "x": 6,
-        "y": 28
-      },
-      "datasource": {
-        "type": "postgres",
-        "uid": "jira-metrics-pg"
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "postgres",
-            "uid": "jira-metrics-pg"
-          },
-          "rawSql": "SELECT COALESCE(SUM(i.story_points), 0) AS value\nFROM issues i\nJOIN issues e ON e.key = i.epic_key\nWHERE e.issue_type        = 'Epic'\n  AND e.customer_project  LIKE '% / WP-%'\n  AND e.status            != 'Obsolete / Won''t Do'\n  AND i.issue_type NOT IN ('Epic', 'Sub-task')\n  AND i.key IN (\n    SELECT DISTINCT issue_key FROM issue_transitions\n    WHERE UPPER(to_status) = 'DONE'\n      AND TO_CHAR(date_trunc('quarter', transitioned_at), 'YYYY-MM-DD') = '$quarter'\n  )\n  AND i.status_category = 'Done'",
-          "format": "table",
-          "refId": "A"
-        }
-      ],
-      "options": {
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "colorMode": "value",
-        "graphMode": "none",
-        "orientation": "auto",
-        "textMode": "auto"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "fixed",
-            "fixedColor": "green"
-          },
-          "unit": "short"
-        },
-        "overrides": []
-      }
-    },
-    {
-      "id": 43,
-      "type": "barchart",
-      "title": "Done SP by Quarter (Trend)",
-      "description": "Story points completed per quarter across all WP- epics.",
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 28
-      },
-      "datasource": {
-        "type": "postgres",
-        "uid": "jira-metrics-pg"
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "postgres",
-            "uid": "jira-metrics-pg"
-          },
-          "rawSql": "SELECT\n  CONCAT('Q', EXTRACT(QUARTER FROM it.transitioned_at)::int, ' ', EXTRACT(YEAR FROM it.transitioned_at)::int) AS \"Quarter\",\n  COALESCE(SUM(i.story_points), 0) AS \"Done SP\"\nFROM issues i\nJOIN issues e  ON e.key       = i.epic_key\nJOIN (\n  SELECT DISTINCT ON (issue_key, date_trunc('quarter', transitioned_at))\n    issue_key, transitioned_at\n  FROM issue_transitions\n  WHERE UPPER(to_status) = 'DONE'\n  ORDER BY issue_key, date_trunc('quarter', transitioned_at), transitioned_at\n) it ON it.issue_key = i.key\nWHERE e.issue_type        = 'Epic'\n  AND e.customer_project  LIKE '% / WP-%'\n  AND e.status            != 'Obsolete / Won''t Do'\n  AND i.issue_type NOT IN ('Epic', 'Sub-task')\n  AND i.status_category   = 'Done'\nGROUP BY 1, date_trunc('quarter', it.transitioned_at)::date\nORDER BY date_trunc('quarter', it.transitioned_at)::date",
-          "format": "table",
-          "refId": "A"
-        }
-      ],
-      "options": {
-        "xField": "Quarter",
-        "stacking": "none",
-        "fillOpacity": 80,
-        "legend": {
-          "displayMode": "list",
-          "placement": "bottom"
-        }
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "color": {
-            "mode": "fixed",
-            "fixedColor": "green"
-          }
-        },
-        "overrides": []
-      }
-    },
-    {
-      "id": 44,
-      "type": "barchart",
-      "title": "Done SP by Workpackage \u2014 Selected Quarter",
-      "description": "Story points completed per workpackage in the selected quarter.",
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 32
-      },
-      "datasource": {
-        "type": "postgres",
-        "uid": "jira-metrics-pg"
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "postgres",
-            "uid": "jira-metrics-pg"
-          },
-          "rawSql": "SELECT\n  COALESCE(e.customer_project, '\u2014') AS \"Workpackage\",\n  COALESCE(SUM(i.story_points), 0)  AS \"Done SP\"\nFROM issues i\nJOIN issues e ON e.key = i.epic_key\nWHERE e.issue_type        = 'Epic'\n  AND e.customer_project  LIKE '% / WP-%'\n  AND e.status            != 'Obsolete / Won''t Do'\n  AND i.issue_type NOT IN ('Epic', 'Sub-task')\n  AND i.key IN (\n    SELECT DISTINCT issue_key FROM issue_transitions\n    WHERE UPPER(to_status) = 'DONE'\n      AND TO_CHAR(date_trunc('quarter', transitioned_at), 'YYYY-MM-DD') = '$quarter'\n  )\n  AND i.status_category = 'Done'\nGROUP BY e.customer_project\nORDER BY SUM(i.story_points) DESC NULLS LAST",
-          "format": "table",
-          "refId": "A"
-        }
-      ],
-      "options": {
-        "xField": "Workpackage",
-        "stacking": "none",
-        "fillOpacity": 80,
-        "xTickLabelRotation": -30,
-        "legend": {
-          "displayMode": "list",
-          "placement": "bottom"
-        }
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "color": {
-            "mode": "fixed",
-            "fixedColor": "green"
-          }
-        },
-        "overrides": []
-      }
-    },
-    {
-      "id": 45,
-      "type": "barchart",
-      "title": "Done SP by Team \u2014 Selected Quarter",
-      "description": "Story points completed per team in the selected quarter.",
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 32
-      },
-      "datasource": {
-        "type": "postgres",
-        "uid": "jira-metrics-pg"
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "postgres",
-            "uid": "jira-metrics-pg"
-          },
-          "rawSql": "SELECT\n  i.project_key                    AS \"Team\",\n  COALESCE(SUM(i.story_points), 0) AS \"Done SP\"\nFROM issues i\nJOIN issues e ON e.key = i.epic_key\nWHERE e.issue_type        = 'Epic'\n  AND e.customer_project  LIKE '% / WP-%'\n  AND e.status            != 'Obsolete / Won''t Do'\n  AND i.issue_type NOT IN ('Epic', 'Sub-task')\n  AND i.key IN (\n    SELECT DISTINCT issue_key FROM issue_transitions\n    WHERE UPPER(to_status) = 'DONE'\n      AND TO_CHAR(date_trunc('quarter', transitioned_at), 'YYYY-MM-DD') = '$quarter'\n  )\n  AND i.status_category = 'Done'\nGROUP BY i.project_key\nORDER BY SUM(i.story_points) DESC NULLS LAST",
-          "format": "table",
-          "refId": "A"
-        }
-      ],
-      "options": {
-        "xField": "Team",
-        "stacking": "none",
-        "fillOpacity": 80,
-        "legend": {
-          "displayMode": "list",
-          "placement": "bottom"
-        }
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "color": {
-            "mode": "fixed",
-            "fixedColor": "blue"
-          }
-        },
-        "overrides": []
       }
     }
   ],
