@@ -409,7 +409,7 @@
         "type": "postgres",
         "uid": "jira-metrics-pg"
       },
-      "description": "Story points committed at sprint start (initial scope). Excludes Epics, Sub-tasks, Obsolete. Uses story_points_at_add to preserve original estimate.",
+      "description": "Story points committed at sprint start (initial scope). Excludes Epics. Sub-tasks and Obsolete included. Uses story_points_at_add to preserve original estimate.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -550,7 +550,7 @@
         "type": "postgres",
         "uid": "jira-metrics-pg"
       },
-      "description": "All active SP (committed + unplanned \u2013 removed).",
+      "description": "All active SP (committed + unplanned \u2013 removed). Excludes Epics. Sub-tasks included.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -688,7 +688,7 @@
         "type": "postgres",
         "uid": "jira-metrics-pg"
       },
-      "description": "SP delivered within this sprint's window. Only counts issues where resolved_at falls between sprint start and complete date, preventing carry-over double-counting. Excludes Epics, Sub-tasks, Obsolete.",
+      "description": "SP delivered within this sprint's window. Only counts issues where resolved_at falls between sprint start and complete date, preventing carry-over double-counting. Excludes Epics. Sub-tasks and Obsolete included.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -982,7 +982,7 @@
         "type": "postgres",
         "uid": "jira-metrics-pg"
       },
-      "description": "Count of issues in initial sprint scope (was_in_initial_scope=TRUE). Excludes Epics and Sub-tasks. Includes Bugs.",
+      "description": "Count of issues in initial sprint scope (was_in_initial_scope=TRUE). Excludes Epics. Sub-tasks and Bugs included. No removed_at filter.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1051,7 +1051,7 @@
         "type": "postgres",
         "uid": "jira-metrics-pg"
       },
-      "description": "All currently active tickets in the sprint (removed_at IS NULL). Excludes Epics and Sub-tasks. Includes unplanned additions and Bugs.",
+      "description": "All currently active tickets in the sprint (removed_at IS NULL). Excludes Epics. Sub-tasks, Bugs, and unplanned additions included.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1258,7 +1258,7 @@
         "type": "postgres",
         "uid": "jira-metrics-pg"
       },
-      "description": "Issues with no assignee (all issue types).",
+      "description": "Stories with no assignee.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1402,7 +1402,7 @@
         "type": "postgres",
         "uid": "jira-metrics-pg"
       },
-      "description": "Issues without a story point estimate.",
+      "description": "Stories without a story point estimate.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1474,7 +1474,7 @@
         "type": "postgres",
         "uid": "jira-metrics-pg"
       },
-      "description": "Issues not linked to a parent Epic.",
+      "description": "Stories not linked to a parent Epic.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1546,7 +1546,7 @@
         "type": "postgres",
         "uid": "jira-metrics-pg"
       },
-      "description": "Issues with no Component assigned. Excludes Epics, Sub-tasks, and Obsolete.",
+      "description": "Stories with no Component assigned.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1690,7 +1690,7 @@
         "type": "postgres",
         "uid": "jira-metrics-pg"
       },
-      "description": "Issues resolved within this sprint's time window (resolved_at between sprint start and complete date). Excludes Epics, Sub-tasks, Obsolete.",
+      "description": "Issues resolved within this sprint's time window (resolved_at between sprint start and complete date). Excludes Epics and Obsolete. Sub-tasks included.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1759,7 +1759,7 @@
         "type": "postgres",
         "uid": "jira-metrics-pg"
       },
-      "description": "Issues not yet done in this sprint (excl. Epics, Sub-tasks, Obsolete).",
+      "description": "Issues not yet done in this sprint (excl. Epics, Obsolete). Sub-tasks included.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1828,7 +1828,7 @@
         "type": "postgres",
         "uid": "jira-metrics-pg"
       },
-      "description": "Issues failing any readiness criterion: SP missing, Epic missing, Acceptance Criteria missing (N/A for Bugs), Assignee missing, or Component missing. Sorted by priority.",
+      "description": "Stories failing any readiness criterion: SP, Epic, Acceptance Criteria, Assignee, or Component missing. Sorted by priority.",
       "fieldConfig": {
         "defaults": {
           "custom": {
@@ -2293,7 +2293,7 @@
         "type": "postgres",
         "uid": "jira-metrics-pg"
       },
-      "description": "Total scope churn (SP added + SP removed) \u00f7 committed SP \u00d7 100. Target: \u226410%. Note: no issue-type filter applied to match raw sprint report data.",
+      "description": "Total scope churn (SP added + SP removed) \u00f7 committed SP \u00d7 100. Target: \u226410%. Epics excluded; Sub-tasks and all other types included.",
       "fieldConfig": {
         "defaults": {
           "color": {

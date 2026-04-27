@@ -328,11 +328,11 @@ JOIN issues  i  ON i.key = si.issue_key;
 
 -- Planning deviation per sprint (committed vs delivered story points/issues).
 -- For closed sprints with scope tables populated: uses sprint_scope_final which
--- is sourced directly from the Jira sprint report — no resolved_at heuristics needed.
+-- is derived from issue_sprint_history (changelog) — no resolved_at heuristics needed.
 -- For active sprints and not-yet-backfilled closed sprints: falls back to sprint_issues.
 CREATE OR REPLACE VIEW v_planning_deviation AS
 WITH scope_sprints AS (
-    -- Sprint IDs that have authoritative scope data from the sprint report
+    -- Sprint IDs that have authoritative scope data (derived from issue_sprint_history)
     SELECT DISTINCT sprint_id FROM sprint_scope_final
 ),
 committed AS (
@@ -365,7 +365,7 @@ committed AS (
     GROUP BY si.sprint_id
 ),
 delivered AS (
-    -- Closed sprints with scope tables: was_completed is authoritative from sprint report
+    -- Closed sprints with scope tables: was_completed is authoritative (from changelog-derived scope)
     SELECT
         ssf.sprint_id,
         COUNT(*)                                                                AS delivered_issues,

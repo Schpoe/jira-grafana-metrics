@@ -9,7 +9,7 @@ Jira Cloud → jira-sync (Python) → PostgreSQL → Grafana
 ```
 
 - **jira-sync**: Python service that pulls issues, sprints, transitions, releases, and fix-version history from the Jira Cloud REST API and upserts them into PostgreSQL. Runs on a cron schedule (07:00 and 19:00 UTC) and supports incremental + full sync.
-- **PostgreSQL**: Stores all Jira data plus derived views (`v_planning_deviation`, `v_lead_time`, `v_cycle_time_rft_to_done`, `v_cycle_time_in_progress_to_rft`, `v_time_in_status`, `v_prod_epic_progress`, `v_prod_item_progress`).
+- **PostgreSQL**: Stores all Jira data plus derived views (`v_planning_deviation`, `v_lead_time`, `v_cycle_time_rft_to_done`, `v_cycle_time_in_progress_to_rft`, `v_time_in_status`, `v_sprint_scope_changes`, `v_prod_epic_progress`, `v_prod_item_progress`).
 - **Grafana**: Dashboards provisioned from JSON files in `grafana/provisioning/dashboards/`. `allowUiUpdates: false` keeps provisioned files authoritative.
 
 ## Dashboards
@@ -43,10 +43,18 @@ JIRA_URL=https://your-org.atlassian.net
 JIRA_EMAIL=your@email.com
 JIRA_API_TOKEN=your_api_token
 JIRA_PROJECT_KEYS=PROJ1,PROJ2
-JIRA_STORY_POINTS_FIELD=customfield_10016
 JIRA_HISTORY_START=2024-01-01
 POSTGRES_PASSWORD=your_db_password
 GF_SECURITY_ADMIN_PASSWORD=your_grafana_password
+
+# Optional — override default custom field IDs if your Jira instance differs
+JIRA_STORY_POINTS_FIELD=customfield_10016
+JIRA_ACCEPTANCE_CRITERIA_FIELD=customfield_10028
+JIRA_CUSTOMER_PROJECT_FIELD=customfield_10662
+JIRA_QA_FIELD=customfield_10132
+
+# Optional — Slack/Teams/make.com webhook URL for sync failure alerts
+NOTIFY_WEBHOOK_URL=
 ```
 
 ### Start
@@ -77,10 +85,12 @@ docker compose exec -T jira-sync python sync.py
 
 | Field | Jira ID | Column |
 | --- | --- | --- |
-| Story Points | `customfield_10016` (configurable) | `story_points` |
-| Acceptance Criteria | `customfield_10028` (configurable) | `has_acceptance_criteria` (boolean) |
-| Customer-Project | `customfield_10662` | `customer`, `project_name`, `customer_project` |
-| QASE test case link | Synced separately via QASE API | `has_qase_link` (boolean, NULL = not yet checked) |
+| Story Points | `customfield_10016` (configurable via `JIRA_STORY_POINTS_FIELD`) | `story_points` |
+| Acceptance Criteria | `customfield_10028` (configurable via `JIRA_ACCEPTANCE_CRITERIA_FIELD`) | `has_acceptance_criteria` (boolean) |
+| Customer-Project | `customfield_10662` (configurable via `JIRA_CUSTOMER_PROJECT_FIELD`) | `customer`, `project_name`, `customer_project` |
+| QA Assignee | `customfield_10132` (configurable via `JIRA_QA_FIELD`) | `qa_assignee` |
+| Components | Standard Jira field | `components` (TEXT[]) |
+| QASE test case link | Synced separately via Jira issue properties | `has_qase_link` (boolean, NULL = not yet checked) |
 
 The Customer-Project field is a cascading select. Both parent (customer) and child (project) values are stored separately.
 
@@ -145,6 +155,10 @@ To incorporate layout changes made in the Grafana UI:
 **`sprint_scope_changes`** — audit log of additions and removals detected between active-sprint sync runs (±12 hour precision). Populated by `_sync_sprint_members`; useful for auditing mid-sprint changes.
 
 **`issue_fix_version_history`** — historical fix-version assignments per issue, populated from the Jira changelog. Unlike `issues.fix_versions` (current value only), this table tracks every release a bug was ever assigned to. Used by the Release Bug History panels in Quality & Bugs.
+
+**`issue_links`** — current snapshot of issue links (e.g. Epic "implements" PROD item). Rebuilt each sync for any issue that was synced.
+
+**`issue_link_history`** — append-only log of link additions and removals detected between syncs. Each sync diffs the current `issue_links` snapshot against the incoming data and records `'added'`/`'removed'` events.
 
 | Column | Meaning |
 | --- | --- |

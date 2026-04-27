@@ -57,7 +57,7 @@ WHERE ssf.was_completed = TRUE
 - `delivered_points`: `SUM(COALESCE(ssf.story_points, 0))`
 - `delivered_issues`: `COUNT(*)`
 
-**Why no `resolved_at` window for closed sprints:** `was_completed` is derived from each issue's resolved state at sprint close, stored in `sprint_scope_final`. It is unique per sprint — no carry-over double-counting risk.
+**Why no `resolved_at` window for closed sprints:** `was_completed` is derived from issue changelog history and stored in `sprint_scope_final` at sprint close time. It is unique per sprint — no carry-over double-counting risk.
 
 **For active/future sprints** (falling back to `sprint_issues`):
 
@@ -109,15 +109,15 @@ Per-sprint drill-down for Scrum Masters and Release Managers.
 
 ### Story Points
 
-**Committed** — `SUM(COALESCE(story_points_at_add, story_points, 0))` where `was_in_initial_scope = TRUE AND removed_at IS NULL`, excl. Epics, Sub-tasks, Obsolete. Uses `story_points_at_add` so mid-sprint re-estimation doesn't change what was committed.
+**Committed** — `SUM(COALESCE(story_points_at_add, story_points, 0))` where `was_in_initial_scope = TRUE AND removed_at IS NULL`, excl. Epics. Sub-tasks and Obsolete are included. Uses `story_points_at_add` so mid-sprint re-estimation doesn't change what was committed.
 
-**Unplanned** — Same SUM for `was_in_initial_scope = FALSE AND removed_at IS NULL`, excl. Epics, Sub-tasks, Obsolete. Target ≤ 10% of Committed.
+**Unplanned** — Same SUM for `was_in_initial_scope = FALSE AND removed_at IS NULL`, excl. Epics. Sub-tasks included. Target ≤ 10% of Committed.
 
-**Total in Sprint** — SUM where `removed_at IS NULL`, excl. Epics, Sub-tasks, Obsolete.
+**Total in Sprint** — SUM where `removed_at IS NULL`, excl. Epics. Sub-tasks included.
 
 **Obsolete / Won't Do** — SUM where `removed_at IS NULL AND status = 'Obsolete / Won''t Do'`. No type filter — counts all types so nothing is silently hidden.
 
-**Completed** — SUM where `status_category = 'Done'`, excl. Epics/Sub-tasks/Obsolete, with `resolved_at` in sprint window (`>= start_date AND <= COALESCE(complete_date, end_date, NOW())`). `resolved_at IS NOT NULL` required. Counts all Done issues including unplanned. The `resolved_at` window is required here because unplanned Done issues appear in multiple sprints' `sprint_issues` with `removed_at IS NULL`.
+**Completed** — SUM where `status_category = 'Done'`, excl. Epics, with `resolved_at` in sprint window (`>= start_date AND <= COALESCE(complete_date, end_date, NOW())`). `resolved_at IS NOT NULL` required. Counts all Done issues including unplanned and Sub-tasks. The `resolved_at` window is required here because unplanned Done issues appear in multiple sprints' `sprint_issues` with `removed_at IS NULL`.
 
 **Delivery %** — `delivery_pct` from `v_planning_deviation`. Gauge: red < 60%, yellow 60–80%, green ≥ 80%.
 
@@ -127,25 +127,25 @@ Per-sprint drill-down for Scrum Masters and Release Managers.
 
 ### Story Readiness
 
-**Planned** — `COUNT(*)` where `was_in_initial_scope = TRUE AND issue_type NOT IN ('Epic','Sub-task')`. No `removed_at` filter. Bugs included.
+**Planned** — `COUNT(*)` where `was_in_initial_scope = TRUE AND issue_type != 'Epic'`. No `removed_at` filter. Sub-tasks and Bugs included.
 
-**Ready Issues** — Issues with SP ≥ 1 AND epic_key IS NOT NULL AND `has_acceptance_criteria = TRUE` AND `cardinality(components) > 0`. All four must be met. Excl. Epics, Sub-tasks, removed.
+**Ready Issues** — Stories with SP ≥ 1 AND epic_key IS NOT NULL AND `has_acceptance_criteria = TRUE` AND `cardinality(components) > 0`. All four must be met. Excl. removed, Obsolete.
 
-**Missing Assignee** — `COUNT(*)` where `removed_at IS NULL AND assignee IS NULL AND status != 'Obsolete / Won''t Do'`. All issue types including Epics and Sub-tasks.
+**Missing Assignee** — `COUNT(*)` Stories where `removed_at IS NULL AND assignee IS NULL AND status != 'Obsolete / Won''t Do'`. Stories only.
 
-**Missing AC** — Issues where `has_acceptance_criteria IS NULL OR FALSE`, excl. Epics, Sub-tasks, **Bugs** (Bugs don't require AC). Also excl. Obsolete.
+**Missing AC** — Stories where `has_acceptance_criteria IS NULL OR FALSE`, excl. Obsolete. Stories only (Bugs, Tasks not shown).
 
-**Missing SP** — Issues where `story_points IS NULL OR story_points = 0`, excl. Epics, Sub-tasks.
+**Missing SP** — Stories where `story_points IS NULL OR story_points = 0`, excl. Obsolete. Stories only.
 
-**Missing Epic Link** — Issues where `epic_key IS NULL`, excl. Epics, Sub-tasks.
+**Missing Epic Link** — Stories where `epic_key IS NULL`, excl. Obsolete. Stories only.
 
-**Readiness %** — `ROUND(100.0 * ready / total, 1)` where ready = SP≥1 AND epic IS NOT NULL AND has_ac = TRUE AND cardinality(components) > 0, total = all active non-Epic/Sub-task issues. Bugs count in denominator even without AC requirement. Target ≥ 90%.
+**Readiness %** — `ROUND(100.0 * ready / total, 1)` where ready = SP≥1 AND epic IS NOT NULL AND has_ac = TRUE AND cardinality(components) > 0, total = all active Stories in sprint (excl. removed). Target ≥ 90%.
 
-**Completed Issues** — `COUNT(*)` with same `resolved_at` sprint window as Completed SP. Excl. Epics, Sub-tasks, Obsolete.
+**Completed Issues** — `COUNT(*)` with same `resolved_at` sprint window as Completed SP. Excl. Epics and Obsolete. Sub-tasks included.
 
-**Open Issues** — `COUNT(*)` where `removed_at IS NULL AND status_category != 'Done'`, excl. Epics, Sub-tasks, Obsolete.
+**Open Issues** — `COUNT(*)` where `removed_at IS NULL AND status_category != 'Done'`, excl. Epics, Obsolete. Sub-tasks included.
 
-**Issues Not Ready (table)** — Issues failing any of: SP missing, Epic missing, AC missing (N/A for Bugs), Assignee missing, Component missing. Bugs only appear for SP/Epic/Assignee/Component — not AC. Sorted by priority. Includes a Component ✅/❌ column.
+**Issues Not Ready (table)** — Stories failing any of: SP missing, Epic missing, AC missing, Assignee missing, Component missing. Stories only. Sorted by priority. Includes a Component ✅/❌ column.
 
 ### Scope Change
 
@@ -153,7 +153,7 @@ Per-sprint drill-down for Scrum Masters and Release Managers.
 
 **Issues Removed / SP Removed** — `removed_at IS NOT NULL`. No type filter.
 
-**Scope Change %** — `(SP_added + SP_removed) / committed_SP × 100`. The committed denominator has no type filter (raw sprint data). Target ≤ 10%, orange at 10%, red at 25%.
+**Scope Change %** — `(SP_added + SP_removed) / committed_SP × 100`. Epics excluded from all three terms; Sub-tasks and other types included. Target ≤ 10%, orange at 10%, red at 25%.
 
 ### Cross-Team Dependencies
 
@@ -223,7 +223,7 @@ Quarterly KPIs for Product Owners: planning quality, delivery accuracy, re-work,
 
 ### Data Age
 
-**Data Age** — Hours since the last successful or partial Jira sync. Queries `sync_log` for the most recent finished entry. Color-coded: green ≤ 12 h · yellow 12–24 h · red > 24 h (syncs run at 07:00 and 19:00 UTC).
+**Data Age** — Hours since the most recent completed sync run (any status: success, partial, or error). Queries `sync_log` for the most recent row where `finished_at IS NOT NULL`. Color-coded: green ≤ 12 h · yellow 12–24 h · red > 24 h (syncs run at 07:00 and 19:00 UTC).
 
 ### KPI Summary Row 1 — Planning & Quality
 
