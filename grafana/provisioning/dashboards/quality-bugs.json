@@ -55,36 +55,6 @@
       "includeVars": true,
       "keepTime": false,
       "targetBlank": false,
-      "title": "Team Overview",
-      "type": "link",
-      "url": "/d/jira-team-overview"
-    },
-    {
-      "asDropdown": false,
-      "icon": "external link",
-      "includeVars": true,
-      "keepTime": false,
-      "targetBlank": false,
-      "title": "Flow & Cycle Time",
-      "type": "link",
-      "url": "/d/jira-flow-cycle-time"
-    },
-    {
-      "asDropdown": false,
-      "icon": "external link",
-      "includeVars": true,
-      "keepTime": false,
-      "targetBlank": false,
-      "title": "PROD Alignment",
-      "type": "link",
-      "url": "/d/jira-prod-alignment"
-    },
-    {
-      "asDropdown": false,
-      "icon": "external link",
-      "includeVars": true,
-      "keepTime": false,
-      "targetBlank": false,
       "title": "PO KPIs",
       "type": "link",
       "url": "/d/jira-po-kpis"
