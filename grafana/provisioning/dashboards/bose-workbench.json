@@ -2,287 +2,961 @@
   "id": null,
   "uid": "bose-workbench",
   "title": "BOSE Workbench",
-  "tags": ["jira", "bose"],
+  "tags": [
+    "jira",
+    "bose"
+  ],
   "timezone": "browser",
   "schemaVersion": 38,
   "version": 1,
   "refresh": "5m",
-  "time": { "from": "now-1y", "to": "now" },
+  "time": {
+    "from": "now-1y",
+    "to": "now"
+  },
   "links": [
-    { "type": "link", "icon": "external link", "targetBlank": false, "includeVars": true, "keepTime": false, "asDropdown": false, "title": "Sprint Detail",   "url": "/d/cfih5an4hj7y8e" },
-    { "type": "link", "icon": "external link", "targetBlank": false, "includeVars": true, "keepTime": false, "asDropdown": false, "title": "Sprint Overview", "url": "/d/jira-sprint-health" },
-    { "type": "link", "icon": "external link", "targetBlank": false, "includeVars": true, "keepTime": false, "asDropdown": false, "title": "Quality & Bugs",  "url": "/d/jira-quality-bugs" },
-    { "type": "link", "icon": "external link", "targetBlank": false, "includeVars": true, "keepTime": false, "asDropdown": false, "title": "PO KPIs",         "url": "/d/jira-po-kpis" }
+    {
+      "type": "link",
+      "icon": "external link",
+      "targetBlank": false,
+      "includeVars": true,
+      "keepTime": false,
+      "asDropdown": false,
+      "title": "Sprint Detail",
+      "url": "/d/cfih5an4hj7y8e"
+    },
+    {
+      "type": "link",
+      "icon": "external link",
+      "targetBlank": false,
+      "includeVars": true,
+      "keepTime": false,
+      "asDropdown": false,
+      "title": "Sprint Overview",
+      "url": "/d/jira-sprint-health"
+    },
+    {
+      "type": "link",
+      "icon": "external link",
+      "targetBlank": false,
+      "includeVars": true,
+      "keepTime": false,
+      "asDropdown": false,
+      "title": "Quality & Bugs",
+      "url": "/d/jira-quality-bugs"
+    },
+    {
+      "type": "link",
+      "icon": "external link",
+      "targetBlank": false,
+      "includeVars": true,
+      "keepTime": false,
+      "asDropdown": false,
+      "title": "PO KPIs",
+      "url": "/d/jira-po-kpis"
+    }
   ],
   "panels": [
     {
       "id": 999,
       "type": "stat",
       "title": "Data Age",
-      "description": "Hours since the last Jira sync attempt and its status. Green ≤ 12 h • Yellow 12–24 h • Red > 24 h or ERROR status.",
-      "gridPos": { "h": 2, "w": 24, "x": 0, "y": 0 },
-      "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
-      "targets": [{
-        "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
-        "rawSql": "SELECT\n  ROUND(EXTRACT(EPOCH FROM (NOW() - finished_at)) / 3600.0, 1) AS \"Age (h)\",\n  UPPER(status) AS \"Status\"\nFROM sync_log\nWHERE finished_at IS NOT NULL\nORDER BY finished_at DESC LIMIT 1",
-        "format": "table",
-        "refId": "A"
-      }],
+      "description": "Hours since the last Jira sync attempt and its status. Green \u2264 12 h \u2022 Yellow 12\u201324 h \u2022 Red > 24 h or ERROR status.",
+      "gridPos": {
+        "h": 2,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT\n  ROUND(EXTRACT(EPOCH FROM (NOW() - finished_at)) / 3600.0, 1) AS \"Age (h)\",\n  UPPER(status) AS \"Status\"\nFROM sync_log\nWHERE finished_at IS NOT NULL\nORDER BY finished_at DESC LIMIT 1",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
       "options": {
-        "colorMode": "background", "graphMode": "none", "justifyMode": "center",
-        "orientation": "auto", "textMode": "value_and_name", "wideLayout": true,
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "textMode": "value_and_name",
+        "wideLayout": true,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
       },
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" }, "mappings": [], "min": 0, "unit": "h",
-          "thresholds": { "mode": "absolute", "steps": [
-            { "color": "green", "value": null },
-            { "color": "yellow", "value": 12 },
-            { "color": "red",    "value": 24 }
-          ]}
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "min": 0,
+          "unit": "h",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 12
+              },
+              {
+                "color": "red",
+                "value": 24
+              }
+            ]
+          }
         },
         "overrides": []
       },
       "pluginVersion": "11.1.0"
     },
-
     {
-      "id": 1, "type": "row", "title": "Summary",
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 2 }, "collapsed": false
+      "id": 1,
+      "type": "row",
+      "title": "Summary",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 2
+      },
+      "collapsed": false
     },
-
     {
-      "id": 2, "type": "stat", "title": "Epics",
+      "id": 2,
+      "type": "stat",
+      "title": "Epics",
       "description": "Bose epics in WP- projects (excluding Obsolete).",
-      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 3 },
-      "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
-      "targets": [{
-        "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
-        "rawSql": "SELECT COUNT(*) AS value\nFROM issues\nWHERE issue_type = 'Epic'\n  AND customer ILIKE '%Bose%'\n  AND project_key LIKE 'WP-%'\n  AND status != 'Obsolete / Won''t Do'",
-        "format": "table", "refId": "A"
-      }],
-      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "colorMode": "value", "graphMode": "none", "orientation": "auto", "textMode": "auto" },
-      "fieldConfig": { "defaults": { "color": { "mode": "fixed", "fixedColor": "blue" }, "unit": "short" }, "overrides": [] }
-    },
-
-    {
-      "id": 3, "type": "stat", "title": "Open Issues",
-      "description": "Non-done child issues under Bose WP- epics.",
-      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 3 },
-      "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
-      "targets": [{
-        "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
-        "rawSql": "SELECT COUNT(*) AS value\nFROM issues\nWHERE epic_key IN (\n  SELECT key FROM issues\n  WHERE issue_type = 'Epic'\n    AND customer ILIKE '%Bose%'\n    AND project_key LIKE 'WP-%'\n    AND status != 'Obsolete / Won''t Do'\n)\nAND issue_type NOT IN ('Epic', 'Sub-task')\nAND status_category != 'Done'\nAND status != 'Obsolete / Won''t Do'",
-        "format": "table", "refId": "A"
-      }],
-      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "colorMode": "value", "graphMode": "none", "orientation": "auto", "textMode": "auto" },
-      "fieldConfig": { "defaults": { "color": { "mode": "fixed", "fixedColor": "orange" }, "unit": "short" }, "overrides": [] }
-    },
-
-    {
-      "id": 4, "type": "stat", "title": "Done Issues",
-      "description": "Completed child issues under Bose WP- epics.",
-      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 3 },
-      "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
-      "targets": [{
-        "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
-        "rawSql": "SELECT COUNT(*) AS value\nFROM issues\nWHERE epic_key IN (\n  SELECT key FROM issues\n  WHERE issue_type = 'Epic'\n    AND customer ILIKE '%Bose%'\n    AND project_key LIKE 'WP-%'\n    AND status != 'Obsolete / Won''t Do'\n)\nAND issue_type NOT IN ('Epic', 'Sub-task')\nAND status_category = 'Done'",
-        "format": "table", "refId": "A"
-      }],
-      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "colorMode": "value", "graphMode": "none", "orientation": "auto", "textMode": "auto" },
-      "fieldConfig": { "defaults": { "color": { "mode": "fixed", "fixedColor": "green" }, "unit": "short" }, "overrides": [] }
-    },
-
-    {
-      "id": 5, "type": "stat", "title": "Total SP",
-      "description": "Story points across all child issues (excl. Obsolete).",
-      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 3 },
-      "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
-      "targets": [{
-        "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
-        "rawSql": "SELECT COALESCE(SUM(story_points), 0) AS value\nFROM issues\nWHERE epic_key IN (\n  SELECT key FROM issues\n  WHERE issue_type = 'Epic'\n    AND customer ILIKE '%Bose%'\n    AND project_key LIKE 'WP-%'\n    AND status != 'Obsolete / Won''t Do'\n)\nAND issue_type NOT IN ('Epic', 'Sub-task')\nAND status != 'Obsolete / Won''t Do'",
-        "format": "table", "refId": "A"
-      }],
-      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "colorMode": "value", "graphMode": "none", "orientation": "auto", "textMode": "auto" },
-      "fieldConfig": { "defaults": { "color": { "mode": "fixed", "fixedColor": "purple" }, "unit": "short" }, "overrides": [] }
-    },
-
-    {
-      "id": 6, "type": "stat", "title": "Done SP",
-      "description": "Story points in completed child issues.",
-      "gridPos": { "h": 4, "w": 4, "x": 16, "y": 3 },
-      "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
-      "targets": [{
-        "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
-        "rawSql": "SELECT COALESCE(SUM(story_points), 0) AS value\nFROM issues\nWHERE epic_key IN (\n  SELECT key FROM issues\n  WHERE issue_type = 'Epic'\n    AND customer ILIKE '%Bose%'\n    AND project_key LIKE 'WP-%'\n    AND status != 'Obsolete / Won''t Do'\n)\nAND issue_type NOT IN ('Epic', 'Sub-task')\nAND status_category = 'Done'",
-        "format": "table", "refId": "A"
-      }],
-      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "colorMode": "value", "graphMode": "none", "orientation": "auto", "textMode": "auto" },
-      "fieldConfig": { "defaults": { "color": { "mode": "fixed", "fixedColor": "green" }, "unit": "short" }, "overrides": [] }
-    },
-
-    {
-      "id": 7, "type": "stat", "title": "Completion %",
-      "description": "Done SP / Total SP across all Bose WP- epics.",
-      "gridPos": { "h": 4, "w": 4, "x": 20, "y": 3 },
-      "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
-      "targets": [{
-        "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
-        "rawSql": "SELECT ROUND(\n  100.0 * COALESCE(SUM(story_points) FILTER (WHERE status_category = 'Done'), 0)\n  / NULLIF(SUM(story_points), 0), 1\n) AS value\nFROM issues\nWHERE epic_key IN (\n  SELECT key FROM issues\n  WHERE issue_type = 'Epic'\n    AND customer ILIKE '%Bose%'\n    AND project_key LIKE 'WP-%'\n    AND status != 'Obsolete / Won''t Do'\n)\nAND issue_type NOT IN ('Epic', 'Sub-task')\nAND status != 'Obsolete / Won''t Do'",
-        "format": "table", "refId": "A"
-      }],
-      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "colorMode": "value", "graphMode": "none", "orientation": "auto", "textMode": "auto" },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 0,
+        "y": 3
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT COUNT(*) AS value\nFROM issues\nWHERE issue_type = 'Epic'\n  AND customer ILIKE '%Bose%'\n  AND status != 'Obsolete / Won''t Do'",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "orientation": "auto",
+        "textMode": "auto"
+      },
       "fieldConfig": {
         "defaults": {
-          "unit": "percent",
-          "color": { "mode": "thresholds" },
-          "thresholds": { "mode": "absolute", "steps": [
-            { "color": "red",    "value": null },
-            { "color": "yellow", "value": 40 },
-            { "color": "green",  "value": 75 }
-          ]}
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          },
+          "unit": "short"
         },
         "overrides": []
       }
     },
-
     {
-      "id": 10, "type": "row", "title": "Epic Progress",
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 7 }, "collapsed": false
-    },
-
-    {
-      "id": 11, "type": "table", "title": "Epic Progress",
-      "description": "Per-epic breakdown: issues and story points done vs total.",
-      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 8 },
-      "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
-      "targets": [{
-        "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
-        "rawSql": "SELECT\n  e.key                                                                          AS \"Epic\",\n  e.summary                                                                      AS \"Summary\",\n  e.status                                                                       AS \"Status\",\n  COALESCE(e.assignee, '—')                                                       AS \"Owner\",\n  COUNT(ci.key)                                                                  AS \"Issues\",\n  COUNT(ci.key) FILTER (WHERE ci.status_category = 'Done')                      AS \"Done\",\n  COALESCE(SUM(ci.story_points), 0)::int                                         AS \"Total SP\",\n  COALESCE(SUM(ci.story_points) FILTER (WHERE ci.status_category = 'Done'), 0)::int AS \"Done SP\",\n  ROUND(\n    100.0 * COUNT(ci.key) FILTER (WHERE ci.status_category = 'Done')\n    / NULLIF(COUNT(ci.key), 0), 1\n  )                                                                              AS \"% Done\"\nFROM issues e\nLEFT JOIN issues ci\n  ON  ci.epic_key    = e.key\n  AND ci.issue_type NOT IN ('Epic', 'Sub-task')\n  AND ci.status     != 'Obsolete / Won''t Do'\nWHERE e.issue_type  = 'Epic'\n  AND e.customer    ILIKE '%Bose%'\n  AND e.project_key LIKE 'WP-%'\n  AND e.status      != 'Obsolete / Won''t Do'\nGROUP BY e.key, e.summary, e.status, e.assignee\nORDER BY e.key",
-        "format": "table", "refId": "A"
-      }],
-      "options": { "sortBy": [{ "desc": false, "displayName": "Epic" }], "footer": { "show": false } },
+      "id": 3,
+      "type": "stat",
+      "title": "Open Issues",
+      "description": "Non-done child issues under Bose WP- epics.",
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 4,
+        "y": 3
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT COUNT(*) AS value\nFROM issues\nWHERE epic_key IN (\n  SELECT key FROM issues\n  WHERE issue_type = 'Epic'\n    AND customer ILIKE '%Bose%'\n    AND status != 'Obsolete / Won''t Do'\n)\nAND issue_type NOT IN ('Epic', 'Sub-task')\nAND status_category != 'Done'\nAND status != 'Obsolete / Won''t Do'",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "orientation": "auto",
+        "textMode": "auto"
+      },
       "fieldConfig": {
-        "defaults": { "custom": { "align": "left", "inspect": false } },
+        "defaults": {
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "orange"
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Done Issues",
+      "description": "Completed child issues under Bose WP- epics.",
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 8,
+        "y": 3
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT COUNT(*) AS value\nFROM issues\nWHERE epic_key IN (\n  SELECT key FROM issues\n  WHERE issue_type = 'Epic'\n    AND customer ILIKE '%Bose%'\n    AND status != 'Obsolete / Won''t Do'\n)\nAND issue_type NOT IN ('Epic', 'Sub-task')\nAND status_category = 'Done'",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "orientation": "auto",
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "green"
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "Total SP",
+      "description": "Story points across all child issues (excl. Obsolete).",
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 12,
+        "y": 3
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT COALESCE(SUM(story_points), 0) AS value\nFROM issues\nWHERE epic_key IN (\n  SELECT key FROM issues\n  WHERE issue_type = 'Epic'\n    AND customer ILIKE '%Bose%'\n    AND status != 'Obsolete / Won''t Do'\n)\nAND issue_type NOT IN ('Epic', 'Sub-task')\nAND status != 'Obsolete / Won''t Do'",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "orientation": "auto",
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "purple"
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 6,
+      "type": "stat",
+      "title": "Done SP",
+      "description": "Story points in completed child issues.",
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 16,
+        "y": 3
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT COALESCE(SUM(story_points), 0) AS value\nFROM issues\nWHERE epic_key IN (\n  SELECT key FROM issues\n  WHERE issue_type = 'Epic'\n    AND customer ILIKE '%Bose%'\n    AND status != 'Obsolete / Won''t Do'\n)\nAND issue_type NOT IN ('Epic', 'Sub-task')\nAND status_category = 'Done'",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "orientation": "auto",
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "green"
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 7,
+      "type": "stat",
+      "title": "Completion %",
+      "description": "Done SP / Total SP across all Bose WP- epics.",
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 20,
+        "y": 3
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT ROUND(\n  100.0 * COALESCE(SUM(story_points) FILTER (WHERE status_category = 'Done'), 0)\n  / NULLIF(SUM(story_points), 0), 1\n) AS value\nFROM issues\nWHERE epic_key IN (\n  SELECT key FROM issues\n  WHERE issue_type = 'Epic'\n    AND customer ILIKE '%Bose%'\n    AND status != 'Obsolete / Won''t Do'\n)\nAND issue_type NOT IN ('Epic', 'Sub-task')\nAND status != 'Obsolete / Won''t Do'",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "orientation": "auto",
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 40
+              },
+              {
+                "color": "green",
+                "value": 75
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 10,
+      "type": "row",
+      "title": "Epic Progress",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 7
+      },
+      "collapsed": false
+    },
+    {
+      "id": 11,
+      "type": "table",
+      "title": "Epic Progress",
+      "description": "Per-epic breakdown: issues and story points done vs total.",
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 8
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT\n  e.key                                                                          AS \"Epic\",\n  e.summary                                                                      AS \"Summary\",\n  e.status                                                                       AS \"Status\",\n  COALESCE(e.assignee, '\u2014')                                                       AS \"Owner\",\n  COUNT(ci.key)                                                                  AS \"Issues\",\n  COUNT(ci.key) FILTER (WHERE ci.status_category = 'Done')                      AS \"Done\",\n  COALESCE(SUM(ci.story_points), 0)::int                                         AS \"Total SP\",\n  COALESCE(SUM(ci.story_points) FILTER (WHERE ci.status_category = 'Done'), 0)::int AS \"Done SP\",\n  ROUND(\n    100.0 * COUNT(ci.key) FILTER (WHERE ci.status_category = 'Done')\n    / NULLIF(COUNT(ci.key), 0), 1\n  )                                                                              AS \"% Done\"\nFROM issues e\nLEFT JOIN issues ci\n  ON  ci.epic_key    = e.key\n  AND ci.issue_type NOT IN ('Epic', 'Sub-task')\n  AND ci.status     != 'Obsolete / Won''t Do'\nWHERE e.issue_type  = 'Epic'\n  AND e.customer    ILIKE '%Bose%'\n  AND e.status      != 'Obsolete / Won''t Do'\nGROUP BY e.key, e.summary, e.status, e.assignee\nORDER BY e.key",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "sortBy": [
+          {
+            "desc": false,
+            "displayName": "Epic"
+          }
+        ],
+        "footer": {
+          "show": false
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "left",
+            "inspect": false
+          }
+        },
         "overrides": [
           {
-            "matcher": { "id": "byName", "options": "Epic" },
+            "matcher": {
+              "id": "byName",
+              "options": "Epic"
+            },
             "properties": [
-              { "id": "custom.width", "value": 110 },
-              { "id": "links", "value": [{ "title": "Open in Jira", "url": "${jira_url}/browse/${__value.text}", "targetBlank": true }] }
+              {
+                "id": "custom.width",
+                "value": 110
+              },
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Open in Jira",
+                    "url": "${jira_url}/browse/${__value.text}",
+                    "targetBlank": true
+                  }
+                ]
+              }
             ]
           },
-          { "matcher": { "id": "byName", "options": "Summary" },  "properties": [{ "id": "custom.width", "value": 340 }] },
-          { "matcher": { "id": "byName", "options": "Status" },   "properties": [{ "id": "custom.width", "value": 160 }] },
-          { "matcher": { "id": "byName", "options": "Owner" },    "properties": [{ "id": "custom.width", "value": 150 }] },
-          { "matcher": { "id": "byName", "options": "Issues" },   "properties": [{ "id": "custom.width", "value": 70 }] },
-          { "matcher": { "id": "byName", "options": "Done" },     "properties": [{ "id": "custom.width", "value": 60 }] },
-          { "matcher": { "id": "byName", "options": "Total SP" }, "properties": [{ "id": "custom.width", "value": 80 }] },
-          { "matcher": { "id": "byName", "options": "Done SP" },  "properties": [{ "id": "custom.width", "value": 80 }] },
           {
-            "matcher": { "id": "byName", "options": "% Done" },
+            "matcher": {
+              "id": "byName",
+              "options": "Summary"
+            },
             "properties": [
-              { "id": "custom.width", "value": 100 },
-              { "id": "custom.displayMode", "value": "gradient-gauge" },
-              { "id": "min", "value": 0 },
-              { "id": "max", "value": 100 },
-              { "id": "unit", "value": "percent" },
-              { "id": "color", "value": { "mode": "thresholds" } },
-              { "id": "thresholds", "value": { "mode": "absolute", "steps": [
-                { "color": "red",    "value": null },
-                { "color": "yellow", "value": 40 },
-                { "color": "green",  "value": 75 }
-              ]}}
+              {
+                "id": "custom.width",
+                "value": 340
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Status"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 160
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Owner"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 150
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Issues"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 70
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Done"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 60
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Total SP"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 80
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Done SP"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 80
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "% Done"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 100
+              },
+              {
+                "id": "custom.displayMode",
+                "value": "gradient-gauge"
+              },
+              {
+                "id": "min",
+                "value": 0
+              },
+              {
+                "id": "max",
+                "value": 100
+              },
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "thresholds"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "red",
+                      "value": null
+                    },
+                    {
+                      "color": "yellow",
+                      "value": 40
+                    },
+                    {
+                      "color": "green",
+                      "value": 75
+                    }
+                  ]
+                }
+              }
             ]
           }
         ]
       },
       "pluginVersion": "11.1.0"
     },
-
     {
-      "id": 20, "type": "row", "title": "Issue Breakdown",
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 18 }, "collapsed": false
+      "id": 20,
+      "type": "row",
+      "title": "Issue Breakdown",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 18
+      },
+      "collapsed": false
     },
-
     {
-      "id": 21, "type": "barchart", "title": "Issues by Status",
+      "id": 21,
+      "type": "barchart",
+      "title": "Issues by Status",
       "description": "Count of child issues grouped by status.",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 19 },
-      "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
-      "targets": [{
-        "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
-        "rawSql": "SELECT status AS \"Status\", COUNT(*) AS \"Issues\"\nFROM issues\nWHERE epic_key IN (\n  SELECT key FROM issues\n  WHERE issue_type = 'Epic'\n    AND customer ILIKE '%Bose%'\n    AND project_key LIKE 'WP-%'\n    AND status != 'Obsolete / Won''t Do'\n)\nAND issue_type NOT IN ('Epic', 'Sub-task')\nAND status != 'Obsolete / Won''t Do'\nGROUP BY status\nORDER BY COUNT(*) DESC",
-        "format": "table", "refId": "A"
-      }],
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 19
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT status AS \"Status\", COUNT(*) AS \"Issues\"\nFROM issues\nWHERE epic_key IN (\n  SELECT key FROM issues\n  WHERE issue_type = 'Epic'\n    AND customer ILIKE '%Bose%'\n    AND status != 'Obsolete / Won''t Do'\n)\nAND issue_type NOT IN ('Epic', 'Sub-task')\nAND status != 'Obsolete / Won''t Do'\nGROUP BY status\nORDER BY COUNT(*) DESC",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
       "options": {
-        "xField": "Status", "stacking": "none", "fillOpacity": 80,
+        "xField": "Status",
+        "stacking": "none",
+        "fillOpacity": 80,
         "xTickLabelRotation": -30,
-        "legend": { "displayMode": "list", "placement": "bottom" }
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
       },
       "fieldConfig": {
-        "defaults": { "unit": "short", "color": { "mode": "palette-classic" } },
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
         "overrides": []
       }
     },
-
     {
-      "id": 22, "type": "barchart", "title": "Open Issues by Assignee",
+      "id": 22,
+      "type": "barchart",
+      "title": "Open Issues by Assignee",
       "description": "Open child issues per assignee (top 15).",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 19 },
-      "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
-      "targets": [{
-        "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
-        "rawSql": "SELECT\n  COALESCE(assignee, 'Unassigned') AS \"Assignee\",\n  COUNT(*) FILTER (WHERE status_category != 'Done') AS \"Open\",\n  COUNT(*) FILTER (WHERE status_category =  'Done') AS \"Done\"\nFROM issues\nWHERE epic_key IN (\n  SELECT key FROM issues\n  WHERE issue_type = 'Epic'\n    AND customer ILIKE '%Bose%'\n    AND project_key LIKE 'WP-%'\n    AND status != 'Obsolete / Won''t Do'\n)\nAND issue_type NOT IN ('Epic', 'Sub-task')\nAND status != 'Obsolete / Won''t Do'\nGROUP BY assignee\nORDER BY COUNT(*) FILTER (WHERE status_category != 'Done') DESC\nLIMIT 15",
-        "format": "table", "refId": "A"
-      }],
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 19
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT\n  COALESCE(assignee, 'Unassigned') AS \"Assignee\",\n  COUNT(*) FILTER (WHERE status_category != 'Done') AS \"Open\",\n  COUNT(*) FILTER (WHERE status_category =  'Done') AS \"Done\"\nFROM issues\nWHERE epic_key IN (\n  SELECT key FROM issues\n  WHERE issue_type = 'Epic'\n    AND customer ILIKE '%Bose%'\n    AND status != 'Obsolete / Won''t Do'\n)\nAND issue_type NOT IN ('Epic', 'Sub-task')\nAND status != 'Obsolete / Won''t Do'\nGROUP BY assignee\nORDER BY COUNT(*) FILTER (WHERE status_category != 'Done') DESC\nLIMIT 15",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
       "options": {
-        "xField": "Assignee", "stacking": "none", "fillOpacity": 80,
+        "xField": "Assignee",
+        "stacking": "none",
+        "fillOpacity": 80,
         "xTickLabelRotation": -30,
-        "legend": { "displayMode": "list", "placement": "bottom" }
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
       },
       "fieldConfig": {
-        "defaults": { "unit": "short", "color": { "mode": "palette-classic" } },
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
         "overrides": [
-          { "matcher": { "id": "byName", "options": "Open" }, "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "orange" } }] },
-          { "matcher": { "id": "byName", "options": "Done" }, "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "green"  } }] }
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Open"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "orange"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Done"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "green"
+                }
+              }
+            ]
+          }
         ]
       }
     },
-
     {
-      "id": 30, "type": "row", "title": "All Issues",
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 27 }, "collapsed": false
+      "id": 30,
+      "type": "row",
+      "title": "All Issues",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 27
+      },
+      "collapsed": false
     },
-
     {
-      "id": 31, "type": "table", "title": "All Issues",
+      "id": 31,
+      "type": "table",
+      "title": "All Issues",
       "description": "Every child issue under Bose WP- epics (excluding Obsolete and Sub-tasks).",
-      "gridPos": { "h": 14, "w": 24, "x": 0, "y": 28 },
-      "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
-      "targets": [{
-        "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
-        "rawSql": "SELECT\n  i.key                              AS \"Key\",\n  i.summary                          AS \"Summary\",\n  i.issue_type                       AS \"Type\",\n  i.status                           AS \"Status\",\n  i.priority                         AS \"Priority\",\n  COALESCE(i.assignee, '—')          AS \"Assignee\",\n  i.story_points                     AS \"SP\",\n  COALESCE(e.summary, '—')           AS \"Epic\"\nFROM issues i\nLEFT JOIN issues e ON e.key = i.epic_key\nWHERE i.epic_key IN (\n  SELECT key FROM issues\n  WHERE issue_type = 'Epic'\n    AND customer ILIKE '%Bose%'\n    AND project_key LIKE 'WP-%'\n    AND status != 'Obsolete / Won''t Do'\n)\nAND i.issue_type NOT IN ('Epic', 'Sub-task')\nAND i.status     != 'Obsolete / Won''t Do'\nORDER BY i.epic_key, i.key",
-        "format": "table", "refId": "A"
-      }],
-      "options": { "footer": { "show": false } },
+      "gridPos": {
+        "h": 14,
+        "w": 24,
+        "x": 0,
+        "y": 28
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT\n  i.key                              AS \"Key\",\n  i.summary                          AS \"Summary\",\n  i.issue_type                       AS \"Type\",\n  i.status                           AS \"Status\",\n  i.priority                         AS \"Priority\",\n  COALESCE(i.assignee, '\u2014')          AS \"Assignee\",\n  i.story_points                     AS \"SP\",\n  COALESCE(e.summary, '\u2014')           AS \"Epic\"\nFROM issues i\nLEFT JOIN issues e ON e.key = i.epic_key\nWHERE i.epic_key IN (\n  SELECT key FROM issues\n  WHERE issue_type = 'Epic'\n    AND customer ILIKE '%Bose%'\n    AND status != 'Obsolete / Won''t Do'\n)\nAND i.issue_type NOT IN ('Epic', 'Sub-task')\nAND i.status     != 'Obsolete / Won''t Do'\nORDER BY i.epic_key, i.key",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "footer": {
+          "show": false
+        }
+      },
       "fieldConfig": {
-        "defaults": { "custom": { "align": "left", "inspect": false } },
+        "defaults": {
+          "custom": {
+            "align": "left",
+            "inspect": false
+          }
+        },
         "overrides": [
           {
-            "matcher": { "id": "byName", "options": "Key" },
+            "matcher": {
+              "id": "byName",
+              "options": "Key"
+            },
             "properties": [
-              { "id": "custom.width", "value": 110 },
-              { "id": "links", "value": [{ "title": "Open in Jira", "url": "${jira_url}/browse/${__value.text}", "targetBlank": true }] }
+              {
+                "id": "custom.width",
+                "value": 110
+              },
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Open in Jira",
+                    "url": "${jira_url}/browse/${__value.text}",
+                    "targetBlank": true
+                  }
+                ]
+              }
             ]
           },
-          { "matcher": { "id": "byName", "options": "Summary" },  "properties": [{ "id": "custom.width", "value": 340 }] },
-          { "matcher": { "id": "byName", "options": "Type" },     "properties": [{ "id": "custom.width", "value": 90 }] },
-          { "matcher": { "id": "byName", "options": "Status" },   "properties": [{ "id": "custom.width", "value": 160 }] },
-          { "matcher": { "id": "byName", "options": "Priority" }, "properties": [{ "id": "custom.width", "value": 90 }] },
-          { "matcher": { "id": "byName", "options": "Assignee" }, "properties": [{ "id": "custom.width", "value": 150 }] },
-          { "matcher": { "id": "byName", "options": "SP" },       "properties": [{ "id": "custom.width", "value": 50 }] }
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Summary"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 340
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Type"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 90
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Status"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 160
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Priority"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 90
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Assignee"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 150
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "SP"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 50
+              }
+            ]
+          }
         ]
       },
       "pluginVersion": "11.1.0"
@@ -294,7 +968,10 @@
         "name": "jira_url",
         "label": "Jira URL",
         "type": "query",
-        "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+        "datasource": {
+          "type": "postgres",
+          "uid": "jira-metrics-pg"
+        },
         "query": "SELECT value FROM app_settings WHERE key = 'jira_url'",
         "hide": 2,
         "refresh": 1,
