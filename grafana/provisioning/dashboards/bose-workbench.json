@@ -489,7 +489,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT\n  e.key                                                                          AS \"Epic\",\n  e.summary                                                                      AS \"Summary\",\n  e.status                                                                       AS \"Status\",\n  COALESCE(e.assignee, '\u2014')                                                       AS \"Owner\",\n  COUNT(ci.key)                                                                  AS \"Issues\",\n  COUNT(ci.key) FILTER (WHERE ci.status_category = 'Done')                      AS \"Done\",\n  COALESCE(SUM(ci.story_points), 0)::int                                         AS \"Total SP\",\n  COALESCE(SUM(ci.story_points) FILTER (WHERE ci.status_category = 'Done'), 0)::int AS \"Done SP\",\n  ROUND(\n    100.0 * COUNT(ci.key) FILTER (WHERE ci.status_category = 'Done')\n    / NULLIF(COUNT(ci.key), 0), 1\n  )                                                                              AS \"% Done\"\nFROM issues e\nLEFT JOIN issues ci\n  ON  ci.epic_key    = e.key\n  AND ci.issue_type NOT IN ('Epic', 'Sub-task')\n  AND ci.status     != 'Obsolete / Won''t Do'\nWHERE e.issue_type  = 'Epic'\n  AND e.customer    ILIKE '%Bose%'\n  AND e.status      != 'Obsolete / Won''t Do'\nGROUP BY e.key, e.summary, e.status, e.assignee\nORDER BY e.key",
+          "rawSql": "SELECT\n  e.key                                                                          AS \"Epic\",\n  e.customer_project                                                             AS \"Workpackage\",\n  e.summary                                                                      AS \"Summary\",\n  e.status                                                                       AS \"Status\",\n  COALESCE(e.assignee, '\u2014')                                                      AS \"Owner\",\n  COUNT(ci.key)                                                                  AS \"Issues\",\n  COUNT(ci.key) FILTER (WHERE ci.status_category = 'Done')                      AS \"Done\",\n  COALESCE(SUM(ci.story_points), 0)::int                                         AS \"Total SP\",\n  COALESCE(SUM(ci.story_points) FILTER (WHERE ci.status_category = 'Done'), 0)::int AS \"Done SP\",\n  ROUND(\n    100.0 * COUNT(ci.key) FILTER (WHERE ci.status_category = 'Done')\n    / NULLIF(COUNT(ci.key), 0), 1\n  )                                                                              AS \"% Done\"\nFROM issues e\nLEFT JOIN issues ci\n  ON  ci.epic_key    = e.key\n  AND ci.issue_type NOT IN ('Epic', 'Sub-task')\n  AND ci.status     != 'Obsolete / Won''t Do'\nWHERE e.issue_type      = 'Epic'\n  AND e.customer_project LIKE '% / WP-%'\n  AND e.status           != 'Obsolete / Won''t Do'\nGROUP BY e.key, e.customer_project, e.summary, e.status, e.assignee\nORDER BY e.customer_project, e.key",
           "format": "table",
           "refId": "A"
         }
@@ -532,6 +532,18 @@
                     "targetBlank": true
                   }
                 ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Workpackage"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 180
               }
             ]
           },
@@ -820,7 +832,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 27
+        "y": 37
       },
       "collapsed": false
     },
@@ -833,7 +845,7 @@
         "h": 14,
         "w": 24,
         "x": 0,
-        "y": 28
+        "y": 38
       },
       "datasource": {
         "type": "postgres",
@@ -960,6 +972,154 @@
         ]
       },
       "pluginVersion": "11.1.0"
+    },
+    {
+      "id": 23,
+      "type": "barchart",
+      "title": "Issues by Workpackage",
+      "description": "Open vs Done issues per WP- workpackage.",
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 27
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT\n  COALESCE(e.customer_project, '\u2014')                                    AS \"Workpackage\",\n  COUNT(i.key) FILTER (WHERE i.status_category != 'Done')              AS \"Open\",\n  COUNT(i.key) FILTER (WHERE i.status_category =  'Done')              AS \"Done\"\nFROM issues i\nJOIN issues e ON e.key = i.epic_key\nWHERE e.issue_type       = 'Epic'\n  AND e.customer_project LIKE '% / WP-%'\n  AND e.status           != 'Obsolete / Won''t Do'\n  AND i.issue_type NOT IN ('Epic', 'Sub-task')\n  AND i.status           != 'Obsolete / Won''t Do'\nGROUP BY e.customer_project\nORDER BY e.customer_project",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "xField": "Workpackage",
+        "stacking": "none",
+        "fillOpacity": 80,
+        "xTickLabelRotation": -30,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Open"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "orange"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Done"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "green"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 24,
+      "type": "barchart",
+      "title": "Issues by Team",
+      "description": "Open vs Done issues per Jira project (team).",
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 27
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "jira-metrics-pg"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "jira-metrics-pg"
+          },
+          "rawSql": "SELECT\n  i.project_key                                                         AS \"Team\",\n  COUNT(i.key) FILTER (WHERE i.status_category != 'Done')              AS \"Open\",\n  COUNT(i.key) FILTER (WHERE i.status_category =  'Done')              AS \"Done\"\nFROM issues i\nJOIN issues e ON e.key = i.epic_key\nWHERE e.issue_type       = 'Epic'\n  AND e.customer_project LIKE '% / WP-%'\n  AND e.status           != 'Obsolete / Won''t Do'\n  AND i.issue_type NOT IN ('Epic', 'Sub-task')\n  AND i.status           != 'Obsolete / Won''t Do'\nGROUP BY i.project_key\nORDER BY COUNT(i.key) DESC",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "xField": "Team",
+        "stacking": "none",
+        "fillOpacity": 80,
+        "xTickLabelRotation": -30,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Open"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "orange"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Done"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "green"
+                }
+              }
+            ]
+          }
+        ]
+      }
     }
   ],
   "templating": {
