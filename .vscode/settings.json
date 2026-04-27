@@ -1,0 +1,7 @@
+{
+    "lmstudio.baseUrl": "http://192.168.2.50:1234",
+    "lmstudio.model": "google/gemma-4-e4b",
+    "lmstudio-copilot.apiKey": "sk-lm-u7EzZBJf:lHkAiWbBOhFt2TI4u0H6",
+    "lmstudio-copilot.serverUrl": "http://192.168.2.9:1234",
+    "vscode-ollama.model": "gemma4:e4b"
+}
