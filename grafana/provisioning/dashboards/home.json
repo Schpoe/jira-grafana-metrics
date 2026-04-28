@@ -439,7 +439,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT COUNT(*) AS value FROM issues i JOIN sprint_issues si ON si.issue_key = i.key WHERE i.project_key IN ($project) AND si.sprint_id = $sprint::bigint AND i.status_category = 'Done'",
+          "rawSql": "SELECT COUNT(*) AS value FROM issues i JOIN sprint_issues si ON si.issue_key = i.key WHERE i.project_key IN ($project) AND si.sprint_id = $sprint::bigint AND si.removed_at IS NULL AND i.status_category = 'Done'",
           "format": "table",
           "refId": "A"
         }
@@ -555,7 +555,7 @@
             "type": "postgres",
             "uid": "jira-metrics-pg"
           },
-          "rawSql": "SELECT sprint_name, COALESCE(committed_points, 0) AS \"Committed\", COALESCE(delivered_points, 0) AS \"Delivered\" FROM v_planning_deviation WHERE sprint_id IN (SELECT DISTINCT si.sprint_id FROM sprint_issues si JOIN issues i ON i.key = si.issue_key WHERE i.project_key IN ($project)) AND state = 'closed' ORDER BY complete_date DESC NULLS LAST LIMIT 10",
+          "rawSql": "SELECT sprint_name, COALESCE(committed_points, 0) AS \"Committed\", COALESCE(delivered_points, 0) AS \"Delivered\" FROM v_planning_deviation WHERE sprint_id IN (\n    SELECT DISTINCT si2.sprint_id FROM sprint_issues si2\n    JOIN issues i2 ON i2.key = si2.issue_key\n    WHERE i2.project_key IN ($project) AND si2.was_in_initial_scope = TRUE\n    GROUP BY si2.sprint_id\n    HAVING COUNT(*) * 2 > (\n      SELECT COUNT(*) FROM sprint_issues si3\n      WHERE si3.sprint_id = si2.sprint_id AND si3.was_in_initial_scope = TRUE\n    )\n  ) AND state = 'closed' ORDER BY complete_date DESC NULLS LAST LIMIT 10",
           "format": "table",
           "refId": "A"
         }
