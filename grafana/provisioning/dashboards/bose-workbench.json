@@ -1217,7 +1217,7 @@
       "targets": [
         {
           "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
-          "rawSql": "SELECT\n  key                                AS \"Key\",\n  summary                            AS \"Summary\",\n  issue_type                         AS \"Type\",\n  priority                           AS \"Priority\",\n  status                             AS \"Status\",\n  COALESCE(assignee, '—')           AS \"Assignee\",\n  COALESCE(story_points::text, '—') AS \"SP\",\n  project_key                        AS \"Team\",\n  DATE_PART('day', NOW() - created_at)::int AS \"Age (days)\"\nFROM issues\nWHERE epic_key IS NULL\n  AND issue_type NOT IN ('Epic', 'Sub-task')\n  AND status_category != 'Done'\n  AND status != 'Obsolete / Won''t Do'\n  AND (\n    summary ILIKE '%bose%'\n  )\nORDER BY\n  CASE priority WHEN 'Blocker' THEN 1 WHEN 'Critical' THEN 2 WHEN 'High' THEN 3 WHEN 'Medium' THEN 4 ELSE 5 END,\n  created_at ASC",
+          "rawSql": "SELECT\n  i.key                                AS \"Key\",\n  i.summary                            AS \"Summary\",\n  i.issue_type                         AS \"Type\",\n  i.priority                           AS \"Priority\",\n  i.status                             AS \"Status\",\n  COALESCE(i.assignee, '—')           AS \"Assignee\",\n  COALESCE(i.story_points::text, '—') AS \"SP\",\n  i.project_key                        AS \"Team\",\n  COALESCE(\n    (SELECT il.to_key FROM issue_links il JOIN issues e ON e.key = il.to_key\n     WHERE il.from_key = i.key AND e.issue_type = 'Epic' LIMIT 1),\n    (SELECT il.from_key FROM issue_links il JOIN issues e ON e.key = il.from_key\n     WHERE il.to_key = i.key AND e.issue_type = 'Epic' LIMIT 1),\n    '—'\n  )                                    AS \"Linked Epic\",\n  COALESCE(\n    (SELECT il.link_label FROM issue_links il JOIN issues e ON e.key = il.to_key\n     WHERE il.from_key = i.key AND e.issue_type = 'Epic' LIMIT 1),\n    (SELECT il.link_label FROM issue_links il JOIN issues e ON e.key = il.from_key\n     WHERE il.to_key = i.key AND e.issue_type = 'Epic' LIMIT 1),\n    '—'\n  )                                    AS \"Link Type\",\n  DATE_PART('day', NOW() - i.created_at)::int AS \"Age (days)\"\nFROM issues i\nWHERE i.epic_key IS NULL\n  AND i.issue_type NOT IN ('Epic', 'Sub-task')\n  AND i.status_category != 'Done'\n  AND i.status != 'Obsolete / Won''t Do'\n  AND i.summary ILIKE '%bose%'\nORDER BY\n  CASE i.priority WHEN 'Blocker' THEN 1 WHEN 'Critical' THEN 2 WHEN 'High' THEN 3 WHEN 'Medium' THEN 4 ELSE 5 END,\n  i.created_at ASC",
           "format": "table",
           "refId": "A"
         }
@@ -1245,10 +1245,12 @@
           { "matcher": { "id": "byName", "options": "Type" },      "properties": [{ "id": "custom.width", "value": 90 }] },
           { "matcher": { "id": "byName", "options": "Priority" },  "properties": [{ "id": "custom.width", "value": 90 }, { "id": "custom.displayMode", "value": "color-background" }] },
           { "matcher": { "id": "byName", "options": "Status" },    "properties": [{ "id": "custom.width", "value": 140 }, { "id": "custom.displayMode", "value": "color-background" }] },
-          { "matcher": { "id": "byName", "options": "Assignee" },  "properties": [{ "id": "custom.width", "value": 130 }] },
-          { "matcher": { "id": "byName", "options": "SP" },        "properties": [{ "id": "custom.width", "value": 50 }] },
-          { "matcher": { "id": "byName", "options": "Team" },      "properties": [{ "id": "custom.width", "value": 80 }] },
-          { "matcher": { "id": "byName", "options": "Age (days)" },"properties": [{ "id": "custom.width", "value": 90 }] }
+          { "matcher": { "id": "byName", "options": "Assignee" },    "properties": [{ "id": "custom.width", "value": 130 }] },
+          { "matcher": { "id": "byName", "options": "SP" },          "properties": [{ "id": "custom.width", "value": 50 }] },
+          { "matcher": { "id": "byName", "options": "Team" },        "properties": [{ "id": "custom.width", "value": 80 }] },
+          { "matcher": { "id": "byName", "options": "Linked Epic" }, "properties": [{ "id": "custom.width", "value": 120 }] },
+          { "matcher": { "id": "byName", "options": "Link Type" },   "properties": [{ "id": "custom.width", "value": 120 }] },
+          { "matcher": { "id": "byName", "options": "Age (days)" },  "properties": [{ "id": "custom.width", "value": 90 }] }
         ]
       },
       "options": { "sortBy": [] },
