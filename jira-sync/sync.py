@@ -1096,13 +1096,21 @@ def sync_sprint_scope(conn):
         with conn.cursor() as cur:
             # ── Derive scope categories from issue_sprint_history ────────────
 
-            # Initial scope: first 'added' event at or before sprint start
+            # Initial scope: ticket's last event at/before sprint start was 'added'
+            # (tickets added then removed pre-sprint do not count)
             if cutoff:
                 cur.execute(
                     """
-                    SELECT issue_key FROM issue_sprint_history
-                    WHERE sprint_id = %s AND event = 'added'
-                    GROUP BY issue_key HAVING MIN(occurred_at) <= %s
+                    SELECT issue_key
+                    FROM (
+                        SELECT issue_key, event,
+                               ROW_NUMBER() OVER (
+                                   PARTITION BY issue_key ORDER BY occurred_at DESC
+                               ) AS rn
+                        FROM issue_sprint_history
+                        WHERE sprint_id = %s AND occurred_at <= %s
+                    ) t
+                    WHERE rn = 1 AND event = 'added'
                     """,
                     (sprint_id, cutoff),
                 )
@@ -1114,30 +1122,40 @@ def sync_sprint_scope(conn):
                 )
             initial_scope_keys = {r[0] for r in cur.fetchall()}
 
-            # Mid-sprint additions: first 'added' event after sprint start
+            # Mid-sprint additions: not in initial scope, but added after sprint start
             if cutoff:
                 cur.execute(
                     """
-                    SELECT issue_key FROM issue_sprint_history
-                    WHERE sprint_id = %s AND event = 'added'
-                    GROUP BY issue_key HAVING MIN(occurred_at) > %s
+                    SELECT DISTINCT issue_key FROM issue_sprint_history
+                    WHERE sprint_id = %s AND event = 'added' AND occurred_at > %s
                     """,
                     (sprint_id, cutoff),
                 )
-                added_mid_keys = {r[0] for r in cur.fetchall()}
+                added_mid_keys = {r[0] for r in cur.fetchall()} - initial_scope_keys
             else:
                 added_mid_keys = set()
 
-            # Punted: any 'removed' event recorded for this sprint
-            cur.execute(
-                """
-                SELECT issue_key, MAX(occurred_at) AS removed_at
-                FROM issue_sprint_history
-                WHERE sprint_id = %s AND event = 'removed'
-                GROUP BY issue_key
-                """,
-                (sprint_id,),
-            )
+            # Punted: removed AFTER sprint start only (pre-sprint churn excluded)
+            if cutoff:
+                cur.execute(
+                    """
+                    SELECT issue_key, MAX(occurred_at) AS removed_at
+                    FROM issue_sprint_history
+                    WHERE sprint_id = %s AND event = 'removed' AND occurred_at > %s
+                    GROUP BY issue_key
+                    """,
+                    (sprint_id, cutoff),
+                )
+            else:
+                cur.execute(
+                    """
+                    SELECT issue_key, MAX(occurred_at) AS removed_at
+                    FROM issue_sprint_history
+                    WHERE sprint_id = %s AND event = 'removed'
+                    GROUP BY issue_key
+                    """,
+                    (sprint_id,),
+                )
             punted = {r[0]: r[1] for r in cur.fetchall()}
 
             has_history = bool(initial_scope_keys or added_mid_keys or punted)
