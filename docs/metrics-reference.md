@@ -80,7 +80,14 @@ Same filter plus `status_category = 'Done'` and `resolved_at <= COALESCE(complet
 
 **`delivery_pct`:** `ROUND(100.0 * delivered_points / committed_points, 1)` — NULL when committed = 0. Cannot exceed 100% because only committed issues are in the numerator.
 
-**How `was_in_initial_scope` and `was_completed` are set:** `sync_sprint_scope()` reads `issue_sprint_history` (changelog-derived sprint field changes) and compares event timestamps to `sprint.start_date`. Issues with a first `'added'` event ≤ `start_date + 2h` are initial scope. `was_completed` is set from `issues.status_category` and `resolved_at` at sprint close time.
+**How `was_in_initial_scope`, `was_punted`, and `was_completed` are set:** `sync_sprint_scope()` reads `issue_sprint_history` (changelog-derived sprint field changes) and compares event timestamps to `sprint.start_date + 2h` (cutoff).
+
+- **`was_in_initial_scope`**: the ticket's last event at or before cutoff was `'added'` — i.e. the ticket was actually in the sprint when it started. Tickets added then removed before sprint start are excluded (pre-sprint churn).
+- **`was_punted`**: a `'removed'` event exists after cutoff. Pre-sprint removals do not count.
+- **`was_added_mid_sprint`**: an `'added'` event exists after cutoff and the ticket is not in initial scope.
+- **`was_completed`**: derived from `issues.status_category = 'Done'` and `resolved_at <= sprint close + 7 days` at the time of sync; always `FALSE` for punted issues.
+
+Tickets that were added and removed entirely before sprint start are deleted from `sprint_issues` during the scope sync so they do not appear in any metric.
 
 **Note:** The Sprint Detail **Completed SP** stat panel uses a different formula — it counts *all* Done issues (including unplanned) and does use a `resolved_at` sprint window (`>= start_date AND <= COALESCE(complete_date, end_date, NOW())`) to prevent carry-over double-counting.
 
@@ -155,6 +162,8 @@ Per-sprint drill-down for Scrum Masters and Release Managers.
 
 **Scope Change %** — `(SP_added + SP_removed) / committed_SP × 100`. Epics excluded from all three terms; Sub-tasks and other types included. Target ≤ 10%, orange at 10%, red at 25%.
 
+**Pre-sprint churn exclusion:** Tickets added and then removed from a sprint before it started are deleted from `sprint_issues` during scope sync. They do not appear in added, removed, or any SP totals. Only changes that occurred after sprint start count as scope change.
+
 ### Cross-Team Dependencies
 
 Uses `issue_links` table with `link_label = 'blocks'` / `'is blocked by'`. Only cross-project links (`i2.project_key != i.project_key`).
@@ -227,7 +236,7 @@ Quarterly KPIs for Product Owners: planning quality, delivery accuracy, re-work,
 
 ### KPI Summary Row 1 — Planning & Quality
 
-**Avg Scope Change %** — `AVG((added_sp + removed_sp) / committed_sp × 100)` across closed sprints in quarter. Target ≤ 10%.
+**Avg Scope Change %** — `AVG((added_sp + removed_sp) / committed_sp × 100)` across closed sprints in quarter. Only additions and removals that occurred after sprint start are counted — pre-sprint churn is excluded. Target ≤ 10%.
 
 **Avg Planning Accuracy %** — `AVG(delivery_pct)` from `v_planning_deviation` for closed sprints. Since `delivery_pct` only counts committed issues, this cannot exceed 100%.
 
