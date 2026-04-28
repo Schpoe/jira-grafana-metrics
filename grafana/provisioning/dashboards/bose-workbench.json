@@ -1169,6 +1169,45 @@
       "pluginVersion": "11.1.0"
     },
     {
+      "id": 43,
+      "type": "stat",
+      "title": "Potential Bose SP",
+      "description": "Total story points of open issues mentioning 'Bose' in title with no Epic link.",
+      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 67 },
+      "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+          "rawSql": "SELECT COALESCE(SUM(story_points), 0) AS value\nFROM issues\nWHERE epic_key IS NULL\n  AND issue_type NOT IN ('Epic', 'Sub-task')\n  AND status_category != 'Done'\n  AND status != 'Obsolete / Won''t Do'\n  AND summary ILIKE '%bose%'",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 1 },
+              { "color": "red", "value": 20 }
+            ]
+          },
+          "color": { "mode": "thresholds" }
+        },
+        "overrides": []
+      },
+      "pluginVersion": "11.1.0"
+    },
+    {
       "id": 42,
       "type": "table",
       "title": "Potential Bose Tickets — Detail",
