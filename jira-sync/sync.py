@@ -1060,9 +1060,10 @@ def sync_sprint_scope(conn):
     """Derive sprint scope from issue changelog history (issue_sprint_history).
 
     Replaces the deprecated Greenhopper sprint report API. For each sprint:
-    - was_in_initial_scope: first 'added' event in issue_sprint_history <= start_date
-    - was_punted:           'removed' event exists for this sprint
-    - was_added_mid_sprint: first 'added' event > start_date + buffer
+    - was_in_initial_scope: last event at/before sprint start was 'added' (ticket
+                            actually in sprint when it started; pre-sprint churn excluded)
+    - was_punted:           'removed' event exists AFTER sprint start
+    - was_added_mid_sprint: 'added' event after sprint start, not in initial scope
     - was_completed:        issue status_category='Done' with resolved_at within sprint window
 
     Closed sprints without scope_synced_at are processed once and marked done.
@@ -1268,6 +1269,9 @@ def sync_sprint_scope(conn):
                         (sprint_id, key, sp, was_completed, is_punted, is_added_mid)
                     )
 
+                cur.execute(
+                    "DELETE FROM sprint_scope_final WHERE sprint_id = %s", (sprint_id,)
+                )
                 if scope_final_rows:
                     execute_values(
                         cur,
@@ -1276,11 +1280,6 @@ def sync_sprint_scope(conn):
                             (sprint_id, issue_key, story_points,
                              was_completed, was_punted, was_added_mid_sprint)
                         VALUES %s
-                        ON CONFLICT (sprint_id, issue_key) DO UPDATE
-                            SET story_points         = EXCLUDED.story_points,
-                                was_completed        = EXCLUDED.was_completed,
-                                was_punted           = EXCLUDED.was_punted,
-                                was_added_mid_sprint = EXCLUDED.was_added_mid_sprint
                         """,
                         scope_final_rows,
                     )
