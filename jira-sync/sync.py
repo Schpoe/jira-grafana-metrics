@@ -1174,6 +1174,21 @@ def sync_sprint_scope(conn):
                     (list(initial_scope_keys), sprint_id, list(all_history_keys)),
                 )
 
+                if cutoff:
+                    # Remove rows for tickets that only appeared in the sprint
+                    # pre-start (added then removed before sprint began).
+                    # They are not in any of our three sets and have removed_at
+                    # set, polluting every scope metric.
+                    cur.execute(
+                        """
+                        DELETE FROM sprint_issues
+                        WHERE sprint_id = %s
+                          AND removed_at IS NOT NULL
+                          AND issue_key != ALL(%s)
+                        """,
+                        (sprint_id, list(all_history_keys)),
+                    )
+
             # Set removed_at for punted issues; insert missing rows for issues
             # that were removed before we ever synced sprint membership
             for key, removed_ts in punted.items():
