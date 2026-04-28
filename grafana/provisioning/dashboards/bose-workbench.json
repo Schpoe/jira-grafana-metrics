@@ -1120,6 +1120,100 @@
           }
         ]
       }
+    },
+    {
+      "id": 40,
+      "type": "row",
+      "title": "Potential Bose Tickets",
+      "description": "Issues mentioning 'Bose' in title or description but not linked to any Epic. Candidates to be triaged into a Bose workpackage.",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 66 },
+      "collapsed": false
+    },
+    {
+      "id": 41,
+      "type": "stat",
+      "title": "Potential Bose Tickets",
+      "description": "Open issues mentioning 'Bose' in title or description with no Epic link. Excludes Epics, Sub-tasks, and Obsolete.",
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 67 },
+      "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+          "rawSql": "SELECT COUNT(*) AS value\nFROM issues\nWHERE epic_key IS NULL\n  AND issue_type NOT IN ('Epic', 'Sub-task')\n  AND status_category != 'Done'\n  AND status != 'Obsolete / Won''t Do'\n  AND (\n    summary     ILIKE '%bose%'\n    OR description ILIKE '%bose%'\n  )",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 1 },
+              { "color": "red", "value": 10 }
+            ]
+          },
+          "color": { "mode": "thresholds" }
+        },
+        "overrides": []
+      },
+      "pluginVersion": "11.1.0"
+    },
+    {
+      "id": 42,
+      "type": "table",
+      "title": "Potential Bose Tickets — Detail",
+      "description": "Open issues mentioning 'Bose' in title or description with no Epic link. Review and assign to a Bose workpackage epic if applicable.",
+      "gridPos": { "h": 14, "w": 24, "x": 0, "y": 71 },
+      "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "jira-metrics-pg" },
+          "rawSql": "SELECT\n  key                                AS \"Key\",\n  summary                            AS \"Summary\",\n  issue_type                         AS \"Type\",\n  priority                           AS \"Priority\",\n  status                             AS \"Status\",\n  COALESCE(assignee, '—')           AS \"Assignee\",\n  COALESCE(story_points::text, '—') AS \"SP\",\n  project_key                        AS \"Team\",\n  DATE_PART('day', NOW() - created_at)::int AS \"Age (days)\"\nFROM issues\nWHERE epic_key IS NULL\n  AND issue_type NOT IN ('Epic', 'Sub-task')\n  AND status_category != 'Done'\n  AND status != 'Obsolete / Won''t Do'\n  AND (\n    summary     ILIKE '%bose%'\n    OR description ILIKE '%bose%'\n  )\nORDER BY\n  CASE priority WHEN 'Blocker' THEN 1 WHEN 'Critical' THEN 2 WHEN 'High' THEN 3 WHEN 'Medium' THEN 4 ELSE 5 END,\n  created_at ASC",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "custom": { "filterable": true } },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Key" },
+            "properties": [
+              { "id": "custom.width", "value": 100 },
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Open in Jira",
+                    "url": "${__data.fields.Key:raw}",
+                    "targetBlank": true
+                  }
+                ]
+              }
+            ]
+          },
+          { "matcher": { "id": "byName", "options": "Summary" },   "properties": [{ "id": "custom.width", "value": 350 }] },
+          { "matcher": { "id": "byName", "options": "Type" },      "properties": [{ "id": "custom.width", "value": 90 }] },
+          { "matcher": { "id": "byName", "options": "Priority" },  "properties": [{ "id": "custom.width", "value": 90 }, { "id": "custom.displayMode", "value": "color-background" }] },
+          { "matcher": { "id": "byName", "options": "Status" },    "properties": [{ "id": "custom.width", "value": 140 }, { "id": "custom.displayMode", "value": "color-background" }] },
+          { "matcher": { "id": "byName", "options": "Assignee" },  "properties": [{ "id": "custom.width", "value": 130 }] },
+          { "matcher": { "id": "byName", "options": "SP" },        "properties": [{ "id": "custom.width", "value": 50 }] },
+          { "matcher": { "id": "byName", "options": "Team" },      "properties": [{ "id": "custom.width", "value": 80 }] },
+          { "matcher": { "id": "byName", "options": "Age (days)" },"properties": [{ "id": "custom.width", "value": 90 }] }
+        ]
+      },
+      "options": { "sortBy": [] },
+      "pluginVersion": "11.1.0"
     }
   ],
   "templating": {
